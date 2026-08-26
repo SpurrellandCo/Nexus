@@ -1,0 +1,42 @@
+# Runtime / ephemeral — never commit these
+.DS_Store
+.last-cleanup
+backups/
+file-history/
+sessions/
+session-data/
+session-env/
+shell-snapshots/
+ide/
+chrome/
+cache/
+tasks/
+teams/
+telemetry/
+metrics/
+mcp-needs-auth-cache.json
+memory.db
+ruvector.db
+bash-commands.log
+cost-tracker.log
+history.jsonl
+
+# Project conversation logs
+projects/
+
+# Local scratch plans (not portable setup)
+plans/
+
+# Secrets — real files excluded, redacted .example.json templates are tracked instead
+settings.json
+settings.json.*
+mcp-configs/mcp-servers.json
+
+# Machine-generated local state — leaks absolute paths/usernames, no value to other users
+ecc/install-state.json
+plugins/known_marketplaces.json
+observer-last-run.log
+
+# Python build artifacts
+__pycache__/
+*.pyc
