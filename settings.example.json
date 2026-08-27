@@ -246,30 +246,6 @@
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $HOME/.claude/scripts/hooks/nexus-autocommit.js --edit",
-            "timeout": 25,
-            "async": true,
-            "statusMessage": "Syncing Nexus config repo..."
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $HOME/.claude/scripts/hooks/nexus-autocommit.js",
-            "timeout": 25,
-            "async": true,
-            "statusMessage": "Syncing Nexus config repo..."
-          }
-        ]
-      },
-      {
         "matcher": "*",
         "hooks": [
           {
