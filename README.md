@@ -1,6 +1,24 @@
-### New Machine Setup
+# Nexus
 
-After cloning this repo (`Nexus`) onto a new machine, run `bash bootstrap.sh` once to install machine-level dependencies (currently: `uv` + the `graphify` CLI). It also prints the remaining manual step of copying `settings.example.json` / `mcp-configs/mcp-servers.example.json` to their real filenames and filling in API keys, since secrets are intentionally excluded from this repo. Per-project tooling (Playwright screenshot setup, project npm deps) is not part of this script — it installs automatically the first time Claude works in a given project, per the policy in `CLAUDE.md`.
+A personal Claude Code configuration — agents, skills, rules, hooks, and slash commands. See `INVENTORY.md` for a full list of what's included, and `CLAUDE.md` for the harness's own operating notes.
+
+## Install
+
+```bash
+git clone https://github.com/SpurrellandCo/Nexus.git && cd Nexus && ./install.sh
+```
+
+This one command does everything:
+
+1. **Places the config at `~/.claude`** — the exact path Claude Code reads global config from. If you already have a `~/.claude` (common if you already use Claude Code), it's backed up first, never overwritten — and if that backup has a real `settings.json` / `mcp-servers.json` with your existing API keys, those are carried forward automatically so you don't lose them.
+2. **Installs machine-level dependencies** (`uv`, the `graphify` CLI) via `bootstrap.sh`.
+3. **Interactively prompts you for any API keys/tokens still missing** — press Enter on any prompt to skip it if you don't need that integration; you can always fill it in later by re-running `./install.sh` or editing `settings.json` / `mcp-configs/mcp-servers.json` directly.
+
+Safe to re-run any time — re-running only fills in keys that are still placeholders and won't touch ones you've already set.
+
+### New Machine Setup (manual, without `install.sh`)
+
+If you'd rather do it by hand: clone this repo directly to `~/.claude`, then run `bash bootstrap.sh` to install machine-level dependencies (`uv` + the `graphify` CLI). It prints the remaining manual step of copying `settings.example.json` / `mcp-configs/mcp-servers.example.json` to their real filenames and filling in API keys yourself, since secrets are intentionally excluded from this repo. Per-project tooling (Playwright screenshot setup, project npm deps) is not part of this script — it installs automatically the first time Claude works in a given project, per the policy in `CLAUDE.md`.
 
 ### Plugin Manifest Gotchas
 
