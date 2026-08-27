@@ -98,5 +98,15 @@ echo "re-running ./install.sh or editing the file directly."
 python3 scripts/install-fill-secrets.py settings.json mcp-configs/mcp-servers.json
 
 echo ""
+echo "== Daily sync schedule =="
+if [ "$(uname -s)" = "Darwin" ]; then
+    bash scripts/nexus-schedule-setup.sh
+else
+    echo "-> Skipping (daily sync scheduling currently ships for macOS/launchd only)."
+    echo "   On Linux, add scripts/nexus-daily-sync.sh to cron yourself, e.g.:"
+    echo "   0 21 * * * /bin/bash \$HOME/.claude/scripts/nexus-daily-sync.sh"
+fi
+
+echo ""
 echo "== Nexus install complete =="
 echo "Start (or restart) Claude Code to pick up the new config."
