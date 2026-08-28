@@ -16,9 +16,10 @@ import sys
 # reused here for consistency across the repo's secret-detection logic.
 LABELED_SECRET_RE = re.compile(
     r"(?i)(api[_-]?key|token|secret|password|authorization|credentials?|auth)"
-    r"""(["'\s:=]+)"""
+    r"""(\s*["']?\s*[:=]\s*["'])"""
     r"([A-Za-z]+\s+)?"
     r"([A-Za-z0-9_\-/.+=]{8,})"
+    r"""["']"""
 )
 
 STRUCTURAL_PATTERNS = [
