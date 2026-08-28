@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "plugins": {
+    "watch@claude-video": [
+      {
+        "scope": "user",
+        "installPath": "/Users/spurrellandco/.claude/plugins/cache/claude-video/watch/0.2.0",
+        "version": "0.2.0",
+        "installedAt": "2026-08-28T16:58:34.378Z",
+        "lastUpdated": "2026-08-28T16:58:34.378Z",
+        "gitCommitSha": "83da59fa78c3eee9e20f515fe75c438bb5166efd"
+      }
+    ]
+  }
+}
