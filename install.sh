@@ -24,17 +24,35 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "== Nexus installer =="
 echo ""
 
+pull_latest() {
+    echo "-> Nexus is already installed at $TARGET — pulling latest changes."
+    local before after
+    before="$(git -C "$TARGET" rev-parse HEAD)"
+    if git -C "$TARGET" pull -q; then
+        after="$(git -C "$TARGET" rev-parse HEAD)"
+        if [ "$before" != "$after" ]; then
+            echo "-> Updated: $(git -C "$TARGET" log --oneline "$before..$after" | wc -l | tr -d ' ') new commit(s)"
+        else
+            echo "-> Already up to date."
+        fi
+    else
+        echo "-> Pull failed (likely a local change conflicting with the update)."
+        echo "   Run 'git -C $TARGET status' to see what's conflicting, resolve it, then re-run."
+    fi
+}
+
 already_in_place=false
 
 if [ "$SCRIPT_DIR" = "$TARGET" ]; then
     already_in_place=true
+    pull_latest
 elif [ -d "$TARGET/.git" ]; then
     existing_remote="$(git -C "$TARGET" remote get-url origin 2>/dev/null || echo "")"
     case "$existing_remote" in
         *SpurrellandCo/Nexus*)
-            echo "-> Nexus is already installed at $TARGET — skipping move, just refreshing deps and secrets."
             already_in_place=true
             SCRIPT_DIR="$TARGET"
+            pull_latest
             ;;
     esac
 fi
