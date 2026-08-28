@@ -48,6 +48,14 @@ cat > "$PLIST" <<EOF
 </plist>
 EOF
 
-launchctl load "$PLIST"
-echo "-> Nexus daily sync scheduled for $HOUR:$(printf '%02d' "$MINUTE") daily (launchd label: $LABEL)"
-echo "   Logs: $LOG_PATH and $HOME/.cache/nexus-daily-sync.log"
+launchctl load "$PLIST" 2>/dev/null || true
+
+if launchctl list "$LABEL" >/dev/null 2>&1; then
+    echo "-> Nexus daily sync scheduled for $HOUR:$(printf '%02d' "$MINUTE") daily (launchd label: $LABEL)"
+    echo "   Logs: $LOG_PATH and $HOME/.cache/nexus-daily-sync.log"
+else
+    echo "-> WARNING: launchd registration could not be confirmed for $LABEL."
+    echo "   The plist was written to $PLIST but launchctl did not report it as loaded."
+    echo "   Try manually: launchctl load \"$PLIST\""
+    exit 1
+fi
