@@ -30,6 +30,10 @@ List the projects you work in regularly here, with local path, a one-line descri
 45 agents (trimmed Jul 2026 — removed ~30 unused claude-flow/swarm/SPARC agents and ~21 unused non-JS language reviewer/build-resolver agents; kept core, review, testing, docs, and JS/TS/React-stack-matched agents).
 Full inventory: `INVENTORY.md` at the repo root — regenerate via the `doc-updater` agent after major additions/removals.
 
+## Keeping Nexus Updated
+
+`~/.claude` is a git checkout of the Nexus repo. If asked to check for, pull, or apply updates to this config (in any phrasing — "pull the updates," "is there a new version," "update my setup"), run `bash ~/.claude/update.sh` (or `/nexus-update`) rather than a bare `git pull` — it also refreshes machine-level dependencies afterward and reports what changed. Nexus itself only pushes new commits once a day via a scheduled `nexus-daily-sync.sh` job (not in real time), so "no updates yet" on a same-day check is expected, not a bug.
+
 ## Key Env Vars
 
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`

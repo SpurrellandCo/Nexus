@@ -881,6 +881,7 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/multi-frontend` | Run a frontend-focused multi-model workflow for components, layouts, animation, and UI polish. |
 | `/multi-plan` | Create a multi-model implementation plan without modifying production code. |
 | `/multi-workflow` | Run a full multi-model development workflow with research, planning, execution, optimization, and review. |
+| `/nexus-update` | Pull the latest Nexus changes into ~/.claude and refresh dependencies. |
 | `/orch-add-feature` | Orchestrate building a brand-new feature end to end — research, plan, TDD, review, gated commit. Wrapper that kicks off the orch-add-feature skill. |
 | `/orch-build-mvp` | Orchestrate bootstrapping a working MVP from a design/spec doc — ingest, slice, scaffold, TDD, review, gated commit (reuses the GAN harness). Wrapper for the orch-build-mvp skill. |
 | `/orch-change-feature` | Orchestrate altering an existing, working feature to new desired behavior — update tests to the new spec, change impl, review, gated commit. Wrapper for the orch-change-feature skill. |
