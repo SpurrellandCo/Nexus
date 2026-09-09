@@ -1,11 +1,11 @@
 ---
-name: prd-architect
+name: prd-5-architect
 category: prd
 description: Stage 3 — run the code-architect on PRD/MASTER.md + PLAN.md. Produces ARCHITECTURE.md and DECISIONS.md with initial entries for every significant architectural choice.
 origin: custom
 ---
 
-# prd:architect
+# prd-5-architect
 
 Invoke the `code-architect` agent.
 

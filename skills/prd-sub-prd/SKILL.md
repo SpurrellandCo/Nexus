@@ -15,6 +15,6 @@ Steps:
 1. Create `PRD/[feature-slug].md` — full PRD treatment for this feature (Sections 1–15)
 2. Run health gate on the new sub-PRD — fix any failures before continuing
 3. Update `PRD/MASTER.md` Section 16: append one row with feature name, file path, 1-sentence summary, status Draft
-4. Run `/prd:skill-map PRD/[feature-slug].md` to assign skills to this feature's tasks
+4. Run `/prd-3-skill-map PRD/[feature-slug].md` to assign skills to this feature's tasks
 
 Sub-PRDs are named after the feature, kebab-case, no prefix: `PRD/bulk-zip-export.md`, not `PRD/sub-bulk-zip-export.md`.

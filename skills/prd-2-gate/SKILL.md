@@ -1,11 +1,11 @@
 ---
-name: prd-gate
+name: prd-2-gate
 category: prd
-description: Stage 1a — run the PRD health gate on PRD/MASTER.md. Checks open questions, metrics, non-goals, requirements, and launch criteria. Blocks progress to prd:skill-map if FAIL.
+description: Stage 1a — run the PRD health gate on PRD/MASTER.md. Checks open questions, metrics, non-goals, requirements, and launch criteria. Blocks progress to prd-3-skill-map if FAIL.
 origin: custom
 ---
 
-# prd:gate
+# prd-2-gate
 
 Invoke the `prd-writer` agent in Health Gate mode.
 
@@ -20,5 +20,5 @@ Output:
 ```
 PRD Health Gate: PASS | FAIL
 Issues: (section + specific problem for each failure)
-Next step: PASS → /prd:skill-map  |  FAIL → fix issues, re-run /prd:gate
+Next step: PASS → /prd-3-skill-map  |  FAIL → fix issues, re-run /prd-2-gate
 ```
