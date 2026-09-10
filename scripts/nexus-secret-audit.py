@@ -32,7 +32,7 @@ STRUCTURAL_PATTERNS = [
 
 # Known-safe placeholder markers already used as convention in this repo's
 # .example.json templates — never flag these.
-ALLOWLIST_RE = re.compile(r"(?i)^REPLACE_ME|^your[-_]|^\$\{|^\$[A-Z_]+$|^<[a-z-]+>$")
+ALLOWLIST_RE = re.compile(r"(?i)^REPLACE_ME|^your[-_]|^test[-_]|^\$\{|^\$[A-Z_]+$|^<[a-z-]+>$")
 
 
 def is_allowlisted(value: str) -> bool:

@@ -5,7 +5,7 @@ description: Full pipeline check — chains prd-2-gate → prd-3-skill-map → p
 origin: custom
 ---
 
-# prd:run
+# prd-run
 
 Run the full pipeline starting from an existing `PRD/MASTER.md`. Does not write the PRD — use `/prd-1-write` first.
 
@@ -27,5 +27,5 @@ Pipeline complete.
   ARCHITECTURE.md ✓
   DECISIONS.md   ✓ (N entries)
 
-Next: review outputs, then start Phase 1 or run /prd:sub-prd if a big feature emerged.
+Next: review outputs, then start Phase 1 or run /prd-sub-prd if a big feature emerged.
 ```

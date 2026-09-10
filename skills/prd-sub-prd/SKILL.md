@@ -5,7 +5,7 @@ description: Sub-PRD creation — invoke when a significant new feature falls ou
 origin: custom
 ---
 
-# prd:sub-prd
+# prd-sub-prd
 
 Invoke the `prd-writer` agent in Sub-PRD mode.
 

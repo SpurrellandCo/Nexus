@@ -5,7 +5,7 @@ description: PRD drift update — surgically update PRD/MASTER.md when implement
 origin: custom
 ---
 
-# prd:update
+# prd-update
 
 Invoke the `prd-writer` agent in Update mode.
 
