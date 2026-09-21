@@ -19,6 +19,12 @@ log() {
 
 cd "$CLAUDE_DIR"
 
+# Refresh INVENTORY.md first so a newly added skill lands in the same commit.
+if command -v node >/dev/null 2>&1; then
+    node "$CLAUDE_DIR/scripts/generate-inventory.js" --quiet >/dev/null 2>&1 \
+        || log "Nexus daily sync: INVENTORY.md refresh failed (continuing)."
+fi
+
 if [ -z "$(git status --porcelain)" ]; then
     log "Nexus daily sync: nothing to do, working tree clean."
     exit 0

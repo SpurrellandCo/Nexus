@@ -47,6 +47,11 @@ echo ""
 echo "-> Refreshing dependencies..."
 bash bootstrap.sh
 
+# Keep INVENTORY.md in step with whatever this pull added or removed.
+if command -v node >/dev/null 2>&1; then
+    node scripts/generate-inventory.js --quiet || echo "-> INVENTORY.md refresh failed (non-fatal)."
+fi
+
 echo ""
 echo "== Update complete =="
 echo "Restart Claude Code to pick up the changes."

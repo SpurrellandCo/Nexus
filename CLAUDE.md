@@ -30,7 +30,7 @@ List the projects you work in regularly here, with local path, a one-line descri
 
 173 skills across marketing, CRO, design, UI, development, and printing-press categories.
 45 agents (trimmed Jul 2026 — removed ~30 unused claude-flow/swarm/SPARC agents and ~21 unused non-JS language reviewer/build-resolver agents; kept core, review, testing, docs, and JS/TS/React-stack-matched agents).
-Full inventory: `INVENTORY.md` at the repo root — regenerate via the `doc-updater` agent after major additions/removals.
+Full inventory: `INVENTORY.md` at the repo root — **auto-generated, don't hand-edit or ask `doc-updater` to regenerate it.** `scripts/generate-inventory.js` rebuilds the Agents/Skills/Slash Commands/Summary sections from the filesystem (skips git-ignored private skills; preserves the hand-written Hooks section). It runs from a Stop hook (`scripts/hooks/inventory-auto-update.js`, every turn, no-op when nothing changed), the daily sync, and `update.sh`. Manual run: `node ~/.claude/scripts/generate-inventory.js` (`--check` reports staleness). Added 2026-09-21.
 
 ## Keeping Nexus Updated
 

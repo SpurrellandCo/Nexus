@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is an auto-generated reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). This inventory should be regenerated after major additions or removals rather than hand-edited piecemeal. Last generated: 2026-08-26 at 20:56:28.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-21 at 12:26:45.
 
 ## Agents
 
@@ -49,11 +49,10 @@ Agents are specialized coordinators for specific tasks or domains. Use them when
 | `security-reviewer` | Security vulnerability detection and remediation specialist. Use PROACTIVELY after writing code that handles user input, authentication, API endpoints, or sensitive data. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10 vulnerabilities. |
 | `seo-specialist` | SEO specialist for technical SEO audits, on-page optimization, structured data, Core Web Vitals, and content/keyword mapping. Use for site audits, meta tag reviews, schema markup, sitemap and robots issues, and SEO remediation plans. |
 | `silent-failure-hunter` | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. |
-| `skill-matcher` | Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub and the web for alternatives, queries squish-memory for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline. |
+| `skill-matcher` | Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub, npm/PyPI, and the web for alternatives (with stars, last-push, license, and an adopt/port/wrap/skip verdict), checks the ~/.claude/skill-learning log for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline. |
 | `tdd-guide` | Test-Driven Development specialist enforcing write-tests-first methodology. Use PROACTIVELY when writing new features, fixing bugs, or refactoring code. Ensures 80%+ test coverage. |
 | `type-design-analyzer` | Analyze type design for encapsulation, invariant expression, usefulness, and enforcement. |
 | `typescript-reviewer` | Expert TypeScript/JavaScript code reviewer specializing in type safety, async correctness, Node/web security, and idiomatic patterns. Use for all TypeScript and JavaScript code changes. MUST BE USED for TypeScript/JavaScript projects. |
-
 
 ## Skills
 
@@ -101,12 +100,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `auth-patterns` | Auth patterns for your API — JWT access tokens, hashed refresh token rotation, Google OAuth popup flow, Express auth middleware, bcrypt password hashing, and role-based access control. Use when building or modifying authentication, session management, or protected routes. |
 
-### b2s-boyle-functional-training
-
-| Skill | Description |
-|-------|-------------|
-| `b2s-boyle-functional-training` | Knowledge base from \"New Functional Training for Sports\" (2nd Edition) by Michael Boyle. Use when applying Boyle's frameworks for functional/sports-general training, joint-by-joint mobility vs. stability, unilateral lower-body training, core antirotation training, plyometric progression, Olympic lift coaching, or performance program design, studying the book, or referencing its concepts. |
-
 ### banner-design
 
 | Skill | Description |
@@ -124,6 +117,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `ckm:brand` | Brand voice, visual identity, messaging frameworks, asset management, brand consistency. Activate for branded content, tone of voice, marketing assets, brand compliance, style guides. |
+
+### brandcreator
+
+| Skill | Description |
+|-------|-------------|
+| `brandcreator` | Interviews the user about a specific business and generates a standalone, permanent brand-identity skill (brandcreator-<company>) containing its logo, brand guidelines, design tokens, and a document template. Use when the user wants to create a brand identity, build a brand kit, or set up branded document generation for a company. The generated skill is later invoked directly (e.g. /brandcreator-acme) to produce reports, PDFs, presentations, or images in that brand automatically. |
 
 ### brandkit
 
@@ -159,7 +158,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `community-marketing` | Build and leverage online communities to drive product growth and brand loyalty. Use when the user wants to create a community strategy, grow a Discord or Slack community, manage a forum or subreddit, build brand advocates, increase word-of-mouth, drive community-led growth, engage users post-signup, or turn customers into evangelists. Trigger phrases: \"build a community,\" \"community strategy,\" \"Discord community,\" \"Slack community,\" \"community-led growth,\" \"brand advocates,\" \"user community,\" \"forum strategy,\" \"community engagement,\" \"grow our community,\" \"ambassador program,\" \"community flywheel.\" |
+| `community-marketing` | Build and leverage online communities to drive product growth and brand loyalty. Use when the user wants to create a community strategy, grow a Discord or Slack community, manage a forum or subreddit, build brand advocates, increase word-of-mouth, drive community-led growth, engage users post-signup, or turn customers into evangelists. Trigger phrases: "build a community," "community strategy," "Discord community," "Slack community," "community-led growth," "brand advocates," "user community," "forum strategy," "community engagement," "grow our community," "ambassador program," "community flywheel." |
 
 ### competitor-alternatives
 
@@ -382,6 +381,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `impeccable` | Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a frontend interface. Covers websites, landing pages, dashboards, product UI, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens. Also use for bland designs that need to become bolder or more delightful, loud designs that should become quieter, live browser iteration on UI elements, or ambitious visual effects that should feel technically extraordinary. Not for backend-only or non-UI tasks. |
 
+### landscape-check
+
+| Skill | Description |
+|-------|-------------|
+| `landscape-check` | Pre-PRD landscape check for a new project or major feature. Two passes — internal (what our ~/.claude stack already covers, from INVENTORY.md and the live skill/agent dirs) and external (GitHub, npm, PyPI, and primary docs for existing implementations worth adopting, porting, or wrapping) — and writes PRD/LANDSCAPE.md with evidence-backed verdicts. Runs as Stage 0.5 of new-project, before the PRD is written, so build-vs-adopt decisions shape the PRD. Trigger with /landscape-check or "check what already exists for [idea]". |
+
 ### launch-strategy
 
 | Skill | Description |
@@ -472,35 +477,41 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `pr-outreach` | Write press releases, journalist pitches, and media outreach for product announcements, launches, funding rounds, partnerships, or company news. Use when the user says "press release," "media coverage," "journalist pitch," "get press," "PR strategy," "product announcement," "news story," "media outreach," "pitch to journalists," "get featured," "TechCrunch," "press coverage," or "public relations." Covers press release writing, journalist personalization, newsworthy angle identification, and media list strategy. For cold sales outreach, see cold-email. For launch planning, see launch-strategy. |
 
-### prd-architect
+### prd-1-write
 
 | Skill | Description |
 |-------|-------------|
-| `prd-architect` | Stage 3 — run the code-architect on PRD/MASTER.md + PLAN.md. Produces ARCHITECTURE.md and DECISIONS.md with initial entries for every significant architectural choice. |
+| `prd-1-write` | Stage 1 — create PRD/MASTER.md for a new project or feature. Creates PRD/ folder if needed. Pass the idea as the argument. |
 
-### prd-gate
-
-| Skill | Description |
-|-------|-------------|
-| `prd-gate` | Stage 1a — run the PRD health gate on PRD/MASTER.md. Checks open questions, metrics, non-goals, requirements, and launch criteria. Blocks progress to prd:skill-map if FAIL. |
-
-### prd-plan
+### prd-2-gate
 
 | Skill | Description |
 |-------|-------------|
-| `prd-plan` | Stage 2 — run the planner on PRD/MASTER.md + SKILL_MAP.md. Produces PLAN.md with phases, file assignments, risk levels, and a Scope Check section. |
+| `prd-2-gate` | Stage 1a — run the PRD health gate on PRD/MASTER.md. Checks open questions, metrics, non-goals, requirements, and launch criteria. Blocks progress to prd-3-skill-map if FAIL. |
+
+### prd-3-skill-map
+
+| Skill | Description |
+|-------|-------------|
+| `prd-3-skill-map` | Stage 1.5 — run the skill-matcher on PRD/MASTER.md. Assigns best ECC skill per task/sub-task, searches GitHub, npm/PyPI, and the web for alternatives (reusing PRD/LANDSCAPE.md if present), checks the ~/.claude/skill-learning log for prior learnings. Writes SKILL_MAP.md. |
+
+### prd-4-plan
+
+| Skill | Description |
+|-------|-------------|
+| `prd-4-plan` | Stage 2 — run the planner on PRD/MASTER.md + SKILL_MAP.md. Produces PLAN.md with phases, file assignments, risk levels, and a Scope Check section. |
+
+### prd-5-architect
+
+| Skill | Description |
+|-------|-------------|
+| `prd-5-architect` | Stage 3 — run the code-architect on PRD/MASTER.md + PLAN.md. Produces ARCHITECTURE.md and DECISIONS.md with initial entries for every significant architectural choice. |
 
 ### prd-run
 
 | Skill | Description |
 |-------|-------------|
-| `prd-run` | Full pipeline check — chains prd:gate → prd:skill-map → prd:plan → prd:architect in sequence. Requires PRD/MASTER.md to already exist. Stops with a clear message if the gate fails. |
-
-### prd-skill-map
-
-| Skill | Description |
-|-------|-------------|
-| `prd-skill-map` | Stage 1.5 — run the skill-matcher on PRD/MASTER.md. Assigns best ECC skill per task/sub-task, searches GitHub and web for alternatives, queries squish-memory for prior learnings. Writes SKILL_MAP.md. |
+| `prd-run` | Full pipeline check — chains prd-2-gate → prd-3-skill-map → prd-4-plan → prd-5-architect in sequence. Requires PRD/MASTER.md to already exist. Stops with a clear message if the gate fails. |
 
 ### prd-sub-prd
 
@@ -513,12 +524,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `prd-update` | PRD drift update — surgically update PRD/MASTER.md when implementation diverges from the original plan. Adds a Section 15 revision history entry. Pass the drift description as the argument. |
-
-### prd-write
-
-| Skill | Description |
-|-------|-------------|
-| `prd-write` | Stage 1 — create PRD/MASTER.md for a new project or feature. Creates PRD/ folder if needed. Pass the idea as the argument. |
 
 ### pricing-strategy
 
@@ -542,19 +547,19 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `printing-press-import` | > |
+| `printing-press-import` | Bring a published CLI from the public library into the internal library so it's identical to a freshly-generated copy — module path reverted, manuscripts placed alongside, ready for /printing-press-polish or /printing-press-emboss. Use when the public library has a CLI you don't have locally, or to recover from a broken/lost internal copy. Trigger phrases: "import the CLI", "bring it into my library", "fetch from public library", "I don't have it locally yet". |
 
 ### printing-press-output-review
 
 | Skill | Description |
 |-------|-------------|
-| `printing-press-output-review` | > |
+| `printing-press-output-review` | Internal sub-skill: agentic review of a printed CLI's sampled command output for plausibility issues that rule-based checks can't encode (substring-match relevance, format bugs, silent source drops, ranking failures). Invoked via the Skill tool by main printing-press SKILL.md (Phase 4.85) and printing-press-polish SKILL.md during the diagnostic loop. Not for direct user invocation — its actionable wrappers are /printing-press and /printing-press-polish. |
 
 ### printing-press-polish
 
 | Skill | Description |
 |-------|-------------|
-| `printing-press-polish` | > |
+| `printing-press-polish` | Polish a generated CLI to pass verification and become publish-ready. Runs diagnostics (dogfood, verify, scorecard, go vet), automatically fixes all issues (verify failures, dead code, descriptions, README, MCP tool quality), reports the before/after delta, and offers to publish. Use after any /printing-press run, or on any CLI in ~/printing-press/library/. Trigger phrases: "polish", "improve the CLI", "fix verify", "make it publish-ready", "clean up the CLI", "get this ready to ship". |
 
 ### printing-press-publish
 
@@ -566,13 +571,13 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `printing-press-reprint` | > |
+| `printing-press-reprint` | Regenerate an existing printed CLI from scratch under the current Printing Press, with prior research and prior novel features carried into the novel-features subagent's reprint reconciliation rather than dropped on the floor. Pulls the CLI from the public library if it isn't local, recommends reuse-vs-redo of prior research based on age, then hands off to /printing-press with the right context. Use when a machine upgrade would benefit a published CLI more than manual polish. Trigger phrases: "reprint <api>", "regenerate <api>", "redo the <api> CLI", "rebuild <api> from scratch", "this CLI would benefit from a reprint". |
 
 ### printing-press-retro
 
 | Skill | Description |
 |-------|-------------|
-| `printing-press-retro` | > |
+| `printing-press-retro` | Run a retrospective after generating a CLI. Identifies systemic improvements to the Printing Press — templates, Go binary, skill instructions, catalog — so the next CLI comes out better. Creates a GitHub issue with actionable findings when there are Printing Press fixes to make. Use after any /printing-press run. Trigger phrases: "retro", "retrospective", "what went wrong", "improve the press", "post-mortem", "lessons learned", "what can we improve", "file a retro", "submit findings". |
 
 ### printing-press-score
 
@@ -656,13 +661,13 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `skill-gap` | Periodic skill library audit. Reads all squish-memory learnings across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow. |
+| `skill-gap` | Periodic skill library audit. Reads all learnings in the ~/.claude/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow. |
 
 ### skill-learn
 
 | Skill | Description |
 |-------|-------------|
-| `skill-learn` | Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and write structured learnings to squish-memory so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro. |
+| `skill-learn` | Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and append structured learnings to the ~/.claude/skill-learning log so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro. |
 
 ### slides
 
@@ -675,6 +680,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `social-content` | When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. Also use when the user mentions 'LinkedIn post,' 'Twitter thread,' 'social media,' 'content calendar,' 'social scheduling,' 'engagement,' 'viral content,' 'what should I post,' 'repurpose this content,' 'tweet ideas,' 'LinkedIn carousel,' 'social media strategy,' 'grow my following,' 'TikTok video,' 'Reels,' 'Shorts,' 'video script,' 'video hook,' 'short-form video,' or 'create a reel.' Use this for social media content creation, repurposing, scheduling, and short-form video scripting. For broader content strategy, see content-strategy. For paid video ads, see ad-creative. |
+
+### stack-scout
+
+| Skill | Description |
+|-------|-------------|
+| `stack-scout` | Periodic (monthly) scout of the wider ecosystem against our own ~/.claude stack. Searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what is in INVENTORY.md, cross-checks our own usage data for dead weight, and writes a "worth trying / retire / watch" report. Report only — never installs or deletes anything. Trigger with /stack-scout, or "scout for better skills/agents/tools". |
 
 ### stripe-integration
 
@@ -751,7 +762,7 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | Command | Description |
 |---------|-------------|
 | `/analysis:bottleneck-detect` | Analyze performance bottlenecks in swarm operations and suggest optimizations. |
-| `/analysis:COMMAND_COMPLIANCE_REPORT` | Reviewed all command files in `.claude/commands/analysis/` directory to ensure proper usage of: - `mcp__claude-flow__*` tools (preferred) - `npx claude-flow` commands (as fallback) - No direct impleme |
+| `/analysis:COMMAND_COMPLIANCE_REPORT` | Reviewed all command files in `.claude/commands/analysis/` directory to ensure proper usage of: |
 | `/analysis:performance-bottlenecks` | Identify and resolve performance bottlenecks in your development workflow. |
 | `/analysis:performance-report` | Generate comprehensive performance reports for swarm operations. |
 | `/analysis:README` | Commands for analysis operations in Claude Flow. |
@@ -776,7 +787,7 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 |---------|-------------|
 | `/github:code-review` | Automated code review with swarm intelligence. |
 | `/github:code-review-swarm` | Deploy specialized AI agents to perform comprehensive, intelligent code reviews that go beyond traditional static analysis. |
-| `/github:github-modes` | This document describes all GitHub integration modes available in Claude-Flow with ruv-swarm coordination. Each mode is optimized for specific GitHub workflows and includes batch tool integration for |
+| `/github:github-modes` | This document describes all GitHub integration modes available in Claude-Flow with ruv-swarm coordination. Each mode is optimized for specific GitHub workflows and includes batch tool integration for maximum efficiency. |
 | `/github:github-swarm` | Create a specialized swarm for GitHub repository management. |
 | `/github:issue-tracker` | Intelligent issue management and project coordination with ruv-swarm integration for automated tracking, progress monitoring, and team coordination. |
 | `/github:issue-triage` | Intelligent issue classification and triage. |
@@ -805,7 +816,7 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/hooks:pre-task` | Execute pre-task preparations and context loading. |
 | `/hooks:README` | Commands for hooks operations in Claude Flow. |
 | `/hooks:session-end` | Cleanup and persist session state before ending work. |
-| `/hooks:setup` | ```bash npx claude-flow init --hooks ``` |
+| `/hooks:setup` | This automatically creates: |
 
 ### monitoring
 
@@ -888,7 +899,6 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/orch-fix-defect` | Orchestrate fixing a bug — reproduce it as a failing regression test, fix to green, review, gated commit. Wrapper for the orch-fix-defect skill. |
 | `/orch-refine-code` | Orchestrate a behavior-preserving refactor — confirm tests green, restructure without changing behavior, keep green, review, gated commit. Wrapper for the orch-refine-code skill. |
 | `/plan` | Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code. |
-| `/plan-prd` | Generate a lean, problem-first PRD and hand off to /plan for implementation planning. |
 | `/pm2` | Analyze a project and generate PM2 service commands for detected frontend, backend, or database services. |
 | `/pr` | Create a GitHub PR from current branch with unpushed commits — discovers templates, analyzes changes, pushes |
 | `/project-init` | Detect a project's stack and produce a dry-run ECC onboarding plan using the repository's install manifests and stack mappings. |
@@ -898,7 +908,6 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/prp-implement` | Execute an implementation plan with rigorous validation loops |
 | `/prp-plan` | Create comprehensive feature implementation plan with codebase analysis and pattern extraction |
 | `/prp-pr` | Create a GitHub PR from current branch with unpushed commits — discovers templates, analyzes changes, pushes |
-| `/prp-prd` | Interactive PRD generator - problem-first, hypothesis-driven product spec with back-and-forth questioning |
 | `/prune` | Delete pending instincts older than 30 days that were never promoted |
 | `/python-review` | Comprehensive Python code review for PEP 8 compliance, type hints, security, and Pythonic idioms. Invokes the python-reviewer agent. |
 | `/quality-gate` | Run the ECC formatter quality gate for a single file and report remediation steps. |
@@ -1052,9 +1061,8 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 173
-- **Slash Commands:** 172
+- **Skills:** 175
+- **Slash Commands:** 171
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
 For more information, see the ECC rules at `~/.claude/rules/ecc/` or the project CLAUDE.md.
-

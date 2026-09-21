@@ -279,6 +279,16 @@
     ],
     "Stop": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/scripts/hooks/inventory-auto-update.js",
+            "timeout": 15,
+            "statusMessage": "Syncing INVENTORY.md with installed skills..."
+          }
+        ]
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
