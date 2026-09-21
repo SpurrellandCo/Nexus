@@ -89,7 +89,7 @@ function buildReminder({ missingGraphify, missingPrd }) {
   }
 
   if (missingPrd) {
-    lines.push('- PRD: ask the user whether they want a `PRD/MASTER.md` written via the prd-writer agent (new-project skill Stage 1) — do not write one unprompted.');
+    lines.push('- PRD: ask the user whether they want a `PRD/MASTER.md` written via the prd-writer agent (new-project skill Stage 1) — do not write one unprompted. If they say yes, suggest running `/landscape-check` first (new-project Stage 0.5) so what already exists in our stack and on GitHub/npm shapes the PRD.');
   }
 
   lines.push('Raise this once, early in the session, not on every turn.');

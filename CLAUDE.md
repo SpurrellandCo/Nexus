@@ -8,6 +8,8 @@
 
 **Memory:** `~/.claude/projects/*/memory/*.md` (native auto-memory, see below) is the actual persistent-memory system in use. `squish-memory`/`squish` MCP is not currently connected either (same audit) — don't assume it's available.
 
+**Skill-learning log & landscape checks:** cross-project learnings live in `~/.claude/skill-learning/` (`learnings.jsonl`, `watchlist.jsonl`, monthly `scout-YYYY-MM.md` — plain JSONL/markdown, gitignored so project data never reaches the synced Nexus repo). Written by `/skill-learn`, read by `skill-matcher`, `/skill-gap`, `/landscape-check`, and `/stack-scout`; this replaces the dead `squish-memory` dependency. `/landscape-check` (new-project Stage 0.5) runs before the PRD: internal stack coverage from `INVENTORY.md` + external GitHub/npm/PyPI search with adopt/port/wrap/skip verdicts → `PRD/LANDSCAPE.md`. `/stack-scout` (about monthly) searches the ecosystem for better skills/agents/hooks than what `INVENTORY.md` lists — report only, never installs. Added 2026-09-21.
+
 **Infrastructure MCP:** Hostinger (hosting, VPS, domains, DNS) — registered in `settings.json`.
 
 **Native memory:** `~/.claude/projects/` — auto-memory system, written by me across every session. Always loaded.

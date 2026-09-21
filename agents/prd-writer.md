@@ -101,7 +101,7 @@ Do not proceed to skill-matcher if gate fails. Fix the specific flagged items, t
 
 ### Step 1 — Understand the brief
 
-Read any existing context: CLAUDE.md, relevant source files, prior PRDs, or whatever the user provides. Identify:
+Read any existing context: CLAUDE.md, `PRD/LANDSCAPE.md` if present (build-vs-adopt findings from `/landscape-check` — reflect its "Implications for the PRD" in the requirements), relevant source files, prior PRDs, or whatever the user provides. Identify:
 - What problem is being solved and for whom
 - What already exists (don't re-specify what's built)
 - What's ambiguous or missing — note these as open questions

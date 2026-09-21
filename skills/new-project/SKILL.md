@@ -21,6 +21,7 @@ End-to-end orchestration from raw idea to Linear issues. One command replaces th
 ## Pipeline Stages
 
 ```
+Stage 0.5: /landscape-check     → PRD/LANDSCAPE.md          ← what exists, in our stack and in the wild
 Stage 1:   prd-writer agent     → PRD/MASTER.md             ← user approves
 Stage 1a:  prd health gate      → PASS or flagged items     ← blocks if FAIL
 Stage 1.5: skill-matcher agent  → SKILL_MAP.md             ← user reviews
@@ -33,8 +34,9 @@ Stage 4:   Linear MCP           → Linear issues
   Big feature?  → prd-writer (sub-PRD mode) → PRD/[slug].md + Section 16 updated
 
 [Project end]
-Stage 5:   /skill-learn         → squish-memory learnings + watchlist
+Stage 5:   /skill-learn         → ~/.claude/skill-learning/ learnings + watchlist
 Stage 6:   /skill-gap           → SKILL_GAPS.md (periodic — every few projects)
+           /stack-scout         → scout report (monthly — stack vs. the ecosystem)
 ```
 
 Each stage gates on the previous. You review and approve output before the next stage starts.
@@ -54,6 +56,26 @@ Before Stage 1, if `graphify-out/graph.json` doesn't already exist in the projec
 
 ---
 
+## Stage 0.5 — Landscape Check
+
+**Skill:** `/landscape-check` (`~/.claude/skills/landscape-check/SKILL.md`)
+**Input:** the idea or brief
+**Output:** `PRD/LANDSCAPE.md` (creates `PRD/` if it doesn't exist)
+**Gate:** User reads the verdict summary before the PRD is written
+
+Runs **before** the PRD so build-vs-adopt findings shape the requirements instead of becoming a footnote in SKILL_MAP.md. It does two passes:
+
+1. **Internal** — what our `~/.claude` stack already covers (`INVENTORY.md`, verified against the live skill/agent dirs if stale), plus prior learnings from `~/.claude/skill-learning/`
+2. **External** — GitHub (`gh search repos` / `gh search code`), npm/PyPI, and primary docs for existing implementations, each candidate with stars, last push, license, fit, and an adopt / port / wrap / skip verdict
+
+Invoke with:
+
+> "Run /landscape-check for [idea]."
+
+Skip for small fixes or work on well-understood existing code. This stage does not replace Stage 1.5 — it finds candidates for the *project*; Stage 1.5 maps the finished PRD's tasks to skills.
+
+---
+
 ## Stage 1 — PRD
 
 **Agent:** `prd-writer`
@@ -62,11 +84,11 @@ Before Stage 1, if `graphify-out/graph.json` doesn't already exist in the projec
 
 Invoke with:
 
-> "Use the prd-writer agent to write a PRD for [idea]. Read CLAUDE.md first for project context."
+> "Use the prd-writer agent to write a PRD for [idea]. Read CLAUDE.md first for project context, and `PRD/LANDSCAPE.md` if it exists."
 
 The prd-writer agent will:
 1. Create `PRD/` folder in project root if it doesn't exist
-2. Read existing project context (CLAUDE.md, relevant source files)
+2. Read existing project context (CLAUDE.md, `PRD/LANDSCAPE.md` if present, relevant source files)
 3. Draft a 16-section PRD to `PRD/MASTER.md` (Sections 1–15 standard + Section 16 Sub-PRDs index)
 4. Flag open questions that need answers before implementation
 
@@ -112,8 +134,8 @@ The skill-matcher will:
 1. Decompose PRD into every task and sub-task
 2. Assign the best ECC skill to each task (with rationale)
 3. Flag precision matches where a sub-task has a more specialized skill than its parent
-4. Search GitHub and the web for alternatives to custom builds (1-2 strongest per task)
-5. Query squish-memory for prior project learnings on similar tasks
+4. Search GitHub, npm/PyPI, and the web for alternatives to custom builds (1-2 strongest per task, each with stars / last push / license and an adopt / port / wrap / skip verdict) — reusing `PRD/LANDSCAPE.md` findings rather than repeating them
+5. Check `~/.claude/skill-learning/` for prior project learnings and watchlist entries on similar tasks
 6. Flag gap candidates (tasks with no good skill match — feed into `/skill-gap`)
 
 Review SKILL_MAP.md before Stage 2. Override any assignment you disagree with.
@@ -220,7 +242,7 @@ Runs prd-writer in **sub-PRD mode**:
 
 **Skill:** `/skill-learn`
 **Input:** `SKILL_MAP.md`, `DECISIONS.md`, git log
-**Output:** squish-memory entries + watchlist
+**Output:** appended lines in `~/.claude/skill-learning/learnings.jsonl` + `watchlist.jsonl` (gitignored, cross-project)
 
 > "Run /skill-learn to record project learnings."
 
@@ -231,12 +253,22 @@ Records: what skill was recommended vs. used, what alternatives were found and s
 ## Stage 6 — Skill Library Audit (periodic)
 
 **Skill:** `/skill-gap`
-**Input:** squish-memory `skill-learning:*` + `skill-watchlist:*` entries
+**Input:** `~/.claude/skill-learning/learnings.jsonl` + `watchlist.jsonl`
 **Output:** `SKILL_GAPS.md`
 
 > "Run /skill-gap to audit the skill library."
 
 Run after every 3+ projects or at end of a quarter. Surfaces: new skill candidates, skills to retire, library wrapping candidates.
+
+### Stack Scout (monthly)
+
+**Skill:** `/stack-scout`
+**Input:** `INVENTORY.md` + the learning log
+**Output:** `~/.claude/skill-learning/scout-YYYY-MM.md` (report only — never installs or deletes)
+
+> "Run /stack-scout."
+
+`/skill-gap` looks inward at what our own projects used. `/stack-scout` looks outward: it searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what's in `INVENTORY.md`, and lists worth-trying / retire / watch items. Run about monthly or before a batch of new projects.
 
 ---
 
@@ -291,6 +323,7 @@ Run after every 3+ projects or at end of a quarter. Surfaces: new skill candidat
 Before calling a feature "planned":
 
 - [ ] `graphify-out/graph.json` exists (existing projects at Stage 0; greenfield after Stage 4)
+- [ ] `PRD/LANDSCAPE.md` exists (or the check was consciously skipped for a small change)
 - [ ] `PRD/` folder exists with `PRD/MASTER.md` and no unresolved open questions
 - [ ] PRD health gate: PASS
 - [ ] SKILL_MAP.md produced with skill assignments and GitHub/web alternatives
@@ -301,5 +334,5 @@ Before calling a feature "planned":
 - [ ] First phase can start without waiting on any external dependency
 
 At project end:
-- [ ] `/skill-learn` run → squish-memory updated
+- [ ] `/skill-learn` run → `~/.claude/skill-learning/` updated
 - [ ] SKILL_GAPS.md reviewed (periodic — every few projects)

@@ -27,6 +27,9 @@ projects/
 # Local scratch plans (not portable setup)
 plans/
 
+# Cross-project skill-learning log + stack-scout reports — project-specific, written by /skill-learn and /stack-scout
+skill-learning/
+
 # Secrets — real files excluded, redacted .example.json templates are tracked instead
 settings.json
 settings.json.*

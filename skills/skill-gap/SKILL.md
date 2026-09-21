@@ -1,6 +1,6 @@
 ---
 name: skill-gap
-description: Periodic skill library audit. Reads all squish-memory learnings across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow.
+description: Periodic skill library audit. Reads all learnings in the ~/.claude/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow.
 origin: custom
 ---
 
@@ -17,15 +17,15 @@ Reads the learning history across all projects and tells you what skills are mis
 
 ## Process
 
-### Step 1 — Load All Learnings from squish-memory
+### Step 1 — Load All Learnings from the Log
 
-Query squish-memory MCP for all entries matching:
-- `skill-learning:*` — all task-level learnings across projects
-- `skill-watchlist:*` — all alternatives found but not used
+Read the cross-project log written by `/skill-learn` (plain JSONL, one JSON object per line — use `cat`/`jq`):
+- `~/.claude/skill-learning/learnings.jsonl` — all task-level learnings across projects (`projectSlug`, `taskSlug`, `recommended`, `used`, `outcome`, …)
+- `~/.claude/skill-learning/watchlist.jsonl` — all alternatives found but not used (`tool`, `taskContext`, `projectSlug`, `worthRevisiting`, …)
 
 Group by `taskSlug` (similar task names across projects) and by `recommended` skill. Build a frequency table.
 
-If squish-memory has fewer than 3 project entries, note this and produce a partial report — not enough data for strong patterns yet.
+If the files don't exist, or cover fewer than 3 distinct `projectSlug` values, say so and produce a partial report — not enough data for strong patterns yet. For a look at the ecosystem instead of your own history, use `/stack-scout`.
 
 ### Step 2 — Identify Gap Candidates
 
