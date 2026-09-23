@@ -1,5 +1,15 @@
 {
-  "etag": "W/\"XgRkQK1WzcSHqFOpkZ2vOcd6qSSYAgVlncoOlwcnba4\"",
-  "rows": [],
+  "etag": "W/\"pXLkcpqNiP66h9Arelp4dJtDhbr7w7fOhLninC6y--s\"",
+  "rows": [
+    {
+      "name": "My Uploads",
+      "scope": "account",
+      "source": {
+        "source": "claudeai"
+      },
+      "id": "marketplace_01S4ASEE3WDf56GEfGufKpiw",
+      "updated_at": "2026-09-22T06:07:30.300058Z"
+    }
+  ],
   "parserVersion": 2
 }
