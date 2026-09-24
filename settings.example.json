@@ -247,6 +247,17 @@
             "command": "$HOME/.claude/skills/ecc/continuous-learning-v2/hooks/observe.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/scripts/hooks/portability-check.js",
+            "timeout": 10,
+            "statusMessage": "Checking skill/agent portability..."
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -352,6 +363,16 @@
             "command": "node $HOME/.claude/scripts/hooks/stop-review-agent-suggest.js",
             "timeout": 15,
             "statusMessage": "Checking for review-worthy changes..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/scripts/hooks/nexus-link-auto.js",
+            "timeout": 15,
+            "statusMessage": "Syncing skills and agents to other AI tools..."
           }
         ]
       }

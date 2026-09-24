@@ -23,6 +23,9 @@ cd "$CLAUDE_DIR"
 if command -v node >/dev/null 2>&1; then
     node "$CLAUDE_DIR/scripts/generate-inventory.js" --quiet >/dev/null 2>&1 \
         || log "Nexus daily sync: INVENTORY.md refresh failed (continuing)."
+    # Keep Codex / Gemini CLI in step with Nexus skills and agents.
+    node "$CLAUDE_DIR/scripts/nexus-link.js" --quiet >/dev/null 2>&1 \
+        || log "Nexus daily sync: nexus-link failed (continuing)."
 fi
 
 if [ -z "$(git status --porcelain)" ]; then

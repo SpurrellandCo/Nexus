@@ -50,6 +50,8 @@ bash bootstrap.sh
 # Keep INVENTORY.md in step with whatever this pull added or removed.
 if command -v node >/dev/null 2>&1; then
     node scripts/generate-inventory.js --quiet || echo "-> INVENTORY.md refresh failed (non-fatal)."
+    # Link new/changed skills and agents into the other AI tools (Codex, Gemini CLI).
+    node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal)."
 fi
 
 echo ""
