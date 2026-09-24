@@ -60,15 +60,9 @@ Per-machine choices live in `~/.nexus-local/config.json`, outside the repo so th
 
 After changing `sync.enabled`, re-run `./install.sh` to add or refresh the nightly schedule. Older configs with `"shareWith"` still work.
 
-### Plugin Manifest Gotchas
+### Claude Code: custom endpoints and gateways
 
-If you plan to edit `.claude-plugin/plugin.json`, be aware that the Claude plugin validator enforces several **undocumented but strict constraints** that can cause installs to fail with vague errors (for example, `agents: Invalid input`). In particular, component fields must be arrays, `agents` is not a supported manifest field and must not be included in plugin.json, and a `version` field is required for reliable validation and installation.
-
-These constraints are not obvious from public examples and have caused repeated installation failures in the past. They are documented in detail in `.claude-plugin/PLUGIN_SCHEMA_NOTES.md`, which should be reviewed before making any changes to the plugin manifest.
-
-### Custom Endpoints and Gateways
-
-ECC does not override Claude Code transport settings. If Claude Code is configured to run through an official LLM gateway or a compatible custom endpoint, the plugin continues to work because hooks, skills, and any retained legacy command shims execute locally after the CLI starts successfully.
+Nexus doesn't change Claude Code's transport settings. If Claude Code runs through an LLM gateway or a compatible custom endpoint, Nexus keeps working, because its hooks and skills run locally once the CLI has started.
 
 Use Claude Code's own environment/configuration for transport selection, for example:
 

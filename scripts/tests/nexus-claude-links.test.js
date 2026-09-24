@@ -101,3 +101,16 @@ test('an old link for CLAUDE.md or AGENTS.md (earlier layout) is removed, never 
   assert.ok(!fs.existsSync(path.join(d.claude, 'CLAUDE.md')), 'stale link removed');
   assert.equal(fs.readFileSync(path.join(d.claude, 'AGENTS.md'), 'utf8'), 'my own real file\n', 'a real file is left alone');
 });
+
+test('links to items that left the repo are removed; unrelated links are kept', () => {
+  const d = legacyInstall();
+  run(d, '--migrate');
+  git(d.nexus, 'rm', '-q', 'scripts/x.sh');
+  git(d.nexus, 'commit', '-qm', 'drop scripts');
+  fs.symlinkSync('/tmp', path.join(d.claude, 'someone-elses-link'));
+  const r = run(d);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(fs.lstatSync(path.join(d.claude, 'scripts'), { throwIfNoEntry: false }), undefined, 'dangling Nexus link removed');
+  assert.ok(fs.lstatSync(path.join(d.claude, 'someone-elses-link')).isSymbolicLink(), 'other links untouched');
+  assert.match(r.stdout, /Removed 1/);
+});

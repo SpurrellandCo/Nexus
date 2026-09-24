@@ -24,7 +24,7 @@ set -euo pipefail
 NEXUS_DIR="${NEXUS_DIR:-$HOME/.nexus}"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 EXTRAS="plans"   # gitignored but Nexus-owned
-EXCLUDES=" CLAUDE.md AGENTS.md "   # the repo's own project files, never linked
+EXCLUDES=" CLAUDE.md AGENTS.md NEXUS.md adapters "   # repo docs and instruction sources (reached via nexus-link blocks), never linked
 BACKUP_DIR="$CLAUDE_DIR/backups/nexus-links-$(date +%Y%m%d-%H%M%S)"
 
 say() { echo "-> $*"; }
@@ -88,6 +88,20 @@ link_all() {
         linked=$((linked + 1))
     done <<< "$(nexus_entries "$NEXUS_DIR")"
     if [ "$linked" -gt 0 ]; then say "Linked $linked item(s) in $CLAUDE_DIR to $NEXUS_DIR."; fi
+    prune_stale
+}
+
+# Remove our links whose target left the repo (dangling links into $NEXUS_DIR only).
+prune_stale() {
+    local removed=0 link
+    for link in "$CLAUDE_DIR"/* "$CLAUDE_DIR"/.[!.]*; do
+        [ -L "$link" ] || continue
+        [ -e "$link" ] && continue
+        case "$(readlink "$link")" in
+            "$NEXUS_DIR"/*) rm "$link"; removed=$((removed + 1)) ;;
+        esac
+    done
+    if [ "$removed" -gt 0 ]; then say "Removed $removed link(s) to items no longer in Nexus."; fi
 }
 
 case "${1:-}" in
