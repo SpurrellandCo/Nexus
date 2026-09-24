@@ -51,7 +51,7 @@ You do not do the creative or technical work yourself — you direct and coordin
 ### Retention / Anti-Churn Campaign
 **Goal:** Reduce churn and reactivate lapsed users
 ```
-1. analytics-tracking  → churn signals, cohort analysis → sparc:analyzer
+1. analytics-tracking  → churn signals, cohort analysis
 2. churn-prevention    → intervention strategy, cancel flow
 3. onboarding-cro      → activation improvements (fix root cause)
 4. email-sequence      → re-engagement and win-back series
@@ -73,7 +73,7 @@ You do not do the creative or technical work yourself — you direct and coordin
 ### CRO Campaign
 **Goal:** Improve conversion rate across a funnel
 ```
-1. analytics-tracking  → funnel analysis, drop-off points → sparc:analyzer
+1. analytics-tracking  → funnel analysis, drop-off points
 2. page-cro            → landing page diagnosis and fixes
 3. signup-flow-cro     → signup flow improvements
 4. onboarding-cro      → activation improvements

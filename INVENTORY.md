@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-21 at 12:26:45.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-23 at 22:33:04.
 
 ## Agents
 
@@ -134,7 +134,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `browser` | Web browser automation with AI-optimized snapshots for claude-flow agents |
+| `browser` | Web browser automation via the agent-browser CLI, with AI-optimized snapshots (element refs instead of full DOM) |
 
 ### brutalist-skill
 
@@ -315,36 +315,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `free-tool-strategy` | When the user wants to plan, evaluate, or build a free tool for marketing purposes — lead generation, SEO value, or brand awareness. Also use when the user mentions "engineering as marketing," "free tool," "marketing tool," "calculator," "generator," "interactive tool," "lead gen tool," "build a tool for leads," "free resource," "ROI calculator," "grader tool," "audit tool," "should I build a free tool," or "tools for lead gen." Use this whenever someone wants to build something useful and give it away to attract leads or earn links. For downloadable content lead magnets (ebooks, checklists, templates), see lead-magnets. |
 
-### github-code-review
-
-| Skill | Description |
-|-------|-------------|
-| `github-code-review` | Comprehensive GitHub code review with AI-powered swarm coordination |
-
-### github-multi-repo
-
-| Skill | Description |
-|-------|-------------|
-| `github-multi-repo` | Multi-repository coordination, synchronization, and architecture management with AI swarm orchestration |
-
-### github-project-management
-
-| Skill | Description |
-|-------|-------------|
-| `github-project-management` | Comprehensive GitHub project management with swarm-coordinated issue tracking, project board automation, and sprint planning |
-
-### github-release-management
-
-| Skill | Description |
-|-------|-------------|
-| `github-release-management` | Comprehensive GitHub release orchestration with AI swarm coordination for automated versioning, testing, deployment, and rollback management |
-
-### github-workflow-automation
-
-| Skill | Description |
-|-------|-------------|
-| `github-workflow-automation` | Advanced GitHub Actions workflow automation with AI swarm coordination, intelligent CI/CD pipelines, and comprehensive repository management |
-
 ### graphify
 
 | Skill | Description |
@@ -446,12 +416,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `paid-ads` | When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also use when the user mentions 'PPC,' 'paid media,' 'ROAS,' 'CPA,' 'ad campaign,' 'retargeting,' 'audience targeting,' 'Google Ads,' 'Facebook ads,' 'LinkedIn ads,' 'ad budget,' 'cost per click,' 'ad spend,' or 'should I run ads.' Use this for campaign strategy, audience targeting, bidding, and optimization. For bulk ad creative generation and iteration, see ad-creative. For landing page optimization, see page-cro. |
-
-### pair-programming
-
-| Skill | Description |
-|-------|-------------|
-| `Pair Programming` | AI-assisted pair programming with multiple modes (driver/navigator/switch), real-time verification, quality monitoring, and comprehensive testing. Supports TDD, debugging, refactoring, and learning sessions. Features automatic role switching, continuous code review, security scanning, and performance optimization with truth-score verification. |
 
 ### paywall-upgrade-cro
 
@@ -729,12 +693,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `ui-ux-pro-max` | UI/UX design intelligence for web and mobile. Includes 50+ styles, 161 color palettes, 57 font pairings, 161 product types, 99 UX guidelines, and 25 chart types across 10 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui, and HTML/CSS). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, and check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, and mobile app. Elements: button, modal, navbar, sidebar, card, table, form, and chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, and flat design. Topics: color systems, accessibility, animation, layout, typography, font pairing, spacing, interaction states, shadow, and gradient. Integrations: shadcn/ui MCP for component search and examples. |
 
-### verification-quality
-
-| Skill | Description |
-|-------|-------------|
-| `Verification & Quality Assurance` | Comprehensive truth scoring, code quality verification, and automatic rollback system with 0.95 accuracy threshold for ensuring high-quality agent outputs and codebase reliability. |
-
 ### video
 
 | Skill | Description |
@@ -757,89 +715,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 Slash commands invoke automated workflows and tools. Grouped by namespace.
 
-### analysis
-
-| Command | Description |
-|---------|-------------|
-| `/analysis:bottleneck-detect` | Analyze performance bottlenecks in swarm operations and suggest optimizations. |
-| `/analysis:COMMAND_COMPLIANCE_REPORT` | Reviewed all command files in `.claude/commands/analysis/` directory to ensure proper usage of: |
-| `/analysis:performance-bottlenecks` | Identify and resolve performance bottlenecks in your development workflow. |
-| `/analysis:performance-report` | Generate comprehensive performance reports for swarm operations. |
-| `/analysis:README` | Commands for analysis operations in Claude Flow. |
-| `/analysis:token-efficiency` | Reduce token consumption while maintaining quality through intelligent coordination. |
-| `/analysis:token-usage` | Analyze token usage patterns and optimize for efficiency. |
-
-### automation
-
-| Command | Description |
-|---------|-------------|
-| `/automation:auto-agent` | Automatically spawn and manage agents based on task requirements. |
-| `/automation:README` | Commands for automation operations in Claude Flow. |
-| `/automation:self-healing` | Automatically detect and recover from errors without interrupting your flow. |
-| `/automation:session-memory` | Maintain context and learnings across Claude Code sessions for continuous improvement. |
-| `/automation:smart-agents` | Automatically spawn the right agents at the right time without manual intervention. |
-| `/automation:smart-spawn` | Intelligently spawn agents based on workload analysis. |
-| `/automation:workflow-select` | Automatically select optimal workflow based on task type. |
-
-### github
-
-| Command | Description |
-|---------|-------------|
-| `/github:code-review` | Automated code review with swarm intelligence. |
-| `/github:code-review-swarm` | Deploy specialized AI agents to perform comprehensive, intelligent code reviews that go beyond traditional static analysis. |
-| `/github:github-modes` | This document describes all GitHub integration modes available in Claude-Flow with ruv-swarm coordination. Each mode is optimized for specific GitHub workflows and includes batch tool integration for maximum efficiency. |
-| `/github:github-swarm` | Create a specialized swarm for GitHub repository management. |
-| `/github:issue-tracker` | Intelligent issue management and project coordination with ruv-swarm integration for automated tracking, progress monitoring, and team coordination. |
-| `/github:issue-triage` | Intelligent issue classification and triage. |
-| `/github:multi-repo-swarm` | Coordinate AI swarms across multiple repositories, enabling organization-wide automation and intelligent cross-project collaboration. |
-| `/github:pr-enhance` | AI-powered pull request enhancements. |
-| `/github:pr-manager` | Comprehensive pull request management with ruv-swarm coordination for automated reviews, testing, and merge workflows. |
-| `/github:project-board-sync` | Synchronize AI swarms with GitHub Projects for visual task management, progress tracking, and team coordination. |
-| `/github:README` | Commands for github operations in Claude Flow. |
-| `/github:release-manager` | Automated release coordination and deployment with ruv-swarm orchestration for seamless version management, testing, and deployment across multiple packages. |
-| `/github:release-swarm` | Orchestrate complex software releases using AI swarms that handle everything from changelog generation to multi-platform deployment. |
-| `/github:repo-analyze` | Deep analysis of GitHub repository with AI insights. |
-| `/github:repo-architect` | Repository structure optimization and multi-repo management with ruv-swarm coordination for scalable project architecture and development workflows. |
-| `/github:swarm-issue` | Transform GitHub Issues into intelligent swarm tasks, enabling automatic task decomposition and agent coordination. |
-| `/github:swarm-pr` | Create and manage AI swarms directly from GitHub Pull Requests, enabling seamless integration with your development workflow. |
-| `/github:sync-coordinator` | Multi-package synchronization and version alignment with ruv-swarm coordination for seamless integration between claude-code-flow and ruv-swarm packages. |
-| `/github:workflow-automation` | Integrate AI swarms with GitHub Actions to create intelligent, self-organizing CI/CD pipelines that adapt to your codebase. |
-
-### hooks
-
-| Command | Description |
-|---------|-------------|
-| `/hooks:overview` | Automatically coordinate, format, and learn from Claude Code operations using hooks. |
-| `/hooks:post-edit` | Execute post-edit processing including formatting, validation, and memory updates. |
-| `/hooks:post-task` | Execute post-task cleanup, performance analysis, and memory storage. |
-| `/hooks:pre-edit` | Execute pre-edit validations and agent assignment before file modifications. |
-| `/hooks:pre-task` | Execute pre-task preparations and context loading. |
-| `/hooks:README` | Commands for hooks operations in Claude Flow. |
-| `/hooks:session-end` | Cleanup and persist session state before ending work. |
-| `/hooks:setup` | This automatically creates: |
-
-### monitoring
-
-| Command | Description |
-|---------|-------------|
-| `/monitoring:agent-metrics` | View agent performance metrics. |
-| `/monitoring:agents` | **This tool coordinates Claude Code's actions. It does NOT write code or create content.** |
-| `/monitoring:README` | Commands for monitoring operations in Claude Flow. |
-| `/monitoring:real-time-view` | Real-time view of swarm activity. |
-| `/monitoring:status` | **This tool coordinates Claude Code's actions. It does NOT write code or create content.** |
-| `/monitoring:swarm-monitor` | Real-time swarm monitoring. |
-
-### optimization
-
-| Command | Description |
-|---------|-------------|
-| `/optimization:auto-topology` | Automatically select the optimal swarm topology based on task complexity analysis. |
-| `/optimization:cache-manage` | Manage operation cache for performance. |
-| `/optimization:parallel-execute` | Execute tasks in parallel for maximum efficiency. |
-| `/optimization:parallel-execution` | Execute independent subtasks in parallel for maximum efficiency. |
-| `/optimization:README` | Commands for optimization operations in Claude Flow. |
-| `/optimization:topology-optimize` | Optimize swarm topology for current workload. |
-
 ### Root Commands
 
 | Command | Description |
@@ -848,9 +723,6 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/auto-update` | Pull the latest ECC repo changes and reinstall the current managed targets. |
 | `/build-fix` | Detect the project build system and incrementally fix build/type errors with minimal safe changes. |
 | `/checkpoint` | Create, verify, or list workflow checkpoints after running verification checks. |
-| `/claude-flow-help` | Show Claude-Flow commands and usage |
-| `/claude-flow-memory` | Interact with Claude-Flow memory system |
-| `/claude-flow-swarm` | Coordinate multi-agent swarms for complex tasks |
 | `/code-review` | Code review — local uncommitted changes or GitHub PR (pass PR number/URL for PR mode) |
 | `/cost-report` | Generate a local Claude Code cost report from a cost-tracker SQLite database. |
 | `/cpp-build` | Fix C++ build errors, CMake issues, and linker problems incrementally. Invokes the cpp-build-resolver agent for minimal, surgical fixes. |
@@ -930,43 +802,6 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/test-coverage` | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. |
 | `/update-codemaps` | Scan project structure and generate token-lean architecture codemaps. |
 | `/update-docs` | Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports. |
-
-### sparc
-
-| Command | Description |
-|---------|-------------|
-| `/sparc:analyzer` | Deep code and data analysis with batch processing capabilities. |
-| `/sparc:architect` | System design with Memory-based coordination for scalable architectures. |
-| `/sparc:ask` | ❓Ask - You are a task-formulation guide that helps users navigate, ask, and delegate tasks to the correc... |
-| `/sparc:batch-executor` | Parallel task execution specialist using batch operations. |
-| `/sparc:code` | 🧠 Auto-Coder - You write clean, efficient, modular code based on pseudocode and architecture. You use configurat... |
-| `/sparc:coder` | Autonomous code generation with batch file operations. |
-| `/sparc:debug` | 🪲 Debugger - You troubleshoot runtime bugs, logic errors, or integration failures by tracing, inspecting, and ... |
-| `/sparc:debugger` | Systematic debugging with TodoWrite and Memory integration. |
-| `/sparc:designer` | UI/UX design with Memory coordination for consistent experiences. |
-| `/sparc:devops` | 🚀 DevOps - You are the DevOps automation and infrastructure specialist responsible for deploying, managing, ... |
-| `/sparc:docs-writer` | 📚 Documentation Writer - You write concise, clear, and modular Markdown documentation that explains usage, integration, se... |
-| `/sparc:documenter` | Documentation with batch file operations for comprehensive docs. |
-| `/sparc:innovator` | Creative problem solving with WebSearch and Memory integration. |
-| `/sparc:integration` | 🔗 System Integrator - You merge the outputs of all modes into a working, tested, production-ready system. You ensure co... |
-| `/sparc:mcp` | ♾️ MCP Integration - You are the MCP (Management Control Panel) integration specialist responsible for connecting to a... |
-| `/sparc:memory-manager` | Knowledge management with Memory tools for persistent insights. |
-| `/sparc:optimizer` | Performance optimization with systematic analysis and improvements. |
-| `/sparc:orchestrator` | Multi-agent task orchestration with TodoWrite/TodoRead/Task/Memory using MCP tools. |
-| `/sparc:post-deployment-monitoring-mode` | 📈 Deployment Monitor - You observe the system post-launch, collecting performance, logs, and user feedback. You flag reg... |
-| `/sparc:refinement-optimization-mode` | 🧹 Optimizer - You refactor, modularize, and improve system performance. You enforce file size limits, dependenc... |
-| `/sparc:researcher` | Deep research with parallel WebSearch/WebFetch and Memory coordination. |
-| `/sparc:reviewer` | Code review using batch file analysis for comprehensive reviews. |
-| `/sparc:security-review` | 🛡️ Security Reviewer - You perform static and dynamic audits to ensure secure code practices. You flag secrets, poor mod... |
-| `/sparc:sparc` | ⚡️ SPARC Orchestrator - You are SPARC, the orchestrator of complex workflows. You break down large objectives into delega... |
-| `/sparc:sparc-modes` | SPARC (Specification, Planning, Architecture, Review, Code) is a comprehensive development methodology with 17 specialized modes, all integrated with MCP tools for enhanced coordination and execution. |
-| `/sparc:spec-pseudocode` | 📋 Specification Writer - You capture full project context—functional requirements, edge cases, constraints—and translate t... |
-| `/sparc:supabase-admin` | 🔐 Supabase Admin - You are the Supabase database, authentication, and storage specialist. You design and implement d... |
-| `/sparc:swarm-coordinator` | Specialized swarm management with batch coordination capabilities. |
-| `/sparc:tdd` | Test-driven development with TodoWrite planning and comprehensive testing. |
-| `/sparc:tester` | Comprehensive testing with parallel execution capabilities. |
-| `/sparc:tutorial` | 📘 SPARC Tutorial - You are the SPARC onboarding and education assistant. Your job is to guide users through the full... |
-| `/sparc:workflow-manager` | Process automation with TodoWrite planning and Task execution. |
 
 ## Hooks
 
@@ -1061,8 +896,8 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 175
-- **Slash Commands:** 171
+- **Skills:** 168
+- **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
 For more information, see the ECC rules at `~/.claude/rules/ecc/` or the project CLAUDE.md.

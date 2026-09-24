@@ -29,7 +29,6 @@ This skill chains the following skills — make sure they are installed in `~/.c
 | `social-content` | 5 |
 | `slides` | 5 (optional) |
 | `impeccable` | 6 |
-| `verification-quality` | 6 |
 
 ## Usage
 

@@ -4,7 +4,7 @@
 
 **Primary harness:** ECC (Everything Claude Code) — skills in `~/.claude/skills/`, agents in `~/.claude/agents/`, hooks wired via `~/.claude/hooks/hooks.json` and mirrored in `settings.json`.
 
-**Orchestration:** use the native `Agent` tool (subagent_type) for research, parallel work, and delegated tasks — this is what's actually wired up and used. `claude-flow` (swarm/SPARC multi-agent orchestration) was previously documented here as "primary" but a Jul 2026 audit found it was never actually registered as a live MCP server in this setup (confirmed via `claude mcp list`, `settings.json`, and `mcp-configs/mcp-servers.json`) — the ~30 dependent swarm/SPARC agent files referencing `mcp__claude-flow__*` tools were removed since those tools don't exist here.
+**Orchestration:** use the native `Agent` tool (subagent_type) for research, parallel work, and delegated tasks — this is what's actually wired up and used. `claude-flow` (swarm/SPARC multi-agent orchestration) was previously documented here as "primary" but a Jul 2026 audit found it was never actually registered as a live MCP server in this setup (confirmed via `claude mcp list`, `settings.json`, and `mcp-configs/mcp-servers.json`) — the ~30 dependent swarm/SPARC agent files referencing `mcp__claude-flow__*` tools were removed since those tools don't exist here. A 2026-09-23 cleanup removed the rest (88 SPARC/claude-flow commands, 8 agents that ran `npx claude-flow` hooks, 7 claude-flow/ruv-swarm skills, and the dead `claude-flow`/`squish-memory`/`claudeFlow` entries in `settings.json`), with a `pre-cleanup` git tag as the restore point.
 
 **Memory:** `~/.claude/projects/*/memory/*.md` (native auto-memory, see below) is the actual persistent-memory system in use. `squish-memory`/`squish` MCP is not currently connected either (same audit) — don't assume it's available.
 
@@ -28,7 +28,7 @@ List the projects you work in regularly here, with local path, a one-line descri
 
 ## Skills & Agents
 
-173 skills across marketing, CRO, design, UI, development, and printing-press categories.
+168 skills across marketing, CRO, design, UI, development, and printing-press categories.
 45 agents (trimmed Jul 2026 — removed ~30 unused claude-flow/swarm/SPARC agents and ~21 unused non-JS language reviewer/build-resolver agents; kept core, review, testing, docs, and JS/TS/React-stack-matched agents).
 Full inventory: `INVENTORY.md` at the repo root — **auto-generated, don't hand-edit or ask `doc-updater` to regenerate it.** `scripts/generate-inventory.js` rebuilds the Agents/Skills/Slash Commands/Summary sections from the filesystem (skips git-ignored private skills; preserves the hand-written Hooks section). It runs from a Stop hook (`scripts/hooks/inventory-auto-update.js`, every turn, no-op when nothing changed), the daily sync, and `update.sh`. Manual run: `node ~/.claude/scripts/generate-inventory.js` (`--check` reports staleness). Added 2026-09-21.
 

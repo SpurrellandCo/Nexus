@@ -17,7 +17,7 @@ Orchestrates 12 specialized skills across 6 phases to produce a recruiter-ready 
 | 3. Copy Writing | `copywriting`, `marketing-psychology`, `copy-editing` |
 | 4. Layout & Design | `design`, `minimalist-skill`, `taste-skill` |
 | 5. LinkedIn & Social | `social-content`, `slides` (optional) |
-| 6. Quality Pass | `impeccable`, `verification-quality` |
+| 6. Quality Pass | `impeccable` + completeness check |
 
 ---
 
@@ -107,7 +107,7 @@ Output: **LinkedIn copy** ready to paste + optional portfolio deck outline.
 Invoke the `impeccable` skill:
 > "Run a final quality pass on this resume. Four lenses: (1) ATS — keywords from [PHASE 1], no parsing-breaking formatting; (2) Recruiter 6-second scan — value prop in top third, strongest bullets leading; (3) Hiring manager — narrative arc, no gaps, scope matches target level; (4) Copy — passive voice, filler, tense, spelling. Return a green/yellow/red scored checklist with specific fixes."
 
-Then invoke the `verification-quality` skill:
+Then run a completeness check:
 > "Verify this resume is complete and ready to send for [TARGET ROLE]. Cross-check: all Phase 1 keywords present, Brand Brief proof themes appear at least twice each, no section missing, LinkedIn and resume are consistent. Flag any gaps."
 
 Output: **Quality scorecard**. Deliver final resume only after all reds are resolved.
