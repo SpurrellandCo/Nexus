@@ -77,7 +77,7 @@ const BODY_RULES = [
     id: 'vendor-path',
     severity: 'error',
     pattern: /(?:~|\$HOME|\$\{HOME\}|\/Users\/[^/\s]+)\/\.claude\/[^\s`'")\]]*/g,
-    hint: () => 'use a path relative to this skill\'s folder, or $NEXUS_HOME/... for other Nexus files',
+    hint: () => 'use a path relative to this skill\'s folder, or ~/.nexus/... (every tool can read it) for other Nexus files',
   },
   {
     id: 'vendor-env',

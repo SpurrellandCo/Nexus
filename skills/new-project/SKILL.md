@@ -45,7 +45,7 @@ Each stage gates on the previous. You review and approve output before the next 
 
 ## Stage 0 — Codebase Graph (existing projects only)
 
-**Tool:** `graphify` CLI (skill: `~/.claude/skills/graphify/SKILL.md`)
+**Tool:** `graphify` CLI (skill: `~/.nexus/skills/graphify/SKILL.md`)
 **Skip for greenfield** — nothing to graph yet; run this once Stage 4 ships initial code instead.
 
 Before Stage 1, if `graphify-out/graph.json` doesn't already exist in the project root:
@@ -58,7 +58,7 @@ Before Stage 1, if `graphify-out/graph.json` doesn't already exist in the projec
 
 ## Stage 0.5 — Landscape Check
 
-**Skill:** `/landscape-check` (`~/.claude/skills/landscape-check/SKILL.md`)
+**Skill:** `/landscape-check` (`~/.nexus/skills/landscape-check/SKILL.md`)
 **Input:** the idea or brief
 **Output:** `PRD/LANDSCAPE.md` (creates `PRD/` if it doesn't exist)
 **Gate:** User reads the verdict summary before the PRD is written
@@ -193,7 +193,7 @@ The code-architect will:
 
 ## Stage 4 — Linear Issues (Optional)
 
-**Tool:** Linear MCP (`mcp__linear__*`)
+**Tool:** the Linear MCP server
 **Input:** `PLAN.md`
 **Output:** Linear project + issues with priorities, estimates, and labels
 

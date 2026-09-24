@@ -200,4 +200,4 @@ Changes:
 Done when: schema validates at https://validator.schema.org with no errors
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

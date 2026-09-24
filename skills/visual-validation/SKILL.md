@@ -104,7 +104,7 @@ curl -s http://localhost:3000/[path] -o /tmp/page.html
 
 ## Step 3 — Read and Validate the Screenshot
 
-Use the Read tool to load the screenshot image, then validate against the checklist below.
+Open the screenshot image, then validate against the checklist below.
 
 ```
 Read: /tmp/screenshot.png
@@ -193,7 +193,7 @@ Save key screenshots for comparison across iterations:
 
 ```bash
 # Save with meaningful name
-cp /tmp/screenshot.png ~/.claude/projects/[project]/screenshots/[feature]-[date].png
+cp /tmp/screenshot.png [project]/screenshots/[feature]-[date].png   # gitignored screenshots/ folder
 
 # Before/after comparison
 cp /tmp/screenshot.png /tmp/before.png

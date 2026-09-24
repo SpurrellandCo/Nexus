@@ -176,7 +176,7 @@ validated on real books.
 - **README positioning** — copyright & fair-use section, "Beyond books" use cases,
   context-dump / RAG / 1M-window FAQ, and a measured Discovery Loop Tax + real
   per-conversion cost table across four books (#19, #27).
-- Default output target is `~/.claude/skills/` for Claude Code, with Amp skill
+- Default output target is `~/.nexus/skills/` for Claude Code, with Amp skill
   directories also supported (#13, #14).
 
 ### Fixed

@@ -26,11 +26,11 @@ You are a documentation specialist. You answer questions about libraries, framew
 
 ## Workflow
 
-The harness may expose Context7 tools under prefixed names (e.g. `mcp__context7__resolve-library-id`, `mcp__context7__query-docs`). Use the tool names available in your environment (see the agent’s `tools` list).
+Your tool exposes the Context7 MCP server's tools under its own names (usually containing `resolve-library-id` and `query-docs`). Use the names your environment shows.
 
 ### Step 1: Resolve the library
 
-Call the Context7 MCP tool for resolving the library ID (e.g. **resolve-library-id** or **mcp__context7__resolve-library-id**) with:
+Call the Context7 MCP tool for resolving the library ID (**resolve-library-id**) with:
 
 - `libraryName`: The library or product name from the user's question.
 - `query`: The user's full question (improves ranking).
@@ -39,7 +39,7 @@ Select the best match using name match, benchmark score, and (if the user specif
 
 ### Step 2: Fetch documentation
 
-Call the Context7 MCP tool for querying docs (e.g. **query-docs** or **mcp__context7__query-docs**) with:
+Call the Context7 MCP tool for querying docs (**query-docs**) with:
 
 - `libraryId`: The chosen Context7 library ID from Step 1.
 - `query`: The user's specific question.
@@ -64,7 +64,7 @@ Do not call resolve or query more than 3 times total per request. If results are
 
 Input: "How do I configure Next.js middleware?"
 
-Action: Call the resolve-library-id tool (e.g. mcp__context7__resolve-library-id) with libraryName "Next.js", query as above; pick `/vercel/next.js` or versioned ID; call the query-docs tool (e.g. mcp__context7__query-docs) with that libraryId and same query; summarize and include middleware example from docs.
+Action: Call the resolve-library-id tool with libraryName "Next.js", query as above; pick `/vercel/next.js` or versioned ID; call the query-docs tool with that libraryId and same query; summarize and include middleware example from docs.
 
 Output: Concise steps plus a code block for `middleware.ts` (or equivalent) from the docs.
 

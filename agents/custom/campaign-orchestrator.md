@@ -131,7 +131,7 @@ Use the Skill tool. Prefix each invocation with a one-line header so the user ca
 Pass context forward explicitly. After each skill completes, summarise its output in 3-5 bullet points before moving to the next step. This becomes the context the next skill works from.
 
 **For implementation steps:**
-When a skill produces an Agent Handoff brief, use it directly. Spawn the agent with `subagent_type='coder'` (or appropriate agent) and the brief as the prompt. Do not re-explain the full campaign — only pass the brief.
+When a skill produces an Agent Handoff brief, use it directly. Hand the brief to the right agent as its prompt (a coding agent for implementation work); if your tool has no subagents, follow the brief yourself. Do not re-explain the full campaign — only pass the brief.
 
 ### Step 4 — Campaign Summary
 
@@ -209,6 +209,6 @@ Use what you have. Note the gap in the Campaign Summary as a "Next Step" rather 
 ## Tool Usage
 
 - **Skill tool** — for all strategy, content, and analysis steps
-- **Agent tool** — for implementation (coder, backend-dev, etc.)
+- **Delegating to agents** — for implementation (a coding agent, backend-dev, etc.; or do it yourself if your tool has no subagents)
 - **Read / Bash** — to check existing files before implementation
 - **Write / Edit** — only for campaign summary documents, not for code (delegate that to agents)

@@ -11,7 +11,7 @@ metadata:
 
 Strategic HTML presentation design with data visualization.
 
-<args>$ARGUMENTS</args>
+<args>the user's request</args>
 
 ## When to Use
 
@@ -37,6 +37,6 @@ Strategic HTML presentation design with data visualization.
 
 ## Routing
 
-1. Parse subcommand from `$ARGUMENTS` (first word)
+1. Parse the subcommand from the user's request (first word)
 2. Load corresponding `references/{subcommand}.md`
 3. Execute with remaining arguments

@@ -83,7 +83,7 @@ See the `printing-press-polish` skill for details. It runs diagnostics, fixes ve
 - **Do not ship a CLI that hasn't been behaviorally tested against real targets.** `go build` and `verify` pass-rate are structural signals, not correctness signals. Phase 5's mechanical test matrix runs every subcommand + `--json` + error paths; if that matrix was not executed, the CLI is not shippable. Quick Check is the floor; Full Dogfood is required when the user asks for thoroughness.
 - **Bugs found during dogfood are fix-before-ship, not "file for v0.2".** If a 1-3 file edit resolves it, do it now. `ship-with-gaps` is deprecated as a default verdict (see Phase 4). Context is freshest in-session; a v0.2 backlog that may never be revisited ships known-broken CLIs.
 - **Features approved in Phase 1.5 are shipping scope.** Do not downgrade a shipping-scope feature to a stub mid-build. If implementation becomes infeasible, return to Phase 1.5 with a revised manifest and get explicit re-approval.
-- **Do not quote human-time estimates for sub-tasks** ("~15-30 min", "~1 hour", "quick fix") in `AskUserQuestion` options, phase descriptions, or reference docs. The agent does the work, not the user; agent-fabricated estimates are notoriously bad and train users to distrust the prompt. Describe scope instead (lines of code, files touched, relative size). The carve-outs are wall-clock estimates for genuinely time-bound things: the whole-CLI run (set the user's expectation up front — most CLIs take 30+ minutes), tool installs (`go install` takes ~10 seconds), and printing-press subcommands that do network-bound work (crowd-sniff scans npm + GitHub, ~5-10 minutes). Anything bounded by agent reasoning time is not time-bound — describe scope.
+- **Do not quote human-time estimates for sub-tasks** ("~15-30 min", "~1 hour", "quick fix") in the options you offer the user, phase descriptions, or reference docs. The agent does the work, not the user; agent-fabricated estimates are notoriously bad and train users to distrust the prompt. Describe scope instead (lines of code, files touched, relative size). The carve-outs are wall-clock estimates for genuinely time-bound things: the whole-CLI run (set the user's expectation up front — most CLIs take 30+ minutes), tool installs (`go install` takes ~10 seconds), and printing-press subcommands that do network-bound work (crowd-sniff scans npm + GitHub, ~5-10 minutes). Anything bounded by agent reasoning time is not time-bound — describe scope.
 - Optimize for time-to-ship, not time-to-document.
 - Reuse prior research whenever it is already good enough.
 - Do not split one idea across multiple mandatory artifacts.
@@ -113,7 +113,7 @@ During Phase 5.6 (archiving) and before publishing, read and apply
 
 ## Preflight
 
-**This section MUST run before any user-facing prompt — including the Orientation and Briefing flow below.** A missing binary or available upgrade is information the user needs *before* they commit to an API. Do not invoke `AskUserQuestion`, print the orientation prose, or otherwise engage the user until preflight has completed and any signals from `references/setup-checks.md` have been handled.
+**This section MUST run before any user-facing prompt — including the Orientation and Briefing flow below.** A missing binary or available upgrade is information the user needs *before* they commit to an API. Do not ask the user anything, print the orientation prose, or otherwise engage the user until preflight has completed and any signals from `references/setup-checks.md` have been handled.
 
 <!-- PRESS_SETUP_CONTRACT_START -->
 ```bash
@@ -179,7 +179,7 @@ fi
 
 # Resolve and emit the absolute path the agent must use for every later
 # `printing-press` invocation. `export PATH` above only affects this one
-# Bash tool call; subsequent calls open a fresh shell and resolve bare
+# shell command; later commands may run in a fresh shell and resolve bare
 # `printing-press` against the user's default PATH. When a global is
 # installed at a stale version, that silently shadows the local build the
 # preflight just chose. Handing the agent an absolute path eliminates the
@@ -342,7 +342,8 @@ fi
 
 # --- Codex mode detection (must run as part of setup, not a separate step) ---
 # Codex mode: opt-in only. User must pass "codex" or "--codex" to enable.
-if echo "$ARGUMENTS" | grep -qiE '(^| )(--?codex|codex)( |$)'; then
+USER_REQUEST="<the user's request, verbatim>"   # substitute before running
+if echo "$USER_REQUEST" | grep -qiE '(^| )(--?codex|codex)( |$)'; then
   CODEX_MODE=true
 else
   CODEX_MODE=false
@@ -373,9 +374,9 @@ CODEX_CONSECUTIVE_FAILURES=0
 ```
 <!-- PRESS_SETUP_CONTRACT_END -->
 
-**MANDATORY: Read and apply [references/setup-checks.md](references/setup-checks.md) immediately after the setup contract bash block runs, before any other action.** It handles six signals the contract emits to stdout: `[setup-error]` (refuse to run, surface the install instructions), `[repo-upgrade-available]` (interactive `AskUserQuestion` prompt + optional repo pull), the min-binary-version compatibility check (hard stop if binary is too old), `[upgrade-available]` (interactive `AskUserQuestion` prompt + optional standalone binary upgrade), `[browser-tools-missing]` (interactive `AskUserQuestion` prompt + optional install of browser-use and/or agent-browser), and the `PRINTING_PRESS_BIN=<abs-path>` marker plus optional `[binary-shadow]` warning (capture the path; use it for every subsequent `printing-press` invocation). Skipping the reference will cause the skill to proceed with a missing or out-of-date binary, hit a mid-flight install prompt if browser-sniff is later needed, or invoke the wrong binary because a stale global on `PATH` shadowed the local build. Do not skip.
+**MANDATORY: Read and apply [references/setup-checks.md](references/setup-checks.md) immediately after the setup contract bash block runs, before any other action.** It handles six signals the contract emits to stdout: `[setup-error]` (refuse to run, surface the install instructions), `[repo-upgrade-available]` (interactive question to the user + optional repo pull), the min-binary-version compatibility check (hard stop if binary is too old), `[upgrade-available]` (interactive question to the user + optional standalone binary upgrade), `[browser-tools-missing]` (interactive question to the user + optional install of browser-use and/or agent-browser), and the `PRINTING_PRESS_BIN=<abs-path>` marker plus optional `[binary-shadow]` warning (capture the path; use it for every subsequent `printing-press` invocation). Skipping the reference will cause the skill to proceed with a missing or out-of-date binary, hit a mid-flight install prompt if browser-sniff is later needed, or invoke the wrong binary because a stale global on `PATH` shadowed the local build. Do not skip.
 
-**Absolute-path rule.** The preflight contract always emits `PRINTING_PRESS_BIN=<absolute path>` to stdout. Capture this value and substitute it (the resolved absolute path, not the literal `$PRINTING_PRESS_BIN` token) for every subsequent `printing-press ...` invocation in this skill, references, and any sub-skill you delegate to. The `export PATH=...` line inside the contract only affects the single Bash tool call it runs in; later Bash tool calls open fresh shells and resolve bare `printing-press` against the user's default `PATH`, where a stale globally-installed binary (`$HOME/go/bin/printing-press`, Homebrew copy, etc.) will silently shadow the local build the preflight just chose. Bash code examples below are written `printing-press generate ...` for readability — replace `printing-press` with the captured absolute path each time you actually run one.
+**Absolute-path rule.** The preflight contract always emits `PRINTING_PRESS_BIN=<absolute path>` to stdout. Capture this value and substitute it (the resolved absolute path, not the literal `$PRINTING_PRESS_BIN` token) for every subsequent `printing-press ...` invocation in this skill, references, and any sub-skill you delegate to. The `export PATH=...` line inside the contract only affects the single shell command it runs in; later commands may run in fresh shells and resolve bare `printing-press` against the user's default `PATH`, where a stale globally-installed binary (`$HOME/go/bin/printing-press`, Homebrew copy, etc.) will silently shadow the local build the preflight just chose. Bash code examples below are written `printing-press generate ...` for readability — replace `printing-press` with the captured absolute path each time you actually run one.
 
 Only after preflight completes successfully (no `[setup-error]`; any `[repo-upgrade-available]`, `[upgrade-available]`, or `[browser-tools-missing]` was offered to the user; `PRINTING_PRESS_BIN` is captured) should you proceed to the Orientation & Briefing section below.
 
@@ -393,7 +394,7 @@ If the user typed `/printing-press` with no arguments (no API name, no `--spec`,
 >
 > The process takes 30-60 minutes depending on API complexity. Simple APIs with official specs (Stripe, GitHub) are faster. Undocumented APIs that need discovery (ESPN, Domino's) take longer.
 
-Print these example invocations as plain text BEFORE the `AskUserQuestion` call (so they appear as context above the question, not as competing menu options):
+Print these example invocations as plain text BEFORE asking the question (so they appear as context above the question, not as competing menu options):
 
 ```
 /printing-press Notion
@@ -403,7 +404,7 @@ Print these example invocations as plain text BEFORE the `AskUserQuestion` call 
 /printing-press https://postman.com
 ```
 
-Then ask via `AskUserQuestion`:
+Then ask the user:
 
 - **question:** `"What API would you like to build a CLI for?"`
 - **header:** `"API target"`
@@ -455,7 +456,7 @@ If the user provided `--spec`, adapt: "You have provided a spec, so I shall skip
 
 If the user provided `--har`, adapt: "You have provided a HAR capture, so I shall generate a spec from your traffic and skip browser browser-sniffing."
 
-Then ask via `AskUserQuestion`:
+Then ask the user:
 
 - **question:** `"Anything you want me to know before I begin? A vision for what this CLI should do, specific features you care about, or auth context I should have?"`
 - **header:** `"Briefing"`
@@ -484,7 +485,7 @@ After the briefing question resolves, inspect the user's original argument AND a
 
 **Parse the order from the prose.** Use the user's wording verbatim. Commas, "then", "and", explicit "primary/secondary", or numbered lists all signal ordering. If the user wrote "Google Flights, Kayak, FlightAware" — that is the order. Do not reorder by spec availability, tier, or ease of generation.
 
-**Confirm via `AskUserQuestion`:**
+**Confirm with the user:**
 
 > "You mentioned **<Source A>**, **<Source B>**, and **<Source C>**. I'll treat **<Source A>** as the primary — it gets the headline commands, the top of the README, and the first-run experience. Is that the right order?"
 
@@ -608,7 +609,7 @@ Before new research:
 
    **URL Detection** — If the argument contains `://`, it's a URL. Determine whether it's a spec or a website before proceeding.
 
-   **Step 1: Content probe.** Fetch the URL (light GET via `WebFetch`) and inspect the response:
+   **Step 1: Content probe.** Fetch the URL (a light GET) and inspect the response:
    - Check the `Content-Type` header and the first few lines of the body.
    - If the fetch fails (timeout, 404, DNS error), skip to Step 2 — treat it as a website.
 
@@ -618,7 +619,7 @@ Before new research:
 
    **Step 2: Disambiguation.** If the content is HTML or the probe failed, ask the user what they want. Extract the site name from the hostname (e.g., `postman.com` → "Postman", `app.linear.app` → "Linear"). Derive `<api>` from the site name using the same `cleanSpecName` normalization the generator uses.
 
-   Use `AskUserQuestion` with:
+   Ask the user, with:
    - **question:** `"What kind of CLI do you want for <SiteName>?"`
    - **header:** `"CLI target"`
    - **multiSelect:** `false`
@@ -687,11 +688,11 @@ Before new research:
    | Yes | Yes | No | Any | Warn: "Actively being rebuilt (phase: `<phase>`, `<age>` seconds ago). Wait, use a different name, or pick a different API." |
    | Yes | Yes | Yes | Any | Offer reclaim: "Interrupted rebuild detected (stale since `<age>`s ago). Reclaim and start fresh?" |
 
-   **If actively locked (not stale):** Present via `AskUserQuestion` with options to wait, pick a different API, or force-reclaim (`printing-press lock acquire --cli <api>-pp-cli --scope "$PRESS_SCOPE" --force`).
+   **If actively locked (not stale):** Ask the user, with options to wait, pick a different API, or force-reclaim (`printing-press lock acquire --cli <api>-pp-cli --scope "$PRESS_SCOPE" --force`).
 
    **If stale lock:** Reclaiming is automatic on `lock acquire` in Phase 2. If user approves, proceed normally — the lock acquire in Phase 2 will auto-reclaim the stale lock.
 
-   **If library exists with go.mod and no lock (completed CLI):** Display context and present options using `AskUserQuestion`:
+   **If library exists with go.mod and no lock (completed CLI):** Display context and present these options to the user:
 
    > Found existing `<api>` in library (last modified `<date>`).
 
@@ -787,7 +788,7 @@ If the catalog has an entry for this API, branch on the entry type:
 - If catalog config: use the spec_url from the catalog entry, skip the research/discovery phase
 - If full discovery: proceed with the normal research workflow
 
-**Wrapper-only entry** (no `spec_url`, `wrapper_libraries` populated) — this is a reverse-engineered API that has no official spec but has known community libraries. The catalog entry is a **discovery aid only**: `printing-press generate` requires `--spec` and does not consume wrapper-library metadata, so there is no direct generation path from a wrapper-only entry today. Tell the user this up front via `AskUserQuestion`:
+**Wrapper-only entry** (no `spec_url`, `wrapper_libraries` populated) — this is a reverse-engineered API that has no official spec but has known community libraries. The catalog entry is a **discovery aid only**: `printing-press generate` requires `--spec` and does not consume wrapper-library metadata, so there is no direct generation path from a wrapper-only entry today. Tell the user this up front and ask:
 
 > "<API> has no official spec. The catalog knows about these community-maintained wrappers, but the Printing Press cannot generate a CLI directly from a wrapper. The next step has to be either browser-sniffing the upstream to author an internal YAML spec, or hand-writing a Go module that imports the wrapper. Which path do you want?"
 
@@ -912,7 +913,7 @@ After Phase 1 research completes, analyze findings to proactively assess what au
 - Community wrapper README "auth" or "authentication" sections
 - The API Key Gate's token detection (Phase 0.5) — if it already found a key, don't re-ask
 
-**For API key auth:** Present via `AskUserQuestion`:
+**For API key auth:** Present these options to the user:
 > "Do you have an API key for `<API>`? It will be used for read-only live smoke testing in Phase 5."
 >
 > 1. **Yes** — user provides the key or confirms it's in the environment
@@ -920,7 +921,7 @@ After Phase 1 research completes, analyze findings to proactively assess what au
 
 If the user provides a key, set it in `AUTH_CONTEXT` so the API Key Gate (Phase 0.5) does not re-ask.
 
-**For browser session auth:** Present via `AskUserQuestion`:
+**For browser session auth:** Present these options to the user:
 > "`<API>` has authenticated endpoints ([list features]). Are you logged in to `<site>` in your browser? If so, the generated CLI will support `auth login --chrome` — you'll be able to authenticate just by being logged into the site in Chrome. No API key needed."
 >
 > 1. **Yes, I'm logged in** — I'll use your session during browser-sniff and enable browser auth in the CLI
@@ -937,9 +938,9 @@ Set `AUTH_SESSION_AVAILABLE=true` if the user selects option 1 or 2. The Browser
 
 After Phase 1 research, evaluate whether browser-sniffing the live site would improve the spec. This phase MUST produce a decision marker file for every source named in the briefing before Phase 1.5 can proceed.
 
-**Browser discovery is temporary discovery, not a printed-CLI runtime.** Use browser-use, agent-browser, the Claude chrome-MCP (`mcp__claude-in-chrome__*`, when the runtime exposes it), or a manual HAR (optionally augmented with computer-use screenshots for visual guidance, when `mcp__computer-use__*` is exposed) to learn the hidden web contract: URLs, methods, persisted GraphQL hashes, BFF envelopes, response shapes, cookies, CSRF/header construction, HTML/SSR/RSS/JSON-LD surfaces, and whether replay is viable. The final printed CLI must use replayable HTTP, Surf/browser-compatible HTTP, browser-clearance cookie import plus replay, or structured HTML/SSR/RSS extraction. If the only working path requires live page-context execution, HOLD or pivot scope — do not generate a resident browser sidecar transport.
+**Browser discovery is temporary discovery, not a printed-CLI runtime.** Use browser-use, agent-browser, the Claude chrome-MCP (Claude Code's Chrome-extension tools, when your tool exposes them), or a manual HAR (optionally augmented with computer-use screenshots for visual guidance, when a computer-use MCP server is available) to learn the hidden web contract: URLs, methods, persisted GraphQL hashes, BFF envelopes, response shapes, cookies, CSRF/header construction, HTML/SSR/RSS/JSON-LD surfaces, and whether replay is viable. The final printed CLI must use replayable HTTP, Surf/browser-compatible HTTP, browser-clearance cookie import plus replay, or structured HTML/SSR/RSS extraction. If the only working path requires live page-context execution, HOLD or pivot scope — do not generate a resident browser sidecar transport.
 
-**Automatic offer, explicit consent.** The Printing Press decides when browser discovery should be offered, but opening Chrome, attaching to a browser session, installing browser-use/agent-browser, asking the user to solve a challenge, or driving the user's logged-in Chrome via the chrome-MCP requires explicit user approval through the Phase 0 website choice or the Phase 1.7 `AskUserQuestion` prompt. **Approval at Phase 1.7 covers the full fallback set** including chrome-MCP and computer-use when Step 2c.5's recovery menu later offers them — picking chrome-MCP at the recovery menu is a refinement of the Phase 1.7 consent, not a new consent surface. The disclosure language used at the Phase 1.7 prompt MUST enumerate these possibilities so the user understands what they are approving:
+**Automatic offer, explicit consent.** The Printing Press decides when browser discovery should be offered, but opening Chrome, attaching to a browser session, installing browser-use/agent-browser, asking the user to solve a challenge, or driving the user's logged-in Chrome via the chrome-MCP requires explicit user approval through the Phase 0 website choice or the Phase 1.7 question to the user. **Approval at Phase 1.7 covers the full fallback set** including chrome-MCP and computer-use when Step 2c.5's recovery menu later offers them — picking chrome-MCP at the recovery menu is a refinement of the Phase 1.7 consent, not a new consent surface. The disclosure language used at the Phase 1.7 prompt MUST enumerate these possibilities so the user understands what they are approving:
 
 > "Approving browser-sniff means the agent may run browser-use, agent-browser, ask you for a manual DevTools HAR export, or — if the default backends get blocked by an anti-bot gate and your runtime exposes them — drive your already-running Chrome via the chrome-MCP browser extension, or take read-only screenshots of your DevTools window via computer-use to guide you through the HAR export. Capture artifacts are written to `$DISCOVERY_DIR/` and credential headers are stripped at write time. The chrome-MCP option uses your real logged-in Chrome session in a fresh capture tab; the agent never navigates your existing tabs."
 
@@ -969,18 +970,18 @@ Phase 1.7 is a hard gate. Phase 1.5 reads a marker file and refuses to proceed w
 
 **Decision values:**
 
-- `approved` — user selected a browser-sniff option via `AskUserQuestion`. Proceed to "If user approves browser-sniff".
-- `declined` — user explicitly declined browser-sniff via `AskUserQuestion`. Proceed to "If user declines browser-sniff".
+- `approved` — user selected a browser-sniff option when asked. Proceed to "If user approves browser-sniff".
+- `declined` — user explicitly declined browser-sniff when asked. Proceed to "If user declines browser-sniff".
 - `skip-silent` — gate was silently skipped per the decision matrix (spec complete, `--har` provided, `--spec` provided, or login required with `AUTH_SESSION_AVAILABLE=false`). The `reason` field names which.
 - `pre-approved` — user already chose "The website itself" in Phase 0, where the prompt disclosed temporary Chrome/browser capture during generation, so `BROWSER_SNIFF_TARGET_URL` was set and the question was answered there.
 
 **Every path through Phase 1.7 MUST write a marker entry** — approve, decline, and every silent-skip case. There is no code path that proceeds to Phase 1.5 without writing the marker.
 
-**`asked_at` is mandatory.** It must reflect the actual time `AskUserQuestion` was invoked (or the time the silent-skip decision was made). Fabricated timestamps are a plan violation.
+**`asked_at` is mandatory.** It must reflect the actual time the question was asked (or the time the silent-skip decision was made). Fabricated timestamps are a plan violation.
 
 ### Banned skip reasons
 
-The following rationales are NOT valid reasons to skip the browser-sniff gate. If any of these apply, you MUST still ask the user via `AskUserQuestion` and record their answer in the marker file:
+The following rationales are NOT valid reasons to skip the browser-sniff gate. If any of these apply, you MUST still ask the user and record their answer in the marker file:
 
 - **"The target is client-rendered and needs Playwright"** — browser capture tools (browser-use, agent-browser) exist specifically to handle client-rendered sites. A hard-to-browser-sniff target is not the same as an impossible one. Ask.
 - **"Direct HTTP/curl got 403, 429, Cloudflare, Vercel, WAF, DataDome, or bot-detection HTML"** — direct HTTP reachability failure is exactly when browser capture is valuable. Do not pivot to RSS, docs-only, official API, or a smaller product shape before attempting the approved browser-sniff. Route to cleared-browser capture instead.
@@ -991,7 +992,7 @@ The following rationales are NOT valid reasons to skip the browser-sniff gate. I
 - **"The user said 'let's go' earlier and implicitly approved everything"** — "let's go" at the briefing stage is consent to proceed with research, not standing approval for every future decision. Ask each gate individually.
 - **"The default browser-use / agent-browser path got hard-blocked by a WAF, so the only remaining option is to pivot scope or fall back to RSS/docs"** — this is exactly when the chrome-MCP and computer-use fallback options enter, when the runtime exposes them. Step 1 of `references/browser-sniff-capture.md` detects which fallback MCPs are available; Step 2c.5 composes the recovery menu including those fallbacks; the gate is "ask before giving up," not "auto-pivot when blocked." Do NOT skip the Step 2c.5 menu. Do NOT pivot scope or substitute an alternate target without first asking the user via that menu.
 
-These banned reasons all fired at once in a past combo-CLI run and caused a user-critical source to be silently swapped out. The marker file exists so this cannot happen again. If you find yourself writing a phrase like "skipping browser-sniff because X" where X is one of the above, stop and call `AskUserQuestion`.
+These banned reasons all fired at once in a past combo-CLI run and caused a user-critical source to be silently swapped out. The marker file exists so this cannot happen again. If you find yourself writing a phrase like "skipping browser-sniff because X" where X is one of the above, stop and ask the user.
 
 ### Combo CLIs: per-source enforcement
 
@@ -1001,15 +1002,15 @@ When the briefing names multiple sources (e.g., "Google Flights + Kayak + Flight
 
 **Per-source decision flow:**
 
-For each named source, run the "When to offer browser-sniff" decision matrix independently, using the research findings for THAT source. Each source produces its own `AskUserQuestion` call or its own silent-skip marker entry.
+For each named source, run the "When to offer browser-sniff" decision matrix independently, using the research findings for THAT source. Each source gets its own question to the user or its own silent-skip marker entry.
 
 **Combo CLI example** (flightgoat pattern — directional guidance, not prescription):
 
 | Source | Spec state | Expected decision |
 |--------|------------|-------------------|
 | `flightaware` | Documented OpenAPI spec found (53 endpoints, appears complete) | `skip-silent` with reason `spec-complete` |
-| `google-flights` | No official spec, but community wrapper exists (`krisukox/google-flights-api`) | Ask via `AskUserQuestion` → record user's answer |
-| `kayak-direct` | No spec, no wrapper, user named this as a key feature | Ask via `AskUserQuestion` → record user's answer |
+| `google-flights` | No official spec, but community wrapper exists (`krisukox/google-flights-api`) | Ask the user → record user's answer |
+| `kayak-direct` | No spec, no wrapper, user named this as a key feature | Ask the user → record user's answer |
 
 The marker file for this run would contain three entries. Phase 1.5 would HALT if any were missing.
 
@@ -1082,7 +1083,7 @@ Do NOT spend time debugging tool integration issues. Browser-sniff is a temporar
 
 **Gap detection heuristic:** If Phase 1 research found documentation, competitor tools, or community projects that reference significantly more endpoints or features than the resolved spec covers, that's a gap signal. Example: "The Zuplo OpenAPI spec has 42 endpoints, but the Public-ESPN-API docs describe 370+."
 
-**When the decision matrix says "Offer browser-sniff", you MUST ask the user via `AskUserQuestion`.** Skipping the question and writing a `skip-silent` marker is a contract violation — `skip-silent` is only valid when the matrix says "Skip silently" or one of the Banned Skip Reasons is the only thing holding you back (in which case, you should be asking anyway).
+**When the decision matrix says "Offer browser-sniff", you MUST ask the user.** Skipping the question and writing a `skip-silent` marker is a contract violation — `skip-silent` is only valid when the matrix says "Skip silently" or one of the Banned Skip Reasons is the only thing holding you back (in which case, you should be asking anyway).
 
 Every browser-sniff approval prompt must make the consent boundary explicit:
 - browser discovery may open or attach to Chrome during generation,
@@ -1092,7 +1093,7 @@ Every browser-sniff approval prompt must make the consent boundary explicit:
 
 ### Browser-Sniff as enrichment (spec exists but has gaps)
 
-Present to the user via `AskUserQuestion`:
+Present to the user as options:
 
 > "Found a spec with **N endpoints**, but research shows the live API likely has more (competitors reference M+ features). Want me to use temporary browser discovery on `<url>` to find replayable endpoints the spec missed? I may open or attach to Chrome during generation, and I will ask before installing or upgrading browser-use/agent-browser."
 >
@@ -1102,7 +1103,7 @@ Present to the user via `AskUserQuestion`:
 
 ### Browser-Sniff as primary (no spec found)
 
-Present to the user via `AskUserQuestion`. **If `AUTH_SESSION_AVAILABLE=true`**, include an authenticated browser-sniff option:
+Present to the user as options. **If `AUTH_SESSION_AVAILABLE=true`**, include an authenticated browser-sniff option:
 
 > "No OpenAPI spec found for `<API>`. Want me to browser-sniff `<likely-url>` to discover the API from live traffic?"
 >
@@ -1192,7 +1193,7 @@ After Phase 1.7 (Browser-Sniff Gate), evaluate whether mining community signals 
 
 ### Crowd-sniff as enrichment (spec exists but has gaps)
 
-Present to the user via `AskUserQuestion`:
+Present to the user as options:
 
 > "Found a spec with **N endpoints**, but research shows the live API likely has more. Want me to search npm packages and GitHub code for `<api>` to discover additional endpoints? This typically takes 5-10 minutes."
 >
@@ -1202,7 +1203,7 @@ Present to the user via `AskUserQuestion`:
 
 ### Crowd-sniff as primary (no spec found)
 
-Present to the user via `AskUserQuestion`:
+Present to the user as options:
 
 > "No OpenAPI spec found for `<API>`. Want me to search npm packages and GitHub code to discover the API from community usage? This typically takes 5-10 minutes."
 >
@@ -1252,16 +1253,16 @@ The GOAT CLI doesn't "find gaps." It absorbs EVERY feature from EVERY tool and t
 
 Run these searches in parallel:
 
-1. **WebSearch**: `"<API name>" Claude Code plugin site:github.com`
-2. **WebSearch**: `"<API name>" MCP server model context protocol`
-3. **WebSearch**: `"<API name>" Claude skill SKILL.md site:github.com`
-4. **WebSearch**: `"<API name>" CLI tool site:github.com` (competing CLIs)
-5. **WebSearch**: `"<API name>" CLI site:npmjs.com` (npm packages)
-6. **WebFetch**: Check `github.com/anthropics/claude-plugins-official/tree/main/external_plugins` for official plugin
-7. **WebSearch**: `"<API name>" MCP site:lobehub.com OR site:mcpmarket.com OR site:fastmcp.me`
-8. **WebSearch**: `"<API name>" automation script workflow site:github.com`
-9. **WebSearch**: `"<API name>" SDK wrapper site:npmjs.com`
-10. **WebSearch**: `"<API name>" client library site:pypi.org`
+1. **Web search**: `"<API name>" Claude Code plugin site:github.com`
+2. **Web search**: `"<API name>" MCP server model context protocol`
+3. **Web search**: `"<API name>" Claude skill SKILL.md site:github.com`
+4. **Web search**: `"<API name>" CLI tool site:github.com` (competing CLIs)
+5. **Web search**: `"<API name>" CLI site:npmjs.com` (npm packages)
+6. **Fetch**: Check `github.com/anthropics/claude-plugins-official/tree/main/external_plugins` for official plugin
+7. **Web search**: `"<API name>" MCP site:lobehub.com OR site:mcpmarket.com OR site:fastmcp.me`
+8. **Web search**: `"<API name>" automation script workflow site:github.com`
+9. **Web search**: `"<API name>" SDK wrapper site:npmjs.com`
+10. **Web search**: `"<API name>" client library site:pypi.org`
 
 ### Step 1.5a.5: Read MCP source code (if found)
 
@@ -1271,7 +1272,7 @@ If step 1.5a discovered MCP server repos with public source code on GitHub, read
 
 **For the top 1-2 MCP repos found:**
 
-1. **Identify the main source file.** WebFetch the repo root to find the entry point — typically `src/index.ts`, `server.ts`, `server.py`, `main.go`, or a `tools/` directory. MCP servers are usually small (one main file + tool definitions).
+1. **Identify the main source file.** Fetch the repo root to find the entry point — typically `src/index.ts`, `server.ts`, `server.py`, `main.go`, or a `tools/` directory. MCP servers are usually small (one main file + tool definitions).
 
 2. **Extract three things:**
    - **API endpoint paths**: Look for HTTP client calls (`fetch(`, `axios.`, `requests.`, `http.Get`, `client.`) and extract the URL paths (e.g., `GET /v1/issues`, `POST /graphql`). These are the endpoints the MCP maintainer proved work.
@@ -1483,7 +1484,7 @@ When an inversion is detected, HALT before Phase Gate 1.5 and print:
 >
 > The user said <Source A> is the headline. Shipping this manifest would invert their stated priority.
 
-Then ask via `AskUserQuestion`:
+Then ask the user:
 
 1. **Re-run discovery for <Source A>** — loop back to Phase 1.7 browser-sniff or Phase 1.8 crowd-sniff for the primary source specifically.
 2. **Accept the inversion** — the user explicitly confirms they're fine with the secondary leading. Record this in `source-priority.json` as `inversion_accepted: true`.
@@ -1495,9 +1496,9 @@ Do not proceed to the prose showcase until this is resolved.
 
 **STOP.** Present the absorb manifest to the user in two parts: a prose showcase, then a question.
 
-The prose showcase and the `AskUserQuestion` are two separate turns. Print the showcase as a plain text reply with every novel feature spelled out, then call `AskUserQuestion` with four short options whose descriptions fit on one line each. The question text is one sentence; the user reads the showcase to decide and the options to act. Cramming the feature list into an option description collapses both turns into one and is the failure mode this gate exists to prevent.
+The prose showcase and the question to the user are two separate turns. Print the showcase as a plain text reply with every novel feature spelled out, then ask the user, with four short options whose descriptions fit on one line each. The question text is one sentence; the user reads the showcase to decide and the options to act. Cramming the feature list into an option description collapses both turns into one and is the failure mode this gate exists to prevent.
 
-**Part 1: Prose showcase (print before the AskUserQuestion)**
+**Part 1: Prose showcase (print before asking)**
 
 The showcase exists so the user can decide approve / trim / add ideas without asking a follow-up. Cover three things:
 
@@ -1509,7 +1510,7 @@ Show every novel feature that scored ≥5/10. Group by theme if there are more t
 
 Format is otherwise yours — markdown headings, prose, a numbered list, whatever reads cleanly. The must-haves are the three things above and the ≥5/10 coverage rule.
 
-**Part 2: AskUserQuestion**
+**Part 2: Ask the user**
 
 > "Ready to generate with the full [N+M]-feature manifest? Or do you have ideas to add?"
 
@@ -1556,7 +1557,7 @@ Pick the simplest GET endpoint from the resolved spec (no required params, no au
 curl -s -o /dev/null -w "%{http_code}" -m 10 "<base_url>/<simplest_get_path>" 2>/dev/null
 ```
 
-Or use `WebFetch` if curl is unavailable. The goal is one real response code.
+Or fetch the page with your tool if curl is unavailable. The goal is one real response code.
 
 **If the check returns 403/429 with bot-protection evidence and `probe-reachability` has not already run for this URL during Phase 1.7's Direct HTTP challenge rule, run it now before consulting the decision matrix:**
 
@@ -1583,7 +1584,7 @@ The matrix below references `probe-reachability` `mode` for the bot-detection ro
 
 ### On HARD STOP
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "WARNING: `<API>` appears to block programmatic access. [what failed: e.g., 'HTTP 403 with HTML error page', 'browser-sniff gate failed with bot detection', 'reteps/redfin has 6+ issues about 403 errors']. Building a CLI against an unreachable API wastes time and tokens."
 >
@@ -1593,7 +1594,7 @@ Present via `AskUserQuestion`:
 
 ### On WARN
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "The API returned [error]. This might be temporary, or it might mean programmatic access is blocked. Want to proceed?"
 >
@@ -2684,7 +2685,7 @@ The working copy remains in `$CLI_WORK_DIR` for potential future retry. Proceed 
 
 ### Dispatch
 
-Use the Agent tool (general-purpose or a dedicated reviewer) with this prompt contract:
+Delegate to a general-purpose or dedicated reviewer agent (or review it yourself if your tool has no subagents) with this prompt contract:
 
 > Review the SKILL.md at `$CLI_WORK_DIR/SKILL.md` against the shipped CLI. You have these ground-truth sources:
 >
@@ -2723,7 +2724,7 @@ The agent can't verify runtime behavior without running commands; stick to help-
 
 **Runs after Phase 4.8, before Phase 5.** Phase 4.8 reviews whether the SKILL's trigger phrases and major claims match shipped behavior. Phase 4.9 reviews the user-facing artifacts as documents: README.md, SKILL.md, and AGENTS.md must not contain boilerplate that does not apply to this CLI.
 
-Use the Agent tool or review directly with this prompt contract:
+Delegate to a reviewer agent, or review directly, with this prompt contract:
 
 > Audit `$CLI_WORK_DIR/README.md`, `$CLI_WORK_DIR/SKILL.md`, and `$CLI_WORK_DIR/AGENTS.md` for factual correctness against the shipped CLI. Ground truth is `<cli> --help` recursively, `$CLI_WORK_DIR/internal/cli/*.go`, `$RESEARCH_DIR/research.json`, and the absorb manifest.
 >
@@ -2785,7 +2786,7 @@ Surface to the user only when the fix requires a real tradeoff they have to make
 - **The finding implies a Phase 1 research miss** — wrong primary source, wrong auth model, wrong transport — that the agent cannot resolve from in-session context.
 - **The fix re-triggers a long phase** (re-running browser-sniff, regen from spec, etc.).
 
-Treat agent judgment as sufficient here — these categories are distinguishable on inspection. Conservatism is the failure mode, not over-fixing. Drafting an AskUserQuestion because "the user might want to know" is premature; fix the issue and note it in the shipcheck report.
+Treat agent judgment as sufficient here — these categories are distinguishable on inspection. Conservatism is the failure mode, not over-fixing. Drafting a question to the user because "the user might want to know" is premature; fix the issue and note it in the shipcheck report.
 
 Re-run the native review after each autofix round until findings clear. Cap at 3 rounds; if findings persist after round 3, stop and surface — autofix is not converging. Findings in out-of-scope paths (`internal/cliutil/`, `internal/mcp/cobratree/`) file as retro-candidates and do not count toward the convergence check or the 3-round cap; the convergence check applies only to in-scope findings.
 
@@ -2808,7 +2809,7 @@ produces correct, useful output for real workflows. These are different checks.
 
 ### Step 1: Ask the user for depth
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "Shipcheck passed. How thoroughly should I test against the live API?"
 >
@@ -3134,7 +3135,7 @@ Read the polish result block emitted by Phase 5.5. The menu and recommendation a
 
 **Always available:** Publish, Done. Retro is not on this menu — it is offered as a post-publish tail (see "If Publish now" below).
 
-Present via `AskUserQuestion`. The recommended option leads, carries the `(recommended)` label, and a leading `Recommendation:` line states the call explicitly. Three reinforcing channels so the user does not have to infer from ordering.
+Present these options to the user. The recommended option leads, carries the `(recommended)` label, and a leading `Recommendation:` line states the call explicitly. Three reinforcing channels so the user does not have to infer from ordering.
 
 **Substitute placeholders before showing the prompt.** The example prompts below use `<api>`, `<N>`, `<score>`, `<pass-rate>`, `<PR_URL>`, `<further_polish_reasoning>`, `$CLI_WORK_DIR`, and `$PRESS_LIBRARY/<api>` as fill-ins. Replace each with the concrete value (the API slug, the actual count, the parsed polish-result string, the expanded shell-variable path, etc.) so the user sees real names and paths, not literal placeholder text. The same rule applies to the hold-path menu below.
 
@@ -3205,7 +3206,7 @@ Invoke `/printing-press-publish <api>`. The publish skill handles everything fro
 
 **After publish returns success**, offer retro as a soft tail. This is where retro lives on the ship-path — it has no business being a peer of publish on the headline menu, but a post-publish optional offer lets users compound learnings without forcing the choice up front. Retro at this point sees the publish step as part of the session it analyzes.
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "PR opened: <PR_URL>. Run a retro? It surfaces systemic gaps from this session (generator misses, scorer bugs, skill-doc drift) as a GitHub issue for the Printing Press maintainers. Every retro filed raises the floor for the next CLI — and your session context is freshest right now."
 >
@@ -3226,7 +3227,7 @@ End normally. The CLI is in `$PRESS_LIBRARY/<api>` and the user can run `/printi
 
 The CLI did not promote to library. The working copy is at `$CLI_WORK_DIR`; manuscripts and proofs are archived. Hold runs are the highest-value retro signal — something blocked the machine from reaching ship, and that signal is most valuable while session context is fresh.
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "<api> couldn't pass shipcheck — <one-line reason from the shipcheck report or polish result>. The working copy is at <expanded $CLI_WORK_DIR path> and was not added to the library. What do you want to do?"
 >

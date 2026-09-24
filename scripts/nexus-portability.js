@@ -34,8 +34,12 @@ function walkMarkdown(dir) {
 }
 
 function allFiles() {
-  const skillFiles = walkMarkdown(path.join(ROOT, 'skills'))
-    .filter((f) => path.relative(path.join(ROOT, 'skills'), f).includes(path.sep));
+  // Only skills tools actually load: skills/<name>/ with its own SKILL.md (skips containers like skills/ecc/).
+  const skillsDir = path.join(ROOT, 'skills');
+  const skillFiles = walkMarkdown(skillsDir).filter((f) => {
+    const parts = path.relative(skillsDir, f).split(path.sep);
+    return parts.length > 1 && fs.existsSync(path.join(skillsDir, parts[0], 'SKILL.md'));
+  });
   const shared = path.join(ROOT, 'NEXUS.md'); // instructions every tool receives
   return [...skillFiles, ...walkMarkdown(path.join(ROOT, 'agents')), ...(fs.existsSync(shared) ? [shared] : [])];
 }

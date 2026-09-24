@@ -95,7 +95,7 @@ jq --arg q "$ARG2" '.entries[]
 ```
 
 If you get one match: use it. If multiple: present at most 4 to the user
-via `AskUserQuestion` showing `name` + `description` per candidate. If
+by asking the user, showing `name` + `description` per candidate. If
 zero: tell the user the public library doesn't have that CLI.
 
 The matched entry gives you everything you need:

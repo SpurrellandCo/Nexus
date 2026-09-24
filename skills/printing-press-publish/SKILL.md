@@ -64,7 +64,7 @@ fi
 
 # Resolve and emit the absolute path the agent must use for every later
 # `printing-press` invocation. `export PATH` above only affects this one
-# Bash tool call; subsequent calls open a fresh shell and resolve bare
+# shell command; later commands may run in a fresh shell and resolve bare
 # `printing-press` against the user's default PATH, where a stale global
 # can silently shadow the local build. The agent captures this marker and
 # substitutes the absolute path into every later invocation.
@@ -91,7 +91,7 @@ mkdir -p "$PRESS_RUNSTATE" "$PRESS_LIBRARY" "$PRESS_MANUSCRIPTS" "$PRESS_CURRENT
 ```
 <!-- PRESS_SETUP_CONTRACT_END -->
 
-After running the setup contract, capture the `PRINTING_PRESS_BIN=<abs-path>` line from stdout. **Every subsequent `printing-press ...` invocation in this skill must use that absolute path** (substitute the value, not the literal `$PRINTING_PRESS_BIN` token) — `export PATH` above only affects the single Bash tool call it runs in, so later calls open a fresh shell where bare `printing-press` resolves against the user's default `PATH` and a stale global can shadow the local build.
+After running the setup contract, capture the `PRINTING_PRESS_BIN=<abs-path>` line from stdout. **Every subsequent `printing-press ...` invocation in this skill must use that absolute path** (substitute the value, not the literal `$PRINTING_PRESS_BIN` token) — `export PATH` above only affects the single shell command it runs in, so later calls open a fresh shell where bare `printing-press` resolves against the user's default `PATH` and a stale global can shadow the local build.
 
 After capturing the binary path, check binary version compatibility. Read the `min-binary-version` field from this skill's YAML frontmatter. Run `<PRINTING_PRESS_BIN> version --json` and parse the version from the output. Compare it to `min-binary-version` using semver rules. If the installed binary is older than the minimum, stop immediately and tell the user: "printing-press binary vX.Y.Z is older than the minimum required vA.B.C. Run `go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest` to update."
 
@@ -174,7 +174,7 @@ Parse the JSON output into a list of CLIs. The library is now keyed by API slug 
 1. **Exact match:** If the argument matches a directory name (API slug) exactly, use it
 2. **CLI name match:** If no exact match, try matching against `cli_name` fields, then derive the API slug from the manifest's `api_name` field
 3. **Suffix match:** If no match yet, try `<argument>-pp-cli` against `cli_name` fields
-4. **Glob match:** If no suffix match, search for entries where `cli_name` or `api_name` contains the argument as a substring. Cap at 5 most-recent matches. If multiple matches, present them via AskUserQuestion and let the user pick
+4. **Glob match:** If no suffix match, search for entries where `cli_name` or `api_name` contains the argument as a substring. Cap at 5 most-recent matches. If multiple matches, present them to the user as options and let the user pick
 5. **No match:** List all available CLIs and ask the user to pick or re-enter
 6. **No argument:** If invoked with no name, list all CLIs sorted by modification time and let the user pick
 
@@ -198,7 +198,7 @@ Read `.printing-press.json` from the resolved CLI directory.
    ```
    Extract the category from the result. Present for confirmation
 
-3. If neither provides a category, present the full list via AskUserQuestion:
+3. If neither provides a category, present the full list to the user:
    - developer-tools, monitoring, cloud, project-management
    - productivity, social-and-messaging, sales-and-crm, marketing
    - payments, auth, commerce, ai, media-and-entertainment, devices, other
@@ -375,7 +375,7 @@ cd "$PUBLISH_REPO_DIR"
 git status --porcelain
 ```
 
-If there are uncommitted changes, ask the user via AskUserQuestion:
+If there are uncommitted changes, ask the user:
 - "Reset and start fresh"
 - "Continue with existing changes"
 
@@ -568,7 +568,7 @@ Show all applicable lines. If `OWN_PR=true`, tag the PR as "(yours)".
 
 ### Resolution paths
 
-Present three options via AskUserQuestion:
+Present three options to the user:
 
 **If `OWN_PR=true` (your own open PR exists):**
 - **Update** — Update your existing PR with the new version (default, preserves current behavior)
@@ -712,7 +712,7 @@ Auto-create a timestamped branch: `feat/<api-slug>-YYYYMMDD`. Do NOT offer to ov
 
 **If the branch exists but no competing PR** (stale branch from a previously closed/merged PR):
 
-Ask via AskUserQuestion:
+Ask the user:
 > "Found a stale branch `feat/<api-slug>` (likely from a previous publish). Overwrite it?"
 
 - "Overwrite existing branch" — reuse the branch name

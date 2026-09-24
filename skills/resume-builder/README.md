@@ -7,12 +7,12 @@ A Claude Code skill that orchestrates 12 specialized sub-skills to build a compl
 Copy the `resume-builder/` folder into your Claude skills directory:
 
 ```bash
-cp -r resume-builder/ ~/.claude/skills/resume-builder/
+cp -r resume-builder/ ~/.nexus/skills/resume-builder/
 ```
 
 ## Required Skills
 
-This skill chains the following skills — make sure they are installed in `~/.claude/skills/`:
+This skill chains the following skills — make sure they are installed in `~/.nexus/skills/`:
 
 | Skill | Phase |
 |-------|-------|

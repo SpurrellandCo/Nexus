@@ -70,7 +70,7 @@ Works with any host that supports the open [Agent Skills](https://github.com/age
 
 ## 📦 What it generates
 
-Running `/book-to-skill your-book.pdf` (or a folder, glob, or list of files) creates a full skill in your agent's skills directory (`~/.copilot/skills/<slug>/` for Copilot CLI, `~/.agents/skills/<slug>/` for Amp or cross-agent, `~/.claude/skills/<slug>/` for Claude Code):
+Running `/book-to-skill your-book.pdf` (or a folder, glob, or list of files) creates a full skill in your agent's skills directory (`~/.copilot/skills/<slug>/` for Copilot CLI, `~/.agents/skills/<slug>/` for Amp or cross-agent, `~/.nexus/skills/<slug>/` for Claude Code):
 
 | File | Purpose | Size |
 |------|---------|------|
@@ -118,7 +118,7 @@ Supported document formats: PDF, EPUB, DOCX, TXT, Markdown, reStructuredText, As
 /book-to-skill "~/books/*.epub" my-library
 
 # Update/fold new material into an existing skill folder
-/book-to-skill ~/articles/new-paper.pdf ~/.claude/skills/project-knowledge
+/book-to-skill ~/articles/new-paper.pdf ~/.nexus/skills/project-knowledge
 ```
 
 After the skill is created, use it like any other agent skill:
@@ -204,7 +204,7 @@ scripts/extract.py <paths…> --mode <technical|text>
           Skill written to one of:
             ~/.copilot/skills/<slug>/   (GitHub Copilot CLI)
             ~/.agents/skills/<slug>/    (Copilot CLI or Amp, cross-agent)
-            ~/.claude/skills/<slug>/    (Claude Code)
+            ~/.nexus/skills/<slug>/    (Claude Code)
           /tmp/book_skill_work/         🗑️  cleaned up
 ```
 
@@ -381,7 +381,7 @@ Install book-to-skill: https://raw.githubusercontent.com/virgiliojr94/book-to-sk
 Or manually using standard `git clone` (ensures modular engine files are fetched correctly):
 
 ```bash
-git clone https://github.com/virgiliojr94/book-to-skill.git ~/.claude/skills/book-to-skill
+git clone https://github.com/virgiliojr94/book-to-skill.git ~/.nexus/skills/book-to-skill
 ```
 
 Then in any agent session:

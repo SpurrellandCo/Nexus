@@ -61,7 +61,7 @@ If the scorecard call fails or `/tmp/output-review-livecheck.json` is empty, ret
 
 ### Step 2: Dispatch the reviewer agent
 
-Use the Agent tool (general-purpose) with this prompt contract:
+Delegate to a general-purpose agent (or do it yourself if your tool has no subagents) with this prompt contract:
 
 > Review the sampled outputs from the shipped CLI at `$CLI_DIR`. You have these ground-truth sources:
 >

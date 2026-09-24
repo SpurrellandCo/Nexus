@@ -9,7 +9,7 @@
 
 ### Cardinal Rules
 
-1. **Prefer browser-use CLI mode for capture, but keep valid fallbacks.** Use browser-use CLI mode when available because it gives stable open/eval/scroll control and response interception without an LLM key. If browser-use is unavailable or incompatible, the valid fallback set is: `agent-browser` (when it can produce equivalent network capture artifacts), the Claude chrome-MCP (`mcp__claude-in-chrome__*` — drives the user's existing Chrome session via the browser extension; see Step 2e), computer-use as a visual-feedback aid for the manual-HAR flow (`mcp__computer-use__*` — read-only on browsers, used to take screenshots and guide the user; see Step 1d's manual-HAR expansion), or asking the user for a manual DevTools HAR. Do NOT substitute curl probing, JS bundle grepping, or agent-browser auto-connect alone for an approved browser capture. Detection of which fallbacks are actually available happens in Step 1; menu composition for failure-recovery selection is in Step 2c.5. Rule 5 (replayability) applies to all of these — fallback shape does not relax the success criterion.
+1. **Prefer browser-use CLI mode for capture, but keep valid fallbacks.** Use browser-use CLI mode when available because it gives stable open/eval/scroll control and response interception without an LLM key. If browser-use is unavailable or incompatible, the valid fallback set is: `agent-browser` (when it can produce equivalent network capture artifacts), the Claude chrome-MCP (Claude Code's Chrome-extension tools — drives the user's existing Chrome session via the browser extension; see Step 2e), computer-use as a visual-feedback aid for the manual-HAR flow (a computer-use MCP server — read-only on browsers, used to take screenshots and guide the user; see Step 1d's manual-HAR expansion), or asking the user for a manual DevTools HAR. Do NOT substitute curl probing, JS bundle grepping, or agent-browser auto-connect alone for an approved browser capture. Detection of which fallbacks are actually available happens in Step 1; menu composition for failure-recovery selection is in Step 2c.5. Rule 5 (replayability) applies to all of these — fallback shape does not relax the success criterion.
 
 2. **Do NOT skip auth discovery when the session expires.** *(Only applies when `AUTH_SESSION_AVAILABLE=true` — the user confirmed they're logged in.)* If a Chrome profile loads but the session has expired (login page visible instead of account page), offer headed login as a fallback. Never proceed without auth just because the profile session was stale. For anonymous sniffs (no auth context), this rule does not apply.
 
@@ -84,13 +84,13 @@ If a tool is found, report: "Using **<tool>** for temporary traffic capture duri
 
 **Important:** browser-use has two modes: autonomous Agent mode (requires an LLM API key like ANTHROPIC_API_KEY) and CLI mode (open/eval/scroll — no key needed). **Always use CLI mode for browser-sniff.** It is more reliable, version-stable, and does not require the user to provide an additional API key. Do NOT attempt to use browser-use's Python `Agent` class — it requires an LLM key that may not be available.
 
-**Also detect: optional MCP-driven fallback backends.** Two additional capture options exist when the runtime exposes them — they enter only on failure-recovery in Step 2c.5 or as opt-in choices in Step 1b's install picker, never as defaults. Detection is **agent-prose, not shell-probe** — the agent inspects its own available and deferred tool lists (visible in system reminders / the deferred-tool block / `ToolSearch` catalog) and asserts the flags inline in its reasoning. Bash blocks cannot read the agent's own tool registry; do not write `command -v mcp__claude-in-chrome__` style probes.
+**Also detect: optional MCP-driven fallback backends.** Two additional capture options exist when the runtime exposes them — they enter only on failure-recovery in Step 2c.5 or as opt-in choices in Step 1b's install picker, never as defaults. Detection is **agent-prose, not shell-probe** — the agent inspects its own available and deferred tool lists (however your tool lists them) and asserts the flags inline in its reasoning. Bash blocks cannot read the agent's own tool registry; do not write `command -v` style probes for MCP tools.
 
 > **Inspect your tool catalog now and assert these flags in your reasoning, not as shell vars.** They are read by Step 2c.5 (recovery menu composition) and Step 2e (chrome-MCP capture playbook) later in this same conversation turn.
 >
-> - If `mcp__claude-in-chrome__*` tools appear in your available or deferred tool list, set `CHROME_MCP_AVAILABLE=true`. Otherwise `false`.
-> - If `mcp__computer-use__*` tools appear in your available or deferred tool list, set `COMPUTER_USE_AVAILABLE=true`. Otherwise `false`.
-> - The probe is intentionally cheap — actual schema loading via `ToolSearch` is deferred until the user picks the option from a menu.
+> - If a Chrome browser-control MCP server is available to you (in Claude Code: the Claude in Chrome extension's tools), set `CHROME_MCP_AVAILABLE=true`. Otherwise `false`.
+> - If a computer-use MCP server is available to you, set `COMPUTER_USE_AVAILABLE=true`. Otherwise `false`.
+> - The probe is intentionally cheap — load those tools' full definitions only once the user picks the option from a menu.
 > - On platforms that don't expose a deferred-tool list (non-Claude-Code targets running this skill via plugin install), the agent observes neither MCP and both flags default to `false`. Downstream behavior is unchanged from today's.
 
 If either MCP flag is true, extend the status report:
@@ -101,7 +101,7 @@ If either MCP flag is true, extend the status report:
 
 Preflight (`references/setup-checks.md` section 5) offers to install browser-use and agent-browser on every run, so most users arrive at Step 1 with one or both already installed. This step is a fallback for the case where the user declined the preflight prompt and the current run actually needs a browser backend.
 
-If neither tool is installed, offer to install via `AskUserQuestion`. Do not install automatically:
+If neither tool is installed, offer to install it (ask the user first). Do not install automatically:
 
 > "No browser automation tool found. I need one to temporarily inspect the live site during generation. Which would you like to install?"
 >
@@ -177,7 +177,7 @@ else
 fi
 ```
 
-**If the selected tool fails the compatibility check**, offer to upgrade via `AskUserQuestion`:
+**If the selected tool fails the compatibility check**, offer to upgrade (ask the user first):
 
 > "Found **<tool>** v<version>, but browser-sniff requires v<min-version>+ for CLI capture commands. Would you like to upgrade?"
 >
@@ -211,7 +211,7 @@ fi
 
 **When Chrome IS running**, use agent-browser to grab cookies, then ask the user to quit Chrome so browser-use can load the profile for capture:
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 > "Chrome is running. I'll grab your cookies, then need you to quit Chrome so I can browser-sniff with full page access."
 >
 > 1. **Grab session, then quit Chrome** (Recommended) — "I save your cookies via agent-browser, you quit Chrome, then I browser-sniff with browser-use using your profile. Full DOM access."
@@ -244,7 +244,7 @@ browser-use --profile "Default" open <url>
 
 **When Chrome is NOT running**, prefer browser-use (loads real Chrome profile with all cookies):
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 > "Chrome isn't running. I can load your Chrome profile directly — all your saved logins will be available."
 >
 > 1. **Use your Chrome profile** (Recommended, requires browser-use) — "Loads your real Chrome profile. Zero setup."
@@ -300,7 +300,7 @@ Close the headed browser and restart headless with the saved state.
 **Computer-use visual-feedback-loop (only when `COMPUTER_USE_AVAILABLE=true`).** Computer-use cannot click or type into Chrome (browsers are tier-"read" — visible in screenshots, but input is blocked). Its value here is closing the loop with the user when text instructions get them stuck. Pattern:
 
 1. **Before screenshotting, instruct the user to collapse the Network panel detail pane** so only the request list is visible. The detail pane shows full request and response headers including `Authorization` and `Cookie`; collapsing it before each screenshot keeps credentials out of the captured PNG. (Click the `×` on any open request detail, or click in the request list to deselect.)
-2. **Take a screenshot via `mcp__computer-use__screenshot`** at each instruction checkpoint (after step 1, after step 2, after step 7).
+2. **Take a screenshot with the computer-use server's screenshot tool** at each instruction checkpoint (after step 1, after step 2, after step 7).
 3. **Display the screenshot inline AND describe what the agent sees in 1-2 sentences.** This is mandatory — silent storage helps no one. Pattern: `Read` the saved PNG path so the image shows in the response, then say something like "I see your DevTools is on the Recorder tab, not Network — click `>>` in the tab strip and pick Network." The screenshot becomes part of the agent's reasoning AND the user-facing feedback.
 4. **Save screenshots to `$DISCOVERY_DIR/devtools-help-*.png`** during the session so they're available for inline display and so manuscripts archiving can clean them up.
 5. **Phase 5.5 cleanup:** the archive-time cleanup must explicitly delete `$DISCOVERY_DIR/devtools-help-*.png` — these are ephemeral debug aids, not durable artifacts, and the text-based credential scrubber in `secret-protection.md` cannot redact PNG contents. Make sure the `cleanup` block in the run wrap-up includes `rm -f "$DISCOVERY_DIR"/devtools-help-*.png 2>/dev/null` or equivalent.
@@ -319,7 +319,7 @@ else
 fi
 ```
 
-If no target-domain cookies are found, present via `AskUserQuestion`:
+If no target-domain cookies are found, present the options to the user:
 
 > "Session transfer failed — no `<target-domain>` cookies found in the browser. The browser-sniff would run unauthenticated."
 >
@@ -336,7 +336,7 @@ var account=document.querySelector('a[href*=account],a[href*=profile],[class*=lo
 login && !account ? 'SESSION_EXPIRED' : account ? 'SESSION_ACTIVE' : 'UNKNOWN'"
 ```
 
-If the result is `SESSION_EXPIRED` (login link visible, no account link), the profile cookies have expired. Present via `AskUserQuestion`:
+If the result is `SESSION_EXPIRED` (login link visible, no account link), the profile cookies have expired. Present these options to the user:
 
 > "Your browser session for `<site>` has expired (login page visible). I need a fresh login to discover authenticated endpoints."
 >
@@ -732,7 +732,7 @@ If browser-use is not available, use agent-browser with Claude driving the explo
    agent-browser network har stop "$DISCOVERY_DIR/browser-sniff-capture.har"
    ```
 
-#### Step 2e: Claude chrome-MCP capture (failure-recovery fallback)
+#### Step 2e: Claude chrome-MCP capture (failure-recovery fallback; tool-specific notes: Claude Code only)
 
 Use this backend when (a) the user picks chrome-MCP from the Step 2c.5 recovery menu after `browser-use` or `agent-browser` was hard-blocked by an anti-bot gate, or (b) the user opted into chrome-MCP up-front from the Step 1b install picker. Detection is set in Step 1 (`CHROME_MCP_AVAILABLE`). Skip this section entirely if `CHROME_MCP_AVAILABLE=false`.
 
@@ -742,7 +742,7 @@ Use this backend when (a) the user picks chrome-MCP from the Step 2c.5 recovery 
 
 **Prerequisites.**
 
-- The Chrome browser extension for chrome-MCP must be installed and connected. If `tabs_context_mcp` returns an error indicating the extension isn't connected, instruct the user via `AskUserQuestion` to connect the extension and retry. If they decline, fall back to the Step 2c.5 recovery menu with chrome-MCP removed (the menu re-fires per the menu re-fire rule in Step 2c.5).
+- The Chrome browser extension for chrome-MCP must be installed and connected. If `tabs_context_mcp` returns an error indicating the extension isn't connected, tell the user to connect the extension and retry. If they decline, fall back to the Step 2c.5 recovery menu with chrome-MCP removed (the menu re-fires per the menu re-fire rule in Step 2c.5).
 - Chrome must be visible and unminimized (chrome-MCP cannot drive a hidden window).
 - For authenticated discovery: the user should already be logged in to `<site>` in their Chrome session. No separate cookie transfer step.
 
@@ -861,7 +861,7 @@ Treat the capture as failed when all or nearly all captured target-site response
 - only login redirects/pages when the user expected an authenticated capture
 - no API-looking requests, no SSR embedded data, no structured HTML/feed data, and no page-context fetch evidence
 
-When this happens, do not continue to Phase 2 with a challenge-page spec. Compose the recovery menu **per the availability of the MCP fallback flags set in Step 1** — the menu shape changes based on what's reachable in this runtime. Use the table below to pick the option set, then present via `AskUserQuestion`.
+When this happens, do not continue to Phase 2 with a challenge-page spec. Compose the recovery menu **per the availability of the MCP fallback flags set in Step 1** — the menu shape changes based on what's reachable in this runtime. Use the table below to pick the option set, then present the options to the user.
 
 **Menu composition table.** Always read `CHROME_MCP_AVAILABLE` and `COMPUTER_USE_AVAILABLE` from your reasoning (set in Step 1). Pick the row matching the flag combination:
 
@@ -884,7 +884,7 @@ When chrome-MCP is NOT in the menu (current 3-option case, unchanged):
 
 > "The browser capture only saw challenge or login pages, so it did not discover the real website data/API surface. What should we do next?"
 
-**Fixed option labels and bodies.** Use these exact strings as the `AskUserQuestion` option labels and descriptions — the implementer should not paraphrase. Labels are short (4-7 words), self-contained (some harnesses render labels without descriptions), and front-load the differentiator. Composition is per the table above; pick the option set for the flag combination, then mark Recommended where the rule above says.
+**Fixed option labels and bodies.** Use these exact strings as the option labels and descriptions — the implementer should not paraphrase. Labels are short (4-7 words), self-contained (some harnesses render labels without descriptions), and front-load the differentiator. Composition is per the table above; pick the option set for the flag combination, then mark Recommended where the rule above says.
 
 - **"Try cleared-browser capture again"** — "Open/attach Chrome, solve the challenge, then repeat the browser-sniff with the previous backend."
 - **"Try chrome-MCP"** — "Capture from your already-running Chrome window via the Chrome extension MCP. Uses your logged-in session, no cookie transfer. The agent will create a fresh tab and close it when done."
@@ -895,7 +895,7 @@ When chrome-MCP is NOT in the menu (current 3-option case, unchanged):
 **Routing on selection.**
 
 - "Try cleared-browser capture again" → re-run the previously-attempted backend (browser-use or agent-browser) per the existing capture flow. If it fails again with the same trigger, re-fire this menu with this option's body amended to "(this option already failed once; consider another path)" — the option stays in the menu but loses any badge.
-- "Try chrome-MCP" → load the chrome-MCP MCP tools via `ToolSearch` (`select:mcp__claude-in-chrome__*`), then proceed to **Step 2e** for the capture playbook.
+- "Try chrome-MCP" → load the chrome-MCP tools (in Claude Code: the Claude in Chrome extension's tools), then proceed to **Step 2e** for the capture playbook.
 - "I'll provide a HAR from DevTools" (either variant) → proceed to the manual-HAR flow at Step 1d (the existing branch). When the user picks the augmented variant, the manual-HAR body augmentation in Step 1d kicks in — see Step 1d for the computer-use visual-feedback-loop.
 - "Discuss alternate CLI scope" → leave this flow and return to upstream scope discussion. Record `decision: alternate_scope` in the marker file.
 

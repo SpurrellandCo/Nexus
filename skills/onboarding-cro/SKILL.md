@@ -240,4 +240,4 @@ Changes:
 Done when: onboarding flow completes without errors, activation event fires in analytics. Run visual-validation skill to screenshot each onboarding step
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

@@ -100,7 +100,7 @@ This caller-mode-driven gate replaces the older path-substring heuristic (`*.run
 
 The lock-status check in the next code block is the safety net for the mid-pipeline scenario: if a build lock is held for this CLI (under either name form), polish refuses to run. `printing-press lock` normalizes slug ↔ binary-name internally, so the check works regardless of which form the basename produces.
 
-If no match or multiple matches, present via `AskUserQuestion`. Show at most 4
+If no match or multiple matches, present the options to the user. Show at most 4
 matches sorted by modification time (most recent first) with human-friendly
 relative timestamps (e.g., "generated 2 hours ago").
 
@@ -221,7 +221,7 @@ Outcomes:
 - **No clone found** → user doesn't have public locally. State this explicitly ("public library not found locally; proceeding on internal as canonical") and continue.
 - **Clone found but doesn't contain this CLI** → never published or under a different name. State this and continue.
 - **Found and diff is empty** → in sync. State this and continue.
-- **Found and divergent** → **stop**. Do not run Phase 1 diagnostics yet. List the divergent files for the user. Ask via AskUserQuestion: **sync public→internal**, or **proceed without syncing**. If the user picks sync, copy public's version of the divergent files into internal, then continue polish on the synced internal copy.
+- **Found and divergent** → **stop**. Do not run Phase 1 diagnostics yet. List the divergent files for the user. Ask the user: **sync public→internal**, or **proceed without syncing**. If the user picks sync, copy public's version of the divergent files into internal, then continue polish on the synced internal copy.
 
 Before showing the sync prompt, check whether internal has files modified after its `.printing-press.json` timestamp (the user has been polishing locally without publishing). If yes, hedge the prompt explicitly: syncing will overwrite their pending local work. Let them decide whether to keep their local edits or pull public's.
 
@@ -274,7 +274,7 @@ go vet ./... 2>&1
 
 verify-skill and workflow-verify run alongside dogfood/verify/scorecard so polish catches the same class of failures the public-library CI catches. `publish-validate` runs only when `STANDALONE_MODE=true` (slash-command or `--standalone` Skill-tool invocation). The publish-validate leg is a hard ship-gate **for standalone polish**: in that mode polish cannot recommend `ship` or `ship-with-gaps` while `printing-press publish validate` reports `passed: false`. Mid-pipeline polish (`STANDALONE_MODE=false`) skips publish-validate entirely — its prerequisites (manifest.printer from `git config github.user`, packaged `tools-manifest.json`, phase5 acceptance proof relocated under `$CLI_DIR/.manuscripts/<run>/proofs/`) are parent-pipeline-owned and not yet satisfied at this point; the main SKILL's Phase 6 publish flow gates on publish-validate at the correct time. See "Ship logic" below for how this affects ship_recommendation.
 
-**If Phase 1 baseline reveals the underlying CLI needs re-discovery** — broken HTML/SSR extraction, sparse capture (fewer than 5 unique endpoints in the source manuscript), wrong endpoint shapes, missing GraphQL operation hashes, or any signal that the CLI was generated from incomplete capture — polish does not normally do browser capture itself, but the shared playbook at `skills/printing-press/references/browser-sniff-capture.md` covers all available capture backends including the Claude chrome-MCP (`mcp__claude-in-chrome__*`) and computer-use (`mcp__computer-use__*`) when the runtime exposes them. Read Step 1 (tool detection), Step 2c.5 (failure-recovery menu), and Step 2e (chrome-MCP capture playbook) of that reference before improvising. Re-discovery from polish is rare but real; when it happens, use the shared backends — do not invent a new capture flow.
+**If Phase 1 baseline reveals the underlying CLI needs re-discovery** — broken HTML/SSR extraction, sparse capture (fewer than 5 unique endpoints in the source manuscript), wrong endpoint shapes, missing GraphQL operation hashes, or any signal that the CLI was generated from incomplete capture — polish does not normally do browser capture itself, but the shared playbook at `skills/printing-press/references/browser-sniff-capture.md` covers all available capture backends including the Claude chrome-MCP (Claude Code's Chrome-extension tools) and computer-use MCP tools when your tool exposes them. Read Step 1 (tool detection), Step 2c.5 (failure-recovery menu), and Step 2e (chrome-MCP capture playbook) of that reference before improvising. Re-discovery from polish is rare but real; when it happens, use the shared backends — do not invent a new capture flow.
 
 Parse findings into categories:
 
@@ -709,7 +709,7 @@ Suppress the "Polish again" option entirely when `further_polish_recommended: no
 
 Surface `further_polish_reasoning` as context when polish opted out of recommending another pass — the user should see *why* polish is done.
 
-Present via `AskUserQuestion`. Two example shapes:
+Present these options to the user. Two example shapes:
 
 **Polish converged clean** (`remaining_issues` empty, `further_polish_recommended: no`):
 
@@ -745,7 +745,7 @@ Then invoke `/printing-press-publish <cli-name>`.
 
 **After publish returns success**, offer retro as a soft tail. This mirrors the main `/printing-press` skill's Phase 6 behavior so users who reach publish through polish (mid-pipeline → polish-again → publish, or standalone polish → publish) get the same retro opportunity as users who reach publish directly through Phase 6.
 
-Present via `AskUserQuestion`:
+Present these options to the user:
 
 > "PR opened: <PR_URL>. Run a retro? It surfaces systemic gaps from this session (generator misses, scorer bugs, skill-doc drift) as a GitHub issue for the Printing Press maintainers. Every retro filed raises the floor for the next CLI — and your session context is freshest right now."
 >

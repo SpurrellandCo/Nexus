@@ -146,7 +146,7 @@ for api_dir in "$PRESS_MANUSCRIPTS"/*/; do
 done
 ```
 
-Use `AskUserQuestion` to let the user pick.
+Let the user pick.
 
 ### Resolve which run
 
@@ -697,7 +697,7 @@ The six fixed component slugs are: `generator` (`internal/generator/`),
 component where the durable fix will land. Pick exactly one; don't multi-label.
 
 **If running from inside the printing-press repo (`IN_REPO=true`):**
-Resolve target file paths using Glob and Grep tool invocations on `$REPO_ROOT` to
+Resolve target file paths by searching file names and contents under `$REPO_ROOT` to
 make work units more precise. E.g., use Glob to find `internal/generator/*.go` files,
 Grep to find where sync code is generated.
 
@@ -762,7 +762,7 @@ when uncertain — duplicates are recoverable, miscomments on the wrong
 issue are uglier.
 
 Then show the user a summary including the filing plan and ask for
-confirmation via `AskUserQuestion`.
+confirmation from the user.
 
 > **Ready to submit your retro.**
 >
@@ -817,7 +817,7 @@ sorted, and `$WU_DEDUP` and `$WU_RELATED` are populated. This step runs
 
 The "Execution principles" block at the top of `issue-template.md` is
 mandatory: build issue bodies inline (heredocs into shell variables, not
-the Write tool), run the whole step in one Bash invocation, and parallelize
+a separately written file), run the whole step in one shell command, and parallelize
 the per-WU `gh issue create` / `gh issue comment` calls. Skipping these
 costs real wall-clock latency — an N WU retro should finish in a single
 round trip's worth of network time, not a serialized stack of them.

@@ -1,6 +1,6 @@
 ---
 name: landscape-check
-description: Pre-PRD landscape check for a new project or major feature. Two passes — internal (what our ~/.claude stack already covers, from INVENTORY.md and the live skill/agent dirs) and external (GitHub, npm, PyPI, and primary docs for existing implementations worth adopting, porting, or wrapping) — and writes PRD/LANDSCAPE.md with evidence-backed verdicts. Runs as Stage 0.5 of new-project, before the PRD is written, so build-vs-adopt decisions shape the PRD. Trigger with /landscape-check or "check what already exists for [idea]".
+description: Pre-PRD landscape check for a new project or major feature. Two passes — internal (what our Nexus stack already covers, from INVENTORY.md and the live skill/agent dirs) and external (GitHub, npm, PyPI, and primary docs for existing implementations worth adopting, porting, or wrapping) — and writes PRD/LANDSCAPE.md with evidence-backed verdicts. Runs as Stage 0.5 of new-project, before the PRD is written, so build-vs-adopt decisions shape the PRD. Trigger with /landscape-check or "check what already exists for [idea]".
 origin: custom
 ---
 
@@ -30,7 +30,7 @@ List 3–6 distinct problem areas the work implies (e.g. "STL mesh boolean ops",
 
 ### Step 2 — Internal pass (what we already have)
 
-1. Read `~/.claude/INVENTORY.md`. Note its `Last generated` date. If it is more than 30 days old, treat it as a hint only and verify against the live dirs: `ls ~/.claude/skills ~/.claude/agents`.
+1. Read `~/.nexus/INVENTORY.md`. Note its `Last generated` date. If it is more than 30 days old, treat it as a hint only and verify against the live dirs: `ls ~/.nexus/skills ~/.nexus/agents`.
 2. For each problem area, list the skills, agents, and hooks that already cover it (name + one-line why). Mark uncovered areas as **stack gaps**.
 3. Read `~/.nexus-local/skill-learning/watchlist.jsonl` and `learnings.jsonl` if they exist. Surface prior entries for similar tasks (what was recommended vs. used, alternatives that were promising but unused).
 
@@ -39,7 +39,7 @@ List 3–6 distinct problem areas the work implies (e.g. "STL mesh boolean ops",
 Per problem area, in this order (stop early when a strong candidate is confirmed):
 
 1. **GitHub** — `gh search repos "<keywords> <stack>" --limit 8 --sort stars --json fullName,description,stargazersCount,pushedAt,license,isArchived,url` and `gh search code "<distinctive API or pattern>" --limit 10`
-2. **Package registries** — `npm search "<keywords>" --json --searchlimit=8`; `npm view <pkg> version time.modified license`. For PyPI use WebSearch `site:pypi.org <keywords>` (no search CLI).
+2. **Package registries** — `npm search "<keywords>" --json --searchlimit=8`; `npm view <pkg> version time.modified license`. For PyPI, search the web for `site:pypi.org <keywords>` (no search CLI).
 3. **Primary docs** — Context7 (`docs-lookup` agent) or vendor docs to confirm the API actually does what the README claims.
 4. **Exa / broader web** — only if steps 1–3 come up empty.
 

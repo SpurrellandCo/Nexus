@@ -68,8 +68,14 @@ inside the brief. The subagent detects their presence by checking for the
 
 ## Subagent invocation
 
-One Task tool call. Do not split passes across multiple invocations — the cut
+One delegation to a single general-purpose subagent (or one pass by yourself if your tool has no subagents). Do not split passes across multiple invocations — the cut
 pass must see the candidates it generated.
+
+Give it the description "Novel-features brainstorm + adversarial cut" and, as its prompt, the subagent prompt template below with the `${...}` placeholders substituted.
+
+#### Tool-specific notes
+
+In Claude Code this is one call:
 
 ```
 Agent({

@@ -264,4 +264,4 @@ Changes:
 Done when: component renders all variants correctly, tokens resolve without errors, Storybook story passes. Run visual-validation skill to screenshot all variants
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

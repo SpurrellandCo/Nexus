@@ -23,9 +23,9 @@ Design banners across social, ads, web, and print formats. Generates multiple ar
 
 ## Workflow
 
-### Step 1: Gather Requirements (AskUserQuestion)
+### Step 1: Gather Requirements (ask the user)
 
-Collect via AskUserQuestion:
+Ask the user for:
 1. **Purpose** — social cover, ad banner, website hero, print, or creative asset?
 2. **Platform/size** — which platform or custom dimensions?
 3. **Content** — headline, subtext, CTA, logo placement?

@@ -6,7 +6,7 @@ Apply these in order. The preamble below runs unconditionally; each numbered sec
 
 ## Preamble: Capture the absolute binary path (unconditional)
 
-Before applying any numbered section below, capture the `PRINTING_PRESS_BIN=<absolute path to the binary>` line the contract emitted to stdout. Every `printing-press ...` invocation referenced anywhere below — including the `version --json` calls in sections 3 and 4 — must be made using that absolute path (substitute the captured value, not the literal `$PRINTING_PRESS_BIN` token). The contract's `export PATH=...` line only affects the single Bash tool call it runs in; later Bash tool calls open fresh shells where bare `printing-press` resolves against the user's default `PATH`, and a stale globally-installed binary (`$HOME/go/bin/printing-press` from an earlier `go install`, a Homebrew copy, etc.) will silently shadow the local repo build the contract selected. Using the absolute path eliminates the shadow.
+Before applying any numbered section below, capture the `PRINTING_PRESS_BIN=<absolute path to the binary>` line the contract emitted to stdout. Every `printing-press ...` invocation referenced anywhere below — including the `version --json` calls in sections 3 and 4 — must be made using that absolute path (substitute the captured value, not the literal `$PRINTING_PRESS_BIN` token). The contract's `export PATH=...` line only affects the single shell command it runs in; later commands may run in fresh shells where bare `printing-press` resolves against the user's default `PATH`, and a stale globally-installed binary (`$HOME/go/bin/printing-press` from an earlier `go install`, a Homebrew copy, etc.) will silently shadow the local repo build the contract selected. Using the absolute path eliminates the shadow.
 
 If `PRINTING_PRESS_BIN` was emitted as an empty value (`PRINTING_PRESS_BIN=`), the contract was unable to resolve a binary; this should have already been surfaced as `[setup-error]` (handled in section 1 below). Treat an empty value here as a setup-error fallback and stop.
 
@@ -28,7 +28,7 @@ If the setup contract output contains a line starting with `[repo-upgrade-availa
 - `PRESS_REPO_HEAD=<current HEAD sha>`
 - `PRESS_REPO_MAIN=<origin/main sha>`
 
-Then ask the user via `AskUserQuestion` before continuing setup:
+Then ask the user before continuing setup:
 
 - **question:** `"origin/main has newer Printing Press changes. Pull the latest main now? After this, reload the skill with /reload-plugin."`
 - **header:** `"Update repo"`
@@ -79,7 +79,7 @@ If the setup contract output contains a line starting with `[upgrade-available]`
 - `PRESS_UPGRADE_AVAILABLE=<latest>`
 - `PRESS_UPGRADE_INSTALLED=<installed>`
 
-Then ask the user via `AskUserQuestion` before continuing setup:
+Then ask the user before continuing setup:
 
 - **question:** `"printing-press v<latest> is available (you have v<installed>). Upgrade now? Takes about 10 seconds."`
 - **header:** `"Update available"`
@@ -133,7 +133,7 @@ If the setup contract output contains a line starting with `[browser-tools-missi
 - `PRESS_BROWSER_USE_MISSING=<true|false>`
 - `PRESS_AGENT_BROWSER_MISSING=<true|false>`
 
-Then ask the user via `AskUserQuestion` before continuing setup. The prompt fires every run when either tool is missing — there is no decline cache. Re-prompting is intentional: browser-use and agent-browser are the preferred Phase 1.7 backends, and mid-flight install gates during generation are more disruptive than one short preflight prompt.
+Then ask the user before continuing setup. The prompt fires every run when either tool is missing — there is no decline cache. Re-prompting is intentional: browser-use and agent-browser are the preferred Phase 1.7 backends, and mid-flight install gates during generation are more disruptive than one short preflight prompt.
 
 - **question** (compose based on which are missing — pick the matching row):
   - Both missing: `"browser-use and agent-browser are not installed. These are the preferred Phase 1.7 browser-sniff backends — broadly useful for future runs and avoids mid-flight install prompts. (chrome-MCP is a narrow-case fallback, not a substitute.) Install now?"`

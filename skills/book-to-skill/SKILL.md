@@ -7,7 +7,7 @@ description: "Converts books and documents (PDF, EPUB, DOCX, HTML, Markdown, pla
 Cross-agent notes (informational; ignored by host agents):
   - Compatible skill roots: GitHub Copilot CLI (~/.copilot/skills, ~/.agents/skills,
     .github/skills, .claude/skills, .agents/skills), Amp (.agents/skills,
-    ~/.config/agents/skills, ~/.config/amp/skills), Claude Code (~/.claude/skills).
+    ~/.config/agents/skills, ~/.config/amp/skills), Claude Code (~/.nexus/skills).
   - `allowed-tools` is intentionally omitted to stay agent-neutral: Copilot CLI uses
     `shell`/MCP-server names, Claude uses `Bash`/`Read`/`Write`/`Glob`/`Grep`, Amp
     adds `shell_command`. The skill needs shell (to run extract.py) and file
@@ -68,7 +68,7 @@ This converter can run from multiple skill systems. When looking for this conver
 
 1. GitHub Copilot CLI personal skills: `~/.copilot/skills/`
 2. Cross-agent personal skills (Copilot + Amp): `~/.agents/skills/`
-3. Claude Code personal skills: `~/.claude/skills/`
+3. Claude Code personal skills: `~/.nexus/skills/`
 4. Project-local Copilot skills: `.github/skills/`
 5. Project-local Claude skills: `.claude/skills/`
 6. Project-local Amp / Copilot skills: `.agents/skills/`
@@ -133,7 +133,7 @@ SCRIPT_PATH=""
 for candidate in \
   "$HOME/.copilot/skills/book-to-skill/scripts/extract.py" \
   "$HOME/.agents/skills/book-to-skill/scripts/extract.py" \
-  "$HOME/.claude/skills/book-to-skill/scripts/extract.py" \
+  "$HOME/.nexus/skills/book-to-skill/scripts/extract.py" \
   ".github/skills/book-to-skill/scripts/extract.py" \
   ".claude/skills/book-to-skill/scripts/extract.py" \
   ".agents/skills/book-to-skill/scripts/extract.py" \
@@ -305,7 +305,7 @@ Choose the destination skill root (`SKILLS_HOME`). Probe the user's filesystem f
 |---|---|---|
 | **GitHub Copilot CLI** | `~/.copilot/skills` → `~/.agents/skills` | `.github/skills` → `.claude/skills` → `.agents/skills` |
 | **Amp** | `~/.agents/skills` → `~/.config/agents/skills` → `~/.config/amp/skills` | `.agents/skills` |
-| **Claude Code** | `~/.claude/skills` | `.claude/skills` |
+| **Claude Code** | `~/.nexus/skills` | `.claude/skills` |
 
 Selection rules:
 1. If **exactly one** of the host's candidate roots exists on disk, use it without asking.

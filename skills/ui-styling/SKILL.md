@@ -344,4 +344,4 @@ Changes:
 Done when: visual changes match spec, no hardcoded values remain, dark mode still works. Run visual-validation skill to screenshot and confirm
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

@@ -185,10 +185,10 @@ Use Playwright MCP or direct browser automation:
 npx playwright test --headed --browser=chromium
 
 # Or via MCP tools if available:
-# mcp__playwright__navigate { url: "http://localhost:3000" }
-# mcp__playwright__click { selector: "button.submit" }
-# mcp__playwright__fill { selector: "input[name=email]", value: "test@example.com" }
-# mcp__playwright__screenshot { name: "after-submit" }
+# Playwright MCP server, navigate: { url: "http://localhost:3000" }
+# Playwright MCP server, click: { selector: "button.submit" }
+# Playwright MCP server, fill: { selector: "input[name=email]", value: "test@example.com" }
+# Playwright MCP server, screenshot: { name: "after-submit" }
 ```
 
 If Playwright MCP is not available, fall back to:

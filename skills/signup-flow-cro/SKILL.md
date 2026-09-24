@@ -379,4 +379,4 @@ Changes:
 Done when: signup flow works end-to-end, no form validation errors. Run visual-validation skill to screenshot each step of the flow
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

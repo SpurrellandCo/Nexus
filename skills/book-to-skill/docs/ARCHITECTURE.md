@@ -34,7 +34,7 @@ document into clean text + metadata; the agent turns that into a structured skil
                 <SKILLS_HOME>/<slug>/  ← chosen per host:
                   ~/.copilot/skills/   GitHub Copilot CLI
                   ~/.agents/skills/    Copilot CLI or Amp (cross-agent)
-                  ~/.claude/skills/    Claude Code
+                  ~/.nexus/skills/    Claude Code
                   .github|.claude|.agents/skills/  project-local
                   SKILL.md         core frameworks + chapter & topic index (~4K)
                   chapters/*.md    on-demand, loaded only when asked

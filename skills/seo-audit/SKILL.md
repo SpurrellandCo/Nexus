@@ -517,4 +517,4 @@ Changes:
 Done when: [tool — e.g. Screaming Frog / validator] shows no remaining errors for these issues
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

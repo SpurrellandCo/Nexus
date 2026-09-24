@@ -1,6 +1,6 @@
 ---
 name: stack-scout
-description: Periodic (monthly) scout of the wider ecosystem against our own ~/.claude stack. Searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what is in INVENTORY.md, cross-checks our own usage data for dead weight, and writes a "worth trying / retire / watch" report. Report only — never installs or deletes anything. Trigger with /stack-scout, or "scout for better skills/agents/tools".
+description: Periodic (monthly) scout of the wider ecosystem against our own Nexus stack. Searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what is in INVENTORY.md, cross-checks our own usage data for dead weight, and writes a "worth trying / retire / watch" report. Report only — never installs or deletes anything. Trigger with /stack-scout, or "scout for better skills/agents/tools".
 origin: custom
 ---
 
@@ -19,7 +19,7 @@ Not for one project's build-vs-adopt questions — use `landscape-check`.
 
 ### Step 1 — Baseline our stack
 
-1. Read `~/.claude/INVENTORY.md` (note its `Last generated` date). If more than 30 days old, verify against `ls ~/.claude/skills ~/.claude/agents ~/.claude/commands`.
+1. Read `~/.nexus/INVENTORY.md` (note its `Last generated` date). If more than 30 days old, verify against `ls ~/.nexus/skills ~/.nexus/agents ~/.nexus/commands`.
 2. Group what we have into categories (e.g. code review, testing, frontend design, marketing, deployment, memory/orchestration, MCP servers). One line per category with the names that cover it.
 3. Read `~/.nexus-local/skill-learning/learnings.jsonl` if it exists. Count `recommended` vs. `used` per skill. Skills recommended repeatedly but never used, or never recommended at all, are **retire candidates**. If there is under 3 projects of data, say the usage signal is too thin and skip retire candidates.
 
@@ -30,7 +30,7 @@ Per category, cap at 3 queries:
 - `gh search repos "<category> claude code skill" --limit 8 --sort updated --json fullName,description,stargazersCount,pushedAt,license,isArchived,url`
 - Topic searches: `gh search repos --topic claude-code --topic <category-keyword> --sort stars --limit 8`
 - MCP servers: `gh search repos "<need> mcp server" --limit 8 --sort stars`
-- WebSearch for "best claude code <category> skills/plugins <current year>" only if GitHub is thin.
+- Search the web for "best AI coding agent <category> skills/plugins <current year>" (Claude Code, Codex, Gemini CLI) only if GitHub is thin.
 
 For each promising result (max 2 per category) collect: stars, last push, license, what it does in one line, and how it differs from what we already have. Reject archived repos, repos with no commits in 12+ months, and anything that only duplicates an item we have.
 

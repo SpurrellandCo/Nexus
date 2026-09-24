@@ -60,7 +60,7 @@ fi
 
 # Resolve and emit the absolute path the agent must use for every later
 # `printing-press` invocation. `export PATH` above only affects this one
-# Bash tool call; subsequent calls open a fresh shell and resolve bare
+# shell command; later commands may run in a fresh shell and resolve bare
 # `printing-press` against the user's default PATH, where a stale global
 # can silently shadow the local build. The agent captures this marker and
 # substitutes the absolute path into every later invocation.
@@ -87,7 +87,7 @@ mkdir -p "$PRESS_RUNSTATE" "$PRESS_LIBRARY" "$PRESS_MANUSCRIPTS" "$PRESS_CURRENT
 ```
 <!-- PRESS_SETUP_CONTRACT_END -->
 
-After running the setup contract, capture the `PRINTING_PRESS_BIN=<abs-path>` line from stdout. **Every subsequent `printing-press ...` invocation in this skill must use that absolute path** (substitute the value, not the literal `$PRINTING_PRESS_BIN` token) — `export PATH` above only affects the single Bash tool call it runs in, so later calls open a fresh shell where bare `printing-press` resolves against the user's default `PATH` and a stale global can shadow the local build.
+After running the setup contract, capture the `PRINTING_PRESS_BIN=<abs-path>` line from stdout. **Every subsequent `printing-press ...` invocation in this skill must use that absolute path** (substitute the value, not the literal `$PRINTING_PRESS_BIN` token) — `export PATH` above only affects the single shell command it runs in, so later calls open a fresh shell where bare `printing-press` resolves against the user's default `PATH` and a stale global can shadow the local build.
 
 After capturing the binary path, check binary version compatibility. Read the `min-binary-version` field from this skill's YAML frontmatter. Run `<PRINTING_PRESS_BIN> version --json` and parse the version from the output. Compare it to `min-binary-version` using semver rules. If the installed binary is older than the minimum, stop immediately and tell the user: "printing-press binary vX.Y.Z is older than the minimum required vA.B.C. Run `go install github.com/mvanhorn/cli-printing-press/v4/cmd/printing-press@latest` to update."
 
@@ -118,7 +118,7 @@ Try these locations in order:
 2. `$PRESS_LIBRARY/<name>-pp-cli/` — with -pp-cli suffix
 3. If neither exists, Glob `$PRESS_LIBRARY/<name>-pp-cli*`
 4. If exactly one glob match exists and is a directory, use it
-5. If multiple glob matches exist, present a numbered menu using AskUserQuestion
+5. If multiple glob matches exist, present a numbered menu to the user
 
 If neither exists, scan current-run and archived state:
 6. Use Glob to find `$PRESS_RUNSTATE/runs/*/state.json` files
@@ -133,7 +133,7 @@ If nothing resolves, report the error: "Could not find CLI '<name>'. Provide a p
 3. Filter to those whose `working_dir` actually exists on disk
 4. If none are found, Glob `$PRESS_LIBRARY/*-pp-cli*` and use those directories instead
 5. If exactly one → use it automatically
-6. If multiple → present a numbered menu using AskUserQuestion:
+6. If multiple → present a numbered menu to the user:
    ```
    Multiple CLIs found. Which one to score?
    1. stripe-pp-cli ($PRESS_LIBRARY/stripe-pp-cli)
@@ -199,7 +199,7 @@ If `unscored_dimensions` is present, those dimensions should be rendered as `N/A
 
 ### Compare Mode
 
-Run **both** scorecard commands in **parallel** using two simultaneous Bash tool calls:
+Run **both** scorecard commands in **parallel** as two shell commands running at the same time:
 
 ```bash
 # Call 1:

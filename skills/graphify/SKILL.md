@@ -202,7 +202,7 @@ Path('graphify-out/.graphify_semantic.json').write_text(json.dumps({'nodes':[],'
 "
 ```
 
-**MANDATORY: You MUST use the Agent tool here. Reading files yourself one-by-one is forbidden - it is 5-10x slower. If you do not use the Agent tool you are doing this wrong.**
+**Use parallel subagents here if your tool has them.** Reading every file yourself, one by one, is 5-10x slower. Only if your tool has no subagents, process the chunks yourself, in order.
 
 Before dispatching subagents, print a timing estimate:
 - Load `total_words` and file counts from `graphify-out/.graphify_detect.json`
@@ -247,17 +247,11 @@ Load files from `graphify-out/.graphify_uncached.txt`. Split into chunks of 20-2
 
 **Step B2 - Dispatch ALL subagents in a single message**
 
-Call the Agent tool multiple times IN THE SAME RESPONSE - one call per chunk. This is the only way they run in parallel. If you make one Agent call, wait, then make another, you are doing it sequentially and defeating the purpose.
+Start one subagent per chunk, all at once, so they run in parallel. Starting one, waiting for it, and then starting the next is sequential and defeats the purpose.
 
-**IMPORTANT - subagent type:** Always use `subagent_type="general-purpose"`. Do NOT use `Explore` - it is read-only and cannot write chunk files to disk, which silently drops extraction results. General-purpose has Write and Bash access which the subagent needs.
+**IMPORTANT - subagent capabilities:** every subagent must be able to write files and run shell commands, because it writes its chunk file to disk. A read-only subagent silently drops its extraction results. (Claude Code specifics are in the tool-specific notes at the end of Part B.)
 
-Concrete example for 3 chunks:
-```
-[Agent tool call 1: files 1-15, subagent_type="general-purpose"]
-[Agent tool call 2: files 16-30, subagent_type="general-purpose"]
-[Agent tool call 3: files 31-45, subagent_type="general-purpose"]
-```
-All three in one message. Not three separate messages.
+For 3 chunks: three subagents (files 1-15, 16-30, 31-45), all started together.
 
 Each subagent receives this exact prompt (substitute FILE_LIST, CHUNK_NUM, TOTAL_CHUNKS, DEEP_MODE, and CHUNK_PATH).
 
@@ -279,9 +273,9 @@ Wait for all subagents. For each result:
 - If the file is missing, the subagent was likely dispatched as read-only (Explore type) — print a warning: "chunk N missing from disk — subagent may have been read-only. Re-run with general-purpose agent." Do not silently skip.
 - If a subagent failed or returned invalid JSON, print a warning and skip that chunk - do not abort
 
-If more than half the chunks failed or are missing, stop and tell the user to re-run and ensure `subagent_type="general-purpose"` is used.
+If more than half the chunks failed or are missing, stop and tell the user to re-run, making sure the subagents can write files (see the tool-specific notes at the end of Part B).
 
-Merge all chunk files into `.graphify_semantic_new.json`. **After each Agent call completes, read the real token counts from the Agent tool result's `usage` field and write them back into the chunk JSON before merging** — the chunk JSON itself always has placeholder zeros. Then run:
+Merge all chunk files into `.graphify_semantic_new.json`. **After each subagent finishes, if your tool reports its token usage, write the real token counts back into the chunk JSON before merging** — the chunk JSON itself always has placeholder zeros. Then run:
 ```bash
 $(cat graphify-out/.graphify_python) -c "
 import json, glob
@@ -349,6 +343,16 @@ print(f'Extraction complete - {len(deduped)} nodes, {len(all_edges)} edges ({len
 "
 ```
 Clean up temp files: `rm -f graphify-out/.graphify_cached.json graphify-out/.graphify_uncached.txt graphify-out/.graphify_semantic_new.json`
+
+##### Tool-specific notes (Part B)
+
+In Claude Code, dispatch the chunks as Agent tool calls, one per chunk, all in the same response (that is what makes them run in parallel), each with `subagent_type="general-purpose"`. Never use `Explore`: it is read-only and cannot write chunk files. Example for 3 chunks:
+```
+[Agent tool call 1: files 1-15, subagent_type="general-purpose"]
+[Agent tool call 2: files 16-30, subagent_type="general-purpose"]
+[Agent tool call 3: files 31-45, subagent_type="general-purpose"]
+```
+All three in one message, not three separate messages. Each Agent tool result has a `usage` field with the real token counts to write back into its chunk JSON.
 
 #### Part C - Merge AST + semantic into final extraction
 

@@ -68,7 +68,7 @@ reading both provenance manifests' `run_id` and `generated_at`:
 | absent | present | invoke `/printing-press-import <api>`, then continue |
 | present | absent | continue — never-published local CLI; skip import |
 | present, same `run_id` | present | continue without import |
-| present, public newer `generated_at` | present | offer import via `AskUserQuestion`; user decides |
+| present, public newer `generated_at` | present | offer the import; the user decides |
 | present, local newer `generated_at` | present | STOP — local has unpublished work; tell user to publish or discard first |
 
 When invoking `/printing-press-import`, let it own backup, overwrite,
@@ -136,7 +136,7 @@ user override. The Phase 0 binary-version-bump revalidation in
 `/printing-press` handles the machine-delta side independently; don't
 duplicate it here.
 
-Ask via `AskUserQuestion`:
+Ask the user:
 
 1. **Reuse prior research** — keep the prior brief; the subagent re-scores
    prior novel features against current personas

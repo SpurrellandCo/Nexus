@@ -20,7 +20,7 @@ Query DeepWiki when Phase 1 or Phase 1.5a discovers a GitHub repo URL for:
 - A popular community wrapper or MCP server repo
 
 **Repo URL sources:** npm package metadata (`repository` field), GitHub search results,
-MCP server discovery (Step 1.5a searches), WebSearch results linking to GitHub repos.
+MCP server discovery (Step 1.5a searches), web search results linking to GitHub repos.
 
 **Skip when:**
 - No GitHub repos were discovered
@@ -34,7 +34,7 @@ MCP server discovery (Step 1.5a searches), WebSearch results linking to GitHub r
 ### Step 1: Fetch the wiki structure
 
 ```
-WebFetch: https://deepwiki.com/{owner}/{repo}
+Fetch: https://deepwiki.com/{owner}/{repo}
 Prompt: "List all wiki section titles and their numeric path identifiers"
 ```
 
@@ -62,10 +62,10 @@ From the wiki structure, identify and fetch **up to 3** of these high-value sect
    "rest" in the title. This reveals the intended API surface from the maintainer's
    perspective.
 
-For each section, use WebFetch with a targeted extraction prompt:
+For each section, fetch the page with a targeted extraction prompt:
 
 ```
-WebFetch: https://deepwiki.com/{owner}/{repo}/{section-path}
+Fetch: https://deepwiki.com/{owner}/{repo}/{section-path}
 Prompt: "Extract: (1) authentication method and token format, (2) primary data
 entities and their relationships, (3) rate limiting or throttling behavior,
 (4) error handling patterns, (5) key architectural decisions. Be specific -
@@ -126,7 +126,7 @@ to ask the user more specific auth questions.
 
 - **DeepWiki returns 404 or error:** Skip silently. Log: "DeepWiki: no wiki
   available for {owner}/{repo}"
-- **WebFetch times out:** Skip silently. Log: "DeepWiki: timeout fetching
+- **Fetching times out:** Skip silently. Log: "DeepWiki: timeout fetching
   {owner}/{repo}"
 - **Wiki exists but targeted sections not found:** Extract what is available.
   Even the overview section provides useful architectural context.

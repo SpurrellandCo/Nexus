@@ -35,7 +35,7 @@ Task: [Requirement name]
 
 ### Step 2 — Load the ECC Skill Library
 
-Run: `ls ~/.claude/skills/` to get the full skill directory listing.
+Run: `ls ~/.nexus/skills/` to get the full skill directory listing.
 
 For each skill directory, read its `SKILL.md` (first 20 lines only — name and description are enough). Build a mental index of: skill name → what it handles.
 
@@ -65,19 +65,19 @@ For each remaining task (not sub-task — keep searches focused):
 gh search repos "[task keyword] [tech stack keyword]" --limit 8 --sort stars --json fullName,description,stargazersCount,pushedAt,license,isArchived,url
 gh search code "[distinctive API or pattern]" --limit 10
 ```
-Or use WebSearch with `site:github.com [task description] [language]`
+Or search the web for `site:github.com [task description] [language]`
 
 **Package registries** (GitHub alone misses most libraries):
 ```
 npm search "[task keyword]" --json --searchlimit=8
 npm view [package] version time.modified license
 ```
-For PyPI: WebSearch `site:pypi.org [task keyword]`.
+For PyPI: search the web for `site:pypi.org [task keyword]`.
 
 **Web search:**
 ```
-WebSearch: "best [library/tool] for [task] [year]"
-WebSearch: "[task] open source alternative [stack]"
+Web search: "best [library/tool] for [task] [year]"
+Web search: "[task] open source alternative [stack]"
 ```
 
 **Vet before recommending.** For each candidate you would surface, verify with `gh repo view [owner/repo] --json stargazerCount,pushedAt,licenseInfo,isArchived` (or `npm view`) and record stars/downloads, last push, and license. Drop archived repos and repos with no commits in 18+ months (unless small and stable). Flag GPL/AGPL/unlicensed code as incompatible with a closed-source commercial app. Confirm fit with the project stack in `CLAUDE.md`.

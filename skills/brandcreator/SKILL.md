@@ -37,7 +37,7 @@ Ask only what you don't already know from the user's message. Cover:
 2. **Industry / what the business does** (one line is enough)
 3. **Target audience** (who it's for)
 4. **Personality** — 3–5 adjectives describing how the brand should feel (e.g. "trustworthy, modern, approachable")
-5. **Style direction** — use `AskUserQuestion` with these options (same set as `web/design-quality.md`'s "Worthwhile Style Directions"): Editorial/magazine, Neo-brutalism, Glassmorphism, Dark or light luxury, Bento layout, Swiss/International, Retro-futurism, or "Pick for me based on the industry/personality." Never default to a vague "clean minimal" — pick something specific.
+5. **Style direction** — ask the user to choose from these options (same set as `web/design-quality.md`'s "Worthwhile Style Directions"): Editorial/magazine, Neo-brutalism, Glassmorphism, Dark or light luxury, Bento layout, Swiss/International, Retro-futurism, or "Pick for me based on the industry/personality." Never default to a vague "clean minimal" — pick something specific.
 6. **Colors** — ask whether they have existing brand colors (hex codes) to lock in, or want you to choose a palette that fits the style direction and industry.
 7. **Existing logo** — ask whether they have a logo file to reuse, or want one generated.
 
@@ -49,9 +49,9 @@ Do not ask about deliverable depth (CIP, video, etc.) here — that is offered l
 
 Slug format: `brandcreator-<company-slug>` — lowercase, hyphens only, derived from the company name (e.g. "Acme Robotics" → `brandcreator-acme-robotics`). Strip anything the user already typed as `brandcreator-`.
 
-Destination is always `~/.claude/skills/` (global) — this makes `/brandcreator-<slug>` available from any project, the same way `/b2s-*` skills are.
+Destination is always `~/.nexus/skills/` (global) — this makes `/brandcreator-<slug>` available from any project, the same way `/b2s-*` skills are.
 
-Check `~/.claude/skills/<slug>/`:
+Check `~/.nexus/skills/<slug>/`:
 - **If it doesn't exist**, proceed to Step 3.
 - **If it exists**, ask the user to choose: **Update** (regenerate guidelines/tokens/template in place, keep the existing logo unless they want a new one), **Overwrite** (delete and start fresh), or **Rename** (append `-2` or a different slug).
 
@@ -60,13 +60,13 @@ Check `~/.claude/skills/<slug>/`:
 ## Step 3 — Create the directory structure
 
 ```bash
-mkdir -p "$HOME/.claude/skills/<slug>/assets"
-mkdir -p "$HOME/.claude/skills/<slug>/templates"
+mkdir -p "$HOME/.nexus/skills/<slug>/assets"
+mkdir -p "$HOME/.nexus/skills/<slug>/templates"
 ```
 
 Target layout:
 ```
-~/.claude/skills/<slug>/
+~/.nexus/skills/<slug>/
   SKILL.md
   brand-guidelines.md
   assets/
@@ -81,25 +81,25 @@ Target layout:
 
 ## Step 4 — Write brand-guidelines.md
 
-Base the structure on `~/.claude/skills/brand/templates/brand-guidelines-starter.md` (Quick Reference table, Color Palette with primary/secondary/accent + neutral + semantic colors, Typography with a real font pairing, Logo Usage rules, Voice & Tone with a voice chart + tone-by-context + prohibited terms, Imagery Guidelines, Design Components), but fill every placeholder with real values decided in Step 1 — never leave `{PLACEHOLDER}` text in the output.
+Base the structure on `~/.nexus/skills/brand/templates/brand-guidelines-starter.md` (Quick Reference table, Color Palette with primary/secondary/accent + neutral + semantic colors, Typography with a real font pairing, Logo Usage rules, Voice & Tone with a voice chart + tone-by-context + prohibited terms, Imagery Guidelines, Design Components), but fill every placeholder with real values decided in Step 1 — never leave `{PLACEHOLDER}` text in the output.
 
 For colors: choose one primary, one secondary, one accent hex value (from the user's existing colors, or chosen to fit the style direction/industry). For each, compute a light and dark shade using simple brightness interpolation (lighten ~30-40% for a "light" variant, darken ~15% for a "dark"/hover variant) — this mirrors the shade-scale approach used by `brand/scripts/sync-brand-to-tokens.cjs`, computed here directly rather than by invoking that script (it is hardcoded to a specific prior brand's paths and naming and is not safely reusable as-is).
 
-Write this file to `~/.claude/skills/<slug>/brand-guidelines.md`. It is the brand's source of truth — everything else in this skill derives from it.
+Write this file to `~/.nexus/skills/<slug>/brand-guidelines.md`. It is the brand's source of truth — everything else in this skill derives from it.
 
 ---
 
 ## Step 5 — Generate or import the logo
 
-Check for `GEMINI_API_KEY` using the same lookup order as `design/scripts/logo/generate.py` (repo-root `.env`, `~/.claude/skills/.env`, `~/.claude/.env`).
+Check for `GEMINI_API_KEY` using the same lookup order as `design/scripts/logo/generate.py` (repo-root `.env`, then `~/.nexus-local/.env`, then the older per-tool spots the script also checks).
 
-**If the user provided an existing logo file**: copy it to `~/.claude/skills/<slug>/assets/logo-primary.png` (converting format if needed) and skip generation.
+**If the user provided an existing logo file**: copy it to `~/.nexus/skills/<slug>/assets/logo-primary.png` (converting format if needed) and skip generation.
 
 **If the key is present and no logo was provided**: generate options with
 ```bash
-python3 ~/.claude/skills/design/scripts/logo/generate.py \
+python3 ~/.nexus/skills/design/scripts/logo/generate.py \
   --brand "<Company Name>" --industry "<industry>" --style "<style direction>" \
-  --output-dir "$HOME/.claude/skills/<slug>/assets/" --batch 4
+  --output-dir "$HOME/.nexus/skills/<slug>/assets/" --batch 4
 ```
 Show the user the generated options (or their file paths) and have them pick one; save the chosen file as `assets/logo-primary.png` and remove the rest.
 
@@ -109,26 +109,26 @@ Show the user the generated options (or their file paths) and have them pick one
 
 ## Step 6 — Build design tokens
 
-Author `~/.claude/skills/<slug>/assets/design-tokens.json` directly, following the primitive → semantic → component schema in `~/.claude/skills/design-system/templates/design-tokens-starter.json`. Populate:
+Author `~/.nexus/skills/<slug>/assets/design-tokens.json` directly, following the primitive → semantic → component schema in `~/.nexus/skills/design-system/templates/design-tokens-starter.json`. Populate:
 - `primitive.color.<name>` for primary/secondary/accent, each with a 50–900 shade scale (reuse the values computed in Step 4)
 - `semantic.color.*` mapped to those primitives (primary, primary-hover, secondary, accent, success/error/info as appropriate)
 - Typography and spacing primitives from the guidelines doc
 
 Then generate the CSS from it:
 ```bash
-node ~/.claude/skills/design-system/scripts/generate-tokens.cjs \
-  --config "$HOME/.claude/skills/<slug>/assets/design-tokens.json" \
-  -o "$HOME/.claude/skills/<slug>/assets/design-tokens.css"
+node ~/.nexus/skills/design-system/scripts/generate-tokens.cjs \
+  --config "$HOME/.nexus/skills/<slug>/assets/design-tokens.json" \
+  -o "$HOME/.nexus/skills/<slug>/assets/design-tokens.css"
 ```
 (This script resolves absolute paths correctly regardless of the current working directory.)
 
-Optionally validate with `node ~/.claude/skills/design-system/scripts/validate-tokens.cjs` against the generated CSS to catch any hardcoded values that slipped in.
+Optionally validate with `node ~/.nexus/skills/design-system/scripts/validate-tokens.cjs` against the generated CSS to catch any hardcoded values that slipped in.
 
 ---
 
 ## Step 7 — Create the document template
 
-Write `~/.claude/skills/<slug>/templates/report-template.html`: a self-contained HTML scaffold that:
+Write `~/.nexus/skills/<slug>/templates/report-template.html`: a self-contained HTML scaffold that:
 - `<link>`s `../assets/design-tokens.css`
 - Uses `var(--...)` exclusively for every color, font, and spacing value — no hardcoded brand hex codes or font names anywhere in the template (same rule `design-system/scripts/slide-token-validator.py` enforces for its slide pipeline)
 - Includes a cover block (logo + title + date), body styles for headings/body text/tables/callout boxes, and a footer with the brand mark
@@ -139,7 +139,7 @@ This is the reusable starting point for "create a report" requests. Additional t
 
 ## Step 8 — Write the generated skill's SKILL.md
 
-Create `~/.claude/skills/<slug>/SKILL.md`:
+Create `~/.nexus/skills/<slug>/SKILL.md`:
 
 ```markdown
 ---
@@ -204,7 +204,7 @@ Confirm `<slug>`: lowercase letters, digits, and hyphens only; ≤64 characters;
 ## Step 10 — Report to the user
 
 ```
-✅ Brand kit created: ~/.claude/skills/<slug>/
+✅ Brand kit created: ~/.nexus/skills/<slug>/
 
 🏢 <Company Name> — <industry>
 🎨 Style: <style direction> | Colors: <primary hex>, <secondary hex>, <accent hex>

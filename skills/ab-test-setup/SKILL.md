@@ -375,4 +375,4 @@ Changes:
 Done when: both variants render correctly, exposure event fires in [tool] dashboard
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

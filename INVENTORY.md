@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 15:28:56.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 17:35:23.
 
 ## Agents
 
@@ -355,7 +355,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `landscape-check` | Pre-PRD landscape check for a new project or major feature. Two passes — internal (what our ~/.claude stack already covers, from INVENTORY.md and the live skill/agent dirs) and external (GitHub, npm, PyPI, and primary docs for existing implementations worth adopting, porting, or wrapping) — and writes PRD/LANDSCAPE.md with evidence-backed verdicts. Runs as Stage 0.5 of new-project, before the PRD is written, so build-vs-adopt decisions shape the PRD. Trigger with /landscape-check or "check what already exists for [idea]". |
+| `landscape-check` | Pre-PRD landscape check for a new project or major feature. Two passes — internal (what our Nexus stack already covers, from INVENTORY.md and the live skill/agent dirs) and external (GitHub, npm, PyPI, and primary docs for existing implementations worth adopting, porting, or wrapping) — and writes PRD/LANDSCAPE.md with evidence-backed verdicts. Runs as Stage 0.5 of new-project, before the PRD is written, so build-vs-adopt decisions shape the PRD. Trigger with /landscape-check or "check what already exists for [idea]". |
 
 ### launch-strategy
 
@@ -649,7 +649,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `stack-scout` | Periodic (monthly) scout of the wider ecosystem against our own ~/.claude stack. Searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what is in INVENTORY.md, cross-checks our own usage data for dead weight, and writes a "worth trying / retire / watch" report. Report only — never installs or deletes anything. Trigger with /stack-scout, or "scout for better skills/agents/tools". |
+| `stack-scout` | Periodic (monthly) scout of the wider ecosystem against our own Nexus stack. Searches GitHub for new or better skills, agents, hooks, and MCP servers that compete with what is in INVENTORY.md, cross-checks our own usage data for dead weight, and writes a "worth trying / retire / watch" report. Report only — never installs or deletes anything. Trigger with /stack-scout, or "scout for better skills/agents/tools". |
 
 ### stripe-integration
 

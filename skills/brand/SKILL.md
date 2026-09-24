@@ -92,6 +92,6 @@ node scripts/inject-brand-context.cjs --json | head -20
 
 ## Routing
 
-1. Parse subcommand from `$ARGUMENTS` (first word)
+1. Parse the subcommand from the user's request (first word)
 2. Load corresponding `references/{subcommand}.md`
 3. Execute with remaining arguments

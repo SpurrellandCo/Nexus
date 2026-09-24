@@ -202,4 +202,4 @@ Changes:
 Done when: changes are visible on page, no layout regressions on mobile and desktop. Run visual-validation skill to screenshot desktop and mobile viewports
 ```
 
-Then use the Agent tool with `subagent_type='coder'`.
+Then hand it to a coding agent (or implement it yourself if your tool has no subagents).

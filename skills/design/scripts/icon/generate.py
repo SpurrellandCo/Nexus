@@ -28,6 +28,7 @@ def load_env():
     """Load .env files in priority order"""
     env_paths = [
         Path(__file__).parent.parent.parent / ".env",
+        Path.home() / ".nexus-local" / ".env",
         Path.home() / ".claude" / "skills" / ".env",
         Path.home() / ".claude" / ".env"
     ]
