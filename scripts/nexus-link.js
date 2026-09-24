@@ -10,18 +10,24 @@
  *             which Codex and Gemini CLI both read
  *   agents -> rendered into each tool's own format (Codex .toml, Gemini .md),
  *             marked GENERATED, with a short tool-neutral preamble
+ * Which tools get them comes from "shareWith" in ~/.nexus-local/config.json
+ * (lib/nexus-config.js). Turning a tool off removes only what Nexus put there.
  *
  * Ownership: only symlinks pointing into Nexus's skills dir and files carrying
- * the GENERATED marker are ever replaced or removed. Anything else is reported
- * and left alone, unless --replace-copies (which backs it up first). After a
- * --replace-copies run the shared skills dir is marked managed; from then on a
- * real skill folder that appears there (made by another tool) is adopted:
- * moved into Nexus and linked back.
+ * the GENERATED marker are ever replaced or removed. Everything else is
+ * reported and left alone, except:
+ *   --replace-copies    back up folders/agent files that have the SAME NAME as
+ *                       a Nexus skill/agent and replace them with Nexus's version.
+ *                       Also marks the shared skills dir managed: skills created
+ *                       there afterwards by another tool are adopted into Nexus
+ *                       (folders already present are remembered and never adopted).
+ *   --retire-unrelated  also back up folders/agent files that are NOT from Nexus.
+ *                       Only for stale leftovers; never needed on a fresh install.
  *
- * Usage: node nexus-link.js [--replace-copies] [--quiet]
+ * Usage: node nexus-link.js [--replace-copies] [--retire-unrelated] [--quiet]
  *   --quiet prints only when something changed (used by the Stop hook).
- * Env overrides (tests): NEXUS_HOME, NEXUS_SHARED_SKILLS_DIR,
- *   NEXUS_CODEX_AGENTS_DIR, NEXUS_GEMINI_AGENTS_DIR, NEXUS_BACKUP_DIR
+ * Env overrides (tests): NEXUS_HOME, NEXUS_SHARED_SKILLS_DIR, NEXUS_CODEX_AGENTS_DIR,
+ *   NEXUS_GEMINI_AGENTS_DIR, NEXUS_BACKUP_DIR, NEXUS_LOCAL_CONFIG
  */
 
 const fs = require('fs');
@@ -29,6 +35,7 @@ const os = require('os');
 const path = require('path');
 const { parseFrontmatter } = require('./generate-inventory.js');
 const { lintFile } = require('./lib/portability');
+const { loadConfig } = require('./lib/nexus-config');
 
 const HOME = os.homedir();
 const env = process.env;
@@ -87,6 +94,28 @@ function makeBackup() {
   return (src, label) => move(src, path.join(dir, label, path.basename(src)));
 }
 
+// ---------- managed marker ----------
+
+function readMarker() {
+  const file = path.join(SHARED_SKILLS, MANAGED_FILE);
+  if (!fs.existsSync(file)) return null;
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return { managedSince: data.managedSince || null, ignore: Array.isArray(data.ignore) ? data.ignore : [] };
+  } catch {
+    return { managedSince: null, ignore: [] }; // older plain-text marker
+  }
+}
+
+function writeMarker(previous, unrelated) {
+  const data = {
+    note: `${MARKER}: skills here are links into ${tilde(SKILLS_DIR)}. "ignore" lists folders that were here before and are never adopted.`,
+    managedSince: (previous && previous.managedSince) || new Date().toISOString(),
+    ignore: [...new Set([...((previous && previous.ignore) || []), ...unrelated])].sort(),
+  };
+  fs.writeFileSync(path.join(SHARED_SKILLS, MANAGED_FILE), `${JSON.stringify(data, null, 2)}\n`);
+}
+
 // ---------- skills ----------
 
 function collectSkills() {
@@ -134,11 +163,12 @@ function handleExtraSkill(name, ctx) {
     if (isOurLink(entry)) { fs.unlinkSync(entry); ctx.out.unlinked.push(name); }
     return;
   }
-  if (!st.isDirectory()) return;
-  const isSkill = fs.existsSync(path.join(entry, 'SKILL.md'));
-  if (ctx.managed && isSkill && !fs.existsSync(path.join(SKILLS_DIR, name))) {
+  if (!st.isDirectory() || ctx.disabled) return;
+  const adoptable = ctx.marker && !ctx.marker.ignore.includes(name)
+    && fs.existsSync(path.join(entry, 'SKILL.md')) && !fs.existsSync(path.join(SKILLS_DIR, name));
+  if (adoptable) {
     adoptSkill(name, entry, ctx);
-  } else if (ctx.replaceCopies) {
+  } else if (ctx.retireUnrelated) {
     ctx.backup(entry, 'agents-skills');
     ctx.out.retired.push(name);
   } else {
@@ -146,17 +176,18 @@ function handleExtraSkill(name, ctx) {
   }
 }
 
-function syncSkills(ctx) {
+function syncSkills(ctx, enabled) {
   if (!fs.existsSync(path.dirname(SHARED_SKILLS))) return;
+  if (!enabled && !fs.existsSync(SHARED_SKILLS)) return;
   fs.mkdirSync(SHARED_SKILLS, { recursive: true });
-  const skills = collectSkills();
+  const skills = enabled ? collectSkills() : [];
   const names = new Set(skills.map((s) => s.name));
-  const skillCtx = { ...ctx, managed: fs.existsSync(path.join(SHARED_SKILLS, MANAGED_FILE)) };
+  const skillCtx = { ...ctx, disabled: !enabled, marker: readMarker() };
   skills.forEach((skill) => linkSkill(skill, skillCtx));
   fs.readdirSync(SHARED_SKILLS)
     .filter((name) => !name.startsWith('.') && !names.has(name))
     .forEach((name) => handleExtraSkill(name, skillCtx));
-  if (ctx.replaceCopies) fs.writeFileSync(path.join(SHARED_SKILLS, MANAGED_FILE), `${MARKER}: skills here are links into ${tilde(SKILLS_DIR)}\n`);
+  if (enabled && ctx.replaceCopies) writeMarker(skillCtx.marker, ctx.out.unmanaged);
 }
 
 // ---------- agents ----------
@@ -237,19 +268,25 @@ function writeAgentFile(file, content, stats, ctx, label) {
   }
 }
 
+function handleExtraAgentFile(file, stats, ctx, label, enabled) {
+  const name = path.basename(file);
+  if (fs.readFileSync(file, 'utf8').includes(MARKER)) { fs.rmSync(file); stats.removed.push(name); }
+  else if (!enabled) return;
+  else if (ctx.retireUnrelated) { ctx.backup(file, label); stats.retired.push(name); }
+  else stats.unmanaged.push(name);
+}
+
 function syncAgentTarget(agents, target, ctx) {
-  const { dir, ext, render, label } = target;
-  const stats = { label, written: [], replaced: [], removed: [], copies: [], unmanaged: [] };
-  if (!fs.existsSync(path.dirname(dir))) return stats;
+  const { dir, ext, render, label, enabled } = target;
+  const stats = { label, written: [], replaced: [], removed: [], retired: [], copies: [], unmanaged: [] };
+  if (!fs.existsSync(path.dirname(dir)) || (!enabled && !fs.existsSync(dir))) return stats;
   fs.mkdirSync(dir, { recursive: true });
-  const wanted = new Set(agents.map((a) => `${a.name}${ext}`));
-  agents.forEach((agent) => writeAgentFile(path.join(dir, `${agent.name}${ext}`), render(agent), stats, ctx, label));
+  const shared = enabled ? agents : [];
+  const wanted = new Set(shared.map((a) => `${a.name}${ext}`));
+  shared.forEach((agent) => writeAgentFile(path.join(dir, `${agent.name}${ext}`), render(agent), stats, ctx, label));
   for (const name of fs.readdirSync(dir).filter((n) => n.endsWith(ext) && !wanted.has(n))) {
     const file = path.join(dir, name);
-    if (!fs.statSync(file).isFile()) continue;
-    if (fs.readFileSync(file, 'utf8').includes(MARKER)) { fs.rmSync(file); stats.removed.push(name); }
-    else if (ctx.replaceCopies) { ctx.backup(file, label); stats.removed.push(name); }
-    else stats.unmanaged.push(name);
+    if (fs.statSync(file).isFile()) handleExtraAgentFile(file, stats, ctx, label, enabled);
   }
   return stats;
 }
@@ -265,28 +302,33 @@ function changeLines(out, agentStats) {
   const lines = [];
   const add = (items, text) => { if (items.length) lines.push(`${text}: ${list(items)}`); };
   add(out.linked, `Linked ${out.linked.length} skill(s) into ${tilde(SHARED_SKILLS)}`);
-  add(out.replaced, `Replaced ${out.replaced.length} old skill copy(ies) with links (backed up)`);
-  add(out.retired, `Retired ${out.retired.length} stale skill copy(ies) (backed up)`);
+  add(out.replaced, `Replaced ${out.replaced.length} same-name skill copy(ies) with links (backed up)`);
+  add(out.retired, `Retired ${out.retired.length} unrelated skill folder(s) (backed up)`);
   add(out.adopted, `Adopted ${out.adopted.length} skill(s) created in another tool into Nexus`);
-  add(out.unlinked, `Removed ${out.unlinked.length} link(s) to deleted skills`);
+  add(out.unlinked, `Removed ${out.unlinked.length} Nexus skill link(s)`);
   for (const s of agentStats) {
     add(s.written, `${s.label}: wrote ${s.written.length} agent(s)`);
-    add(s.replaced, `${s.label}: replaced ${s.replaced.length} old agent copy(ies) (backed up)`);
-    add(s.removed, `${s.label}: removed ${s.removed.length} agent file(s) no longer in Nexus`);
+    add(s.replaced, `${s.label}: replaced ${s.replaced.length} same-name agent copy(ies) (backed up)`);
+    add(s.removed, `${s.label}: removed ${s.removed.length} Nexus agent file(s)`);
+    add(s.retired, `${s.label}: retired ${s.retired.length} unrelated agent file(s) (backed up)`);
   }
   return lines;
 }
 
 function noticeLines(out, agentStats) {
   const lines = [];
-  const copies = [...out.copies, ...out.unmanaged];
-  if (copies.length) {
-    lines.push(`${copies.length} skill folder(s) in ${tilde(SHARED_SKILLS)} are real copies, not links (left alone): ${list(copies)}.`
+  const where = tilde(SHARED_SKILLS);
+  if (out.copies.length) {
+    lines.push(`${out.copies.length} folder(s) in ${where} have the same name as a Nexus skill but are separate copies (left alone): ${list(out.copies)}.`
       + ' Run with --replace-copies to back them up and link Nexus instead.');
   }
+  if (out.unmanaged.length) lines.push(`${out.unmanaged.length} other skill folder(s) in ${where} are not from Nexus (left alone): ${list(out.unmanaged)}.`);
   for (const s of agentStats) {
-    const other = [...s.copies, ...s.unmanaged];
-    if (other.length) lines.push(`${s.label}: ${other.length} agent file(s) not made by Nexus (left alone): ${list(other)}. --replace-copies backs them up.`);
+    if (s.copies.length) {
+      lines.push(`${s.label}: ${s.copies.length} agent file(s) have the same name as a Nexus agent but weren't made by Nexus (left alone): ${list(s.copies)}.`
+        + ' --replace-copies backs them up and regenerates them.');
+    }
+    if (s.unmanaged.length) lines.push(`${s.label}: ${s.unmanaged.length} agent file(s) are not from Nexus (left alone): ${list(s.unmanaged)}.`);
   }
   if (out.duplicates.length) lines.push(`Duplicate agent names: ${out.duplicates.join('; ')}`);
   if (out.invalid.length) lines.push(`Agent names other tools reject (use lowercase-with-dashes): ${list(out.invalid)}`);
@@ -295,14 +337,20 @@ function noticeLines(out, agentStats) {
 
 function main(argv) {
   const quiet = argv.includes('--quiet');
+  const { shareWith } = loadConfig();
   const out = { linked: [], replaced: [], retired: [], adopted: [], unlinked: [], copies: [], unmanaged: [], duplicates: [], invalid: [] };
-  const ctx = { replaceCopies: argv.includes('--replace-copies'), backup: makeBackup(), out };
+  const ctx = {
+    replaceCopies: argv.includes('--replace-copies'),
+    retireUnrelated: argv.includes('--retire-unrelated'),
+    backup: makeBackup(),
+    out,
+  };
 
-  syncSkills(ctx);
+  syncSkills(ctx, shareWith.length > 0);
   const agents = collectAgents(out);
   const agentStats = [
-    { dir: CODEX_AGENTS, ext: '.toml', render: renderCodex, label: 'Codex' },
-    { dir: GEMINI_AGENTS, ext: '.md', render: renderGemini, label: 'Gemini' },
+    { dir: CODEX_AGENTS, ext: '.toml', render: renderCodex, label: 'Codex', enabled: shareWith.includes('codex') },
+    { dir: GEMINI_AGENTS, ext: '.md', render: renderGemini, label: 'Gemini', enabled: shareWith.includes('gemini') },
   ].map((target) => syncAgentTarget(agents, target, ctx));
 
   const changes = changeLines(out, agentStats);
@@ -310,7 +358,7 @@ function main(argv) {
   if (changes.length || notices.length) {
     console.log(['nexus-link:', ...changes, ...notices].join('\n  '));
   } else if (!quiet) {
-    console.log('nexus-link: everything already in sync.');
+    console.log(shareWith.length ? 'nexus-link: everything already in sync.' : 'nexus-link: sharing is off (shareWith is empty); nothing to do.');
   }
   return 0;
 }

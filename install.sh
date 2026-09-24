@@ -116,13 +116,59 @@ echo "re-running ./install.sh or editing the file directly."
 python3 scripts/install-fill-secrets.py settings.json mcp-configs/mcp-servers.json
 
 echo ""
+echo "== Sharing & sync preferences =="
+# Per-machine choices live outside the repo, in ~/.nexus-local/config.json
+# (see scripts/lib/nexus-config.js). Asked once; an existing file is kept.
+CONFIG_FILE="$HOME/.nexus-local/config.json"
+
+ask_yes_no() { # $1 question, $2 default answer (y|n); no terminal -> default
+    local answer=""
+    if [ -t 0 ]; then
+        read -r -p "$1 " answer || answer=""
+    fi
+    answer="${answer:-$2}"
+    case "$answer" in [Yy]*) return 0 ;; *) return 1 ;; esac
+}
+
+if [ -f "$CONFIG_FILE" ]; then
+    echo "-> Keeping your existing preferences in $CONFIG_FILE"
+elif ! command -v node >/dev/null 2>&1; then
+    echo "-> node not found: skipping preferences. Nexus hooks need node; install it and re-run ./install.sh."
+else
+    share='[]'; sync_enabled=false; push=false
+    if ask_yes_no "Share Nexus skills and agents with Codex and Gemini CLI on this machine? [Y/n]" y; then
+        share='["codex","gemini"]'
+    fi
+    if ask_yes_no "Run a nightly job that commits your Nexus changes to this checkout? [y/N]" n; then
+        sync_enabled=true
+        origin="$(git remote get-url origin 2>/dev/null || echo "origin")"
+        echo "   Pushing publishes those commits to $origin (anyone can see a public repo)."
+        if ask_yes_no "   Also push them? Only say yes if this is your own repo or fork. [y/N]" n; then
+            push=true
+        fi
+    fi
+    node scripts/lib/nexus-config.js write "{\"shareWith\":$share,\"sync\":{\"enabled\":$sync_enabled,\"push\":$push}}"
+fi
+
+echo ""
 echo "== Daily sync schedule =="
-if [ "$(uname -s)" = "Darwin" ]; then
+sync_on="$(node scripts/lib/nexus-config.js get sync.enabled 2>/dev/null || echo false)"
+if [ "$sync_on" != "true" ]; then
+    echo "-> Skipping (nightly sync is off; set sync.enabled in $CONFIG_FILE and re-run ./install.sh to turn it on)."
+elif [ "$(uname -s)" = "Darwin" ]; then
     bash scripts/nexus-schedule-setup.sh
 else
     echo "-> Skipping (daily sync scheduling currently ships for macOS/launchd only)."
     echo "   On Linux, add scripts/nexus-daily-sync.sh to cron yourself, e.g.:"
     echo "   0 21 * * * /bin/bash \$HOME/.claude/scripts/nexus-daily-sync.sh"
+fi
+
+echo ""
+echo "== Sharing with other AI tools =="
+if command -v node >/dev/null 2>&1; then
+    node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal); it runs again after your next Claude Code session."
+else
+    echo "-> Skipping (needs node)."
 fi
 
 echo ""

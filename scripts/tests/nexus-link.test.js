@@ -26,6 +26,7 @@ function makeFixture() {
     codex: path.join(base, 'codex', 'agents'),
     gemini: path.join(base, 'gemini', 'agents'),
     backup: path.join(base, 'backup'),
+    config: path.join(base, 'config.json'),
   };
   const { root, shared, codex } = dirs;
   write(path.join(root, 'skills/alpha/SKILL.md'), '---\nname: alpha\ndescription: Alpha.\n---\nAlpha body\n');
@@ -55,6 +56,7 @@ function run(dirs, ...args) {
       NEXUS_CODEX_AGENTS_DIR: dirs.codex,
       NEXUS_GEMINI_AGENTS_DIR: dirs.gemini,
       NEXUS_BACKUP_DIR: dirs.backup,
+      NEXUS_LOCAL_CONFIG: dirs.config,
     },
     encoding: 'utf8',
   });
@@ -120,24 +122,36 @@ test('second run is a no-op and prints nothing with --quiet', () => {
   assert.equal(again.stdout.trim(), '');
 });
 
-test('--replace-copies backs up copies and orphans, links them, and marks the dir managed', () => {
+test('--replace-copies replaces only same-name copies; unrelated skills and agents stay put', () => {
   const d = makeFixture();
   const r = run(d, '--replace-copies');
   assert.equal(r.status, 0, r.stderr);
   assert.ok(isLinkTo(path.join(d.shared, 'beta'), path.join(d.root, 'skills/beta')));
-  assert.ok(!fs.existsSync(path.join(d.shared, 'old-copy')));
-  assert.ok(fs.existsSync(path.join(d.shared, '.nexus-managed')));
+  assert.ok(fs.existsSync(path.join(d.shared, 'old-copy/SKILL.md')), "someone's own skill is not touched");
   assert.match(fs.readFileSync(path.join(d.codex, 'rev.toml'), 'utf8'), new RegExp(MARKER));
-  assert.ok(!fs.existsSync(path.join(d.codex, 'x.toml')));
+  assert.equal(fs.readFileSync(path.join(d.codex, 'x.toml'), 'utf8'), 'name = "x"\n', "someone's own agent is not touched");
+
+  const marker = JSON.parse(fs.readFileSync(path.join(d.shared, '.nexus-managed'), 'utf8'));
+  assert.deepEqual(marker.ignore, ['old-copy'], 'pre-existing folders are remembered so they are never adopted');
 
   const backups = fs.readdirSync(d.backup, { recursive: true }).map(String);
   assert.ok(backups.some((p) => p.endsWith(path.join('beta', 'SKILL.md'))));
-  assert.ok(backups.some((p) => p.endsWith('old-copy')));
-  assert.ok(backups.some((p) => p.endsWith('x.toml')));
   assert.ok(backups.some((p) => p.endsWith('rev.toml')));
+  assert.ok(!backups.some((p) => p.endsWith('old-copy') || p.endsWith('x.toml')));
 });
 
-test('once managed, a skill created directly in another tool is adopted into Nexus', () => {
+test('--retire-unrelated is the explicit way to back up unrelated folders and agent files', () => {
+  const d = makeFixture();
+  const r = run(d, '--replace-copies', '--retire-unrelated');
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(!fs.existsSync(path.join(d.shared, 'old-copy')));
+  assert.ok(!fs.existsSync(path.join(d.codex, 'x.toml')));
+  const backups = fs.readdirSync(d.backup, { recursive: true }).map(String);
+  assert.ok(backups.some((p) => p.endsWith('old-copy')));
+  assert.ok(backups.some((p) => p.endsWith('x.toml')));
+});
+
+test('once managed, only skills created afterwards in another tool are adopted into Nexus', () => {
   const d = makeFixture();
   run(d, '--replace-copies');
   write(path.join(d.shared, 'fresh/SKILL.md'), '---\nname: fresh\ndescription: Made in Codex.\n---\nUse AskUserQuestion.\n');
@@ -147,6 +161,35 @@ test('once managed, a skill created directly in another tool is adopted into Nex
   assert.ok(isLinkTo(path.join(d.shared, 'fresh'), path.join(d.root, 'skills/fresh')));
   assert.match(r.stdout, /adopted/i);
   assert.match(r.stdout, /AskUserQuestion|portability/i, 'adopted skill is linted');
+  assert.ok(!fs.existsSync(path.join(d.root, 'skills/old-copy')), 'pre-existing folder not adopted');
+  assert.ok(fs.existsSync(path.join(d.shared, 'old-copy/SKILL.md')));
+});
+
+test('non-quiet notices tell same-name copies apart from unrelated folders', () => {
+  const d = makeFixture();
+  const r = run(d);
+  assert.match(r.stdout, /same name as a Nexus skill[^\n]*beta/i);
+  assert.match(r.stdout, /not from Nexus[^\n]*old-copy/i);
+  assert.doesNotMatch(r.stdout, /real copies/i);
+});
+
+test('shareWith [] removes only what Nexus shared; shareWith ["codex"] skips Gemini', () => {
+  const d = makeFixture();
+  run(d);
+  fs.writeFileSync(d.config, JSON.stringify({ shareWith: [] }));
+  const off = run(d);
+  assert.equal(off.status, 0, off.stderr);
+  assert.ok(!fs.existsSync(path.join(d.shared, 'alpha')), 'our link removed');
+  assert.ok(fs.existsSync(path.join(d.shared, 'beta/SKILL.md')), 'copy untouched');
+  assert.ok(!fs.existsSync(path.join(d.codex, 'builder.toml')), 'generated agent removed');
+  assert.ok(fs.existsSync(path.join(d.codex, 'x.toml')), 'unrelated agent untouched');
+  assert.deepEqual(fs.readdirSync(d.gemini), []);
+
+  fs.writeFileSync(d.config, JSON.stringify({ shareWith: ['codex'] }));
+  run(d);
+  assert.ok(isLinkTo(path.join(d.shared, 'alpha'), path.join(d.root, 'skills/alpha')));
+  assert.ok(fs.existsSync(path.join(d.codex, 'builder.toml')));
+  assert.deepEqual(fs.readdirSync(d.gemini), []);
 });
 
 test('deleting a source removes only the links and files Nexus generated', () => {
@@ -173,6 +216,7 @@ test('a tool that is not installed (parent dir missing) is skipped cleanly', () 
       NEXUS_CODEX_AGENTS_DIR: path.join(d.base, 'no-codex-here', 'agents'),
       NEXUS_GEMINI_AGENTS_DIR: d.gemini,
       NEXUS_BACKUP_DIR: d.backup,
+      NEXUS_LOCAL_CONFIG: d.config,
     },
     encoding: 'utf8',
   });
