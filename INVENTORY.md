@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-23 at 22:33:04.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 14:50:19.
 
 ## Agents
 
@@ -764,7 +764,7 @@ Slash commands invoke automated workflows and tools. Grouped by namespace.
 | `/multi-frontend` | Run a frontend-focused multi-model workflow for components, layouts, animation, and UI polish. |
 | `/multi-plan` | Create a multi-model implementation plan without modifying production code. |
 | `/multi-workflow` | Run a full multi-model development workflow with research, planning, execution, optimization, and review. |
-| `/nexus-update` | Pull the latest Nexus changes into ~/.claude and refresh dependencies. |
+| `/nexus-update` | Pull the latest Nexus changes into ~/.nexus and refresh links, dependencies, and tool sharing. |
 | `/orch-add-feature` | Orchestrate building a brand-new feature end to end — research, plan, TDD, review, gated commit. Wrapper that kicks off the orch-add-feature skill. |
 | `/orch-build-mvp` | Orchestrate bootstrapping a working MVP from a design/spec doc — ingest, slice, scaffold, TDD, review, gated commit (reuses the GAN harness). Wrapper for the orch-build-mvp skill. |
 | `/orch-change-feature` | Orchestrate altering an existing, working feature to new desired behavior — update tests to the new spec, change impl, review, gated commit. Wrapper for the orch-change-feature skill. |

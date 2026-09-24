@@ -23,7 +23,7 @@ function fixture() {
   write(path.join(root, 'agents/sub/rev.md'), '---\nname: rev\ndescription: R.\n---\n');
   write(path.join(root, 'commands/hello.md'), '# hello\n');
   write(path.join(root, 'rules/x/one.md'), '# one\n');
-  write(path.join(root, 'settings.json'), JSON.stringify({
+  write(path.join(base, 'claude-home/settings.json'), JSON.stringify({
     hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node /x/scripts/hooks/inventory-auto-update.js' }] }] },
   }));
   write(path.join(base, 'claude.json'), JSON.stringify({ mcpServers: { linear: {}, context7: {} } }));
@@ -31,6 +31,7 @@ function fixture() {
     ...process.env,
     NEXUS_HOME: root,
     NEXUS_CLAUDE_JSON: path.join(base, 'claude.json'),
+    NEXUS_CLAUDE_SETTINGS: path.join(base, 'claude-home/settings.json'), // Claude's settings live in ~/.claude, not in Nexus
     NEXUS_SHARED_SKILLS_DIR: path.join(base, 'shared'),
     NEXUS_CODEX_AGENTS_DIR: path.join(base, 'codex'),
     NEXUS_GEMINI_AGENTS_DIR: path.join(base, 'gemini'),

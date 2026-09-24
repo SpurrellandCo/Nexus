@@ -14,7 +14,7 @@
  *   node nexus-baseline.js                   print the snapshot as JSON
  *   node nexus-baseline.js --out <file>      write it to a file
  *   node nexus-baseline.js --compare <file>  diff against a saved snapshot (exit 1 if different)
- * Env overrides (tests): NEXUS_HOME, NEXUS_CLAUDE_JSON, NEXUS_SHARED_SKILLS_DIR,
+ * Env overrides (tests): NEXUS_HOME, NEXUS_CLAUDE_JSON, NEXUS_CLAUDE_SETTINGS, NEXUS_SHARED_SKILLS_DIR,
  *   NEXUS_CODEX_AGENTS_DIR, NEXUS_GEMINI_AGENTS_DIR
  */
 
@@ -27,6 +27,8 @@ const HOME = os.homedir();
 const env = process.env;
 const ROOT = require('./lib/nexus-home').nexusHome();
 const CLAUDE_JSON = env.NEXUS_CLAUDE_JSON || path.join(HOME, '.claude.json');
+// Claude Code's settings (hooks) live in ~/.claude, not in the Nexus repo.
+const CLAUDE_SETTINGS = env.NEXUS_CLAUDE_SETTINGS || path.join(HOME, '.claude', 'settings.json');
 const SHARED_SKILLS = env.NEXUS_SHARED_SKILLS_DIR || path.join(HOME, '.agents', 'skills');
 const CODEX_AGENTS = env.NEXUS_CODEX_AGENTS_DIR || path.join(HOME, '.codex', 'agents');
 const GEMINI_AGENTS = env.NEXUS_GEMINI_AGENTS_DIR || path.join(HOME, '.gemini', 'agents');
@@ -60,7 +62,7 @@ function agents() {
 }
 
 function hooks() {
-  const events = readJson(path.join(ROOT, 'settings.json')).hooks || {};
+  const events = readJson(CLAUDE_SETTINGS).hooks || {};
   const lines = Object.entries(events).flatMap(([event, entries]) => entries.flatMap((entry) =>
     (entry.hooks || []).map((h) => {
       const script = (String(h.command).match(/[A-Za-z0-9_.-]+\.(?:js|sh|py)(?=["'\s]|$)/g) || []).pop();

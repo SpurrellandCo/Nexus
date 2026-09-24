@@ -33,7 +33,7 @@ const ROOT_COMMANDS_GROUP = 'Root Commands';
 const HOOKS_END_MARKER = '\n---\n\n## Summary';
 
 const INTRO =
-  'This is a reference of every agent, skill, slash command, and hook installed in the Nexus Claude Code configuration (root: `~/.claude`). ' +
+  'This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). ' +
   'The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` ' +
   '(Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is.';
 

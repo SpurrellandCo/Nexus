@@ -32,7 +32,7 @@ function write(root, rel, content) {
 
 function run(root, ...args) {
   return spawnSync('node', [SCRIPT, ...args], {
-    env: { ...process.env, CLAUDE_HOME: root },
+    env: { ...process.env, CLAUDE_HOME: root, NEXUS_HOME: root },
     encoding: 'utf8',
   });
 }
