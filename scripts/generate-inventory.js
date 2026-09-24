@@ -23,13 +23,10 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const ROOT = process.env.CLAUDE_HOME
-  ? path.resolve(process.env.CLAUDE_HOME)
-  : path.join(os.homedir(), '.claude');
+const ROOT = require('./lib/nexus-home').nexusHome();
 const INVENTORY_PATH = path.join(ROOT, 'INVENTORY.md');
 const SKIP_SKILL_DIRS = new Set(['synced']);
 const ROOT_COMMANDS_GROUP = 'Root Commands';

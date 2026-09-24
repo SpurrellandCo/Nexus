@@ -15,12 +15,19 @@
 # working tree is left dirty (unstaged) for review and a warning is logged.
 set -euo pipefail
 
-CLAUDE_DIR="$HOME/.claude"
+# Where Nexus lives: $NEXUS_HOME, else ~/.nexus (current layout), else ~/.claude (older installs).
+if [ -n "${NEXUS_HOME:-}" ]; then
+    NEXUS_DIR="$NEXUS_HOME"
+elif [ -d "$HOME/.nexus/.git" ]; then
+    NEXUS_DIR="$HOME/.nexus"
+else
+    NEXUS_DIR="$HOME/.claude"
+fi
 MAX_LISTED_FILES=5
 LOG_FILE="$HOME/.cache/nexus-daily-sync.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
-# Nexus-owned content. Everything else in ~/.claude is runtime state.
+# Nexus-owned content. Anything else in the checkout is runtime state (older installs mix it in).
 SYNC_PATHS=(
     agents commands skills rules scripts hooks mcp-configs .agents
     settings.example.json CLAUDE.md AGENTS.md README.md INVENTORY.md LICENSE
@@ -33,10 +40,10 @@ log() {
 }
 
 config_get() {
-    node "$CLAUDE_DIR/scripts/lib/nexus-config.js" get "$1"
+    node "$NEXUS_DIR/scripts/lib/nexus-config.js" get "$1"
 }
 
-cd "$CLAUDE_DIR"
+cd "$NEXUS_DIR"
 
 if ! command -v node >/dev/null 2>&1; then
     log "Nexus daily sync: node not found, can't read ~/.nexus-local/config.json — skipping."
@@ -54,10 +61,10 @@ fi
 push_enabled="$(config_get sync.push 2>/dev/null || echo false)"
 
 # Refresh INVENTORY.md first so a newly added skill lands in the same commit.
-node "$CLAUDE_DIR/scripts/generate-inventory.js" --quiet >/dev/null 2>&1 \
+node "$NEXUS_DIR/scripts/generate-inventory.js" --quiet >/dev/null 2>&1 \
     || log "Nexus daily sync: INVENTORY.md refresh failed (continuing)."
 # Keep Codex / Gemini CLI in step with Nexus skills and agents.
-node "$CLAUDE_DIR/scripts/nexus-link.js" --quiet >/dev/null 2>&1 \
+node "$NEXUS_DIR/scripts/nexus-link.js" --quiet >/dev/null 2>&1 \
     || log "Nexus daily sync: nexus-link failed (continuing)."
 
 paths=()
@@ -85,7 +92,7 @@ if git diff --cached --quiet; then
     exit 0
 fi
 
-audit_output="$(git diff --cached --unified=0 | python3 "$CLAUDE_DIR/scripts/nexus-secret-audit.py" 2>&1)" && audit_ok=1 || audit_ok=0
+audit_output="$(git diff --cached --unified=0 | python3 "$NEXUS_DIR/scripts/nexus-secret-audit.py" 2>&1)" && audit_ok=1 || audit_ok=0
 
 if [ "$audit_ok" -eq 0 ]; then
     git reset >/dev/null

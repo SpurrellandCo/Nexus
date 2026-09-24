@@ -15,13 +15,12 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { lintFile, kindForPath, formatFindings } = require('../lib/portability');
 
 const MAX_STDIN = 1024 * 1024;
 const MAX_FINDINGS = 8;
-const ROOT = path.resolve(process.env.NEXUS_HOME || process.env.CLAUDE_HOME || path.join(os.homedir(), '.claude'));
+const ROOT = require('../lib/nexus-home').nexusHome();
 
 function realpathOrSelf(p) {
   try { return fs.realpathSync(p); } catch { return p; }

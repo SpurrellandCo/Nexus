@@ -13,15 +13,14 @@
  *   node nexus-portability.js --all           report on every skill and agent
  *   add --quiet to print only files with errors
  *
- * Env: NEXUS_HOME (or CLAUDE_HOME) overrides the root (default ~/.claude).
+ * Env: NEXUS_HOME (or CLAUDE_HOME) overrides the root (default: lib/nexus-home.js).
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { lintFile, formatFindings } = require('./lib/portability');
 
-const ROOT = path.resolve(process.env.NEXUS_HOME || process.env.CLAUDE_HOME || path.join(os.homedir(), '.claude'));
+const ROOT = require('./lib/nexus-home').nexusHome();
 const SKIP_DIRS = new Set(['node_modules', 'synced', '.git']);
 
 function walkMarkdown(dir) {

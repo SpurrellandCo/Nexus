@@ -10,7 +10,7 @@
  * if either is missing, injects a reminder for Claude to proactively
  * offer to build/write them once near the start of the session.
  *
- * Skips non-project directories (home dir, ~/.claude itself, any cwd
+ * Skips non-project directories (home dir, ~/.claude and ~/.nexus, any cwd
  * with no recognizable project markers) and skips on every SessionStart
  * mode except 'startup'/'resume'/'clear' (not 'compact', which would
  * otherwise re-nag after every auto-compact within the same session).
@@ -38,14 +38,11 @@ const NOISY_MODES = new Set(['compact']);
 
 function isNonProjectDir(cwd) {
   const home = os.homedir();
-  const claudeDir = path.join(home, '.claude');
+  const configDirs = [path.join(home, '.claude'), path.join(home, '.nexus')].map((d) => path.resolve(d));
   const normalizedCwd = path.resolve(cwd);
 
   if (normalizedCwd === path.resolve(home)) return true;
-  if (normalizedCwd === path.resolve(claudeDir)) return true;
-  if (normalizedCwd.startsWith(path.resolve(claudeDir) + path.sep)) return true;
-
-  return false;
+  return configDirs.some((dir) => normalizedCwd === dir || normalizedCwd.startsWith(dir + path.sep));
 }
 
 function hasProjectMarker(cwd) {

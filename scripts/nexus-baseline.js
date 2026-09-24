@@ -25,7 +25,7 @@ const { parseFrontmatter } = require('./generate-inventory.js');
 
 const HOME = os.homedir();
 const env = process.env;
-const ROOT = path.resolve(env.NEXUS_HOME || env.CLAUDE_HOME || path.join(HOME, '.claude'));
+const ROOT = require('./lib/nexus-home').nexusHome();
 const CLAUDE_JSON = env.NEXUS_CLAUDE_JSON || path.join(HOME, '.claude.json');
 const SHARED_SKILLS = env.NEXUS_SHARED_SKILLS_DIR || path.join(HOME, '.agents', 'skills');
 const CODEX_AGENTS = env.NEXUS_CODEX_AGENTS_DIR || path.join(HOME, '.codex', 'agents');

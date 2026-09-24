@@ -8,7 +8,15 @@ set -euo pipefail
 
 LABEL="com.nexus.dailysync"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-SCRIPT_PATH="$HOME/.claude/scripts/nexus-daily-sync.sh"
+# Where Nexus lives: $NEXUS_HOME, else ~/.nexus (current layout), else ~/.claude (older installs).
+if [ -n "${NEXUS_HOME:-}" ]; then
+    NEXUS_DIR="$NEXUS_HOME"
+elif [ -d "$HOME/.nexus/.git" ]; then
+    NEXUS_DIR="$HOME/.nexus"
+else
+    NEXUS_DIR="$HOME/.claude"
+fi
+SCRIPT_PATH="$NEXUS_DIR/scripts/nexus-daily-sync.sh"
 LOG_PATH="$HOME/.cache/nexus-daily-sync-launchd.log"
 HOUR="${NEXUS_SYNC_HOUR:-21}"
 MINUTE="${NEXUS_SYNC_MINUTE:-0}"

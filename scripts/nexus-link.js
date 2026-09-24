@@ -39,7 +39,7 @@ const { loadConfig } = require('./lib/nexus-config');
 
 const HOME = os.homedir();
 const env = process.env;
-const ROOT = path.resolve(env.NEXUS_HOME || env.CLAUDE_HOME || path.join(HOME, '.claude'));
+const ROOT = require('./lib/nexus-home').nexusHome();
 const SKILLS_DIR = path.join(ROOT, 'skills');
 const SHARED_SKILLS = path.resolve(env.NEXUS_SHARED_SKILLS_DIR || path.join(HOME, '.agents', 'skills'));
 const CODEX_AGENTS = path.resolve(env.NEXUS_CODEX_AGENTS_DIR || path.join(env.CODEX_HOME || path.join(HOME, '.codex'), 'agents'));
@@ -66,11 +66,16 @@ function lstatOrNull(p) {
   try { return fs.lstatSync(p); } catch { return null; }
 }
 
+function realOrSelf(p) {
+  try { return fs.realpathSync(p); } catch { return p; }
+}
+
+/** True if the link points into Nexus's skills dir, directly or through an old path (e.g. ~/.claude/skills). */
 function isOurLink(entry) {
   const target = path.resolve(path.dirname(entry), fs.readlinkSync(entry));
-  let realSkills = SKILLS_DIR;
-  try { realSkills = fs.realpathSync(SKILLS_DIR); } catch { /* keep unresolved */ }
-  return [SKILLS_DIR, realSkills].some((dir) => target.startsWith(dir + path.sep));
+  const skillDirs = [SKILLS_DIR, realOrSelf(SKILLS_DIR)];
+  const viaRealParent = path.join(realOrSelf(path.dirname(target)), path.basename(target));
+  return [target, viaRealParent].some((t) => skillDirs.some((dir) => t.startsWith(dir + path.sep)));
 }
 
 function sameTarget(entry, dir) {
@@ -133,10 +138,12 @@ function linkSkill(skill, ctx) {
     return ctx.out.linked.push(skill.name);
   }
   if (st.isSymbolicLink()) {
-    if (sameTarget(entry, skill.dir) || !isOurLink(entry)) return undefined;
+    const pointsHere = sameTarget(entry, skill.dir);
+    if (!pointsHere && !isOurLink(entry)) return undefined;
+    if (fs.readlinkSync(entry) === skill.dir) return undefined;
     fs.unlinkSync(entry);
     fs.symlinkSync(skill.dir, entry, 'dir');
-    return ctx.out.linked.push(skill.name);
+    return (pointsHere ? ctx.out.repointed : ctx.out.linked).push(skill.name);
   }
   if (!st.isDirectory()) return undefined;
   if (!ctx.replaceCopies) return ctx.out.copies.push(skill.name);
@@ -302,6 +309,7 @@ function changeLines(out, agentStats) {
   const lines = [];
   const add = (items, text) => { if (items.length) lines.push(`${text}: ${list(items)}`); };
   add(out.linked, `Linked ${out.linked.length} skill(s) into ${tilde(SHARED_SKILLS)}`);
+  add(out.repointed, `Re-pointed ${out.repointed.length} skill link(s) to ${tilde(SKILLS_DIR)}`);
   add(out.replaced, `Replaced ${out.replaced.length} same-name skill copy(ies) with links (backed up)`);
   add(out.retired, `Retired ${out.retired.length} unrelated skill folder(s) (backed up)`);
   add(out.adopted, `Adopted ${out.adopted.length} skill(s) created in another tool into Nexus`);
@@ -335,10 +343,19 @@ function noticeLines(out, agentStats) {
   return lines;
 }
 
+function assertCompleteRoot() {
+  for (const dir of [SKILLS_DIR, path.join(ROOT, 'agents')]) {
+    if (!fs.existsSync(dir)) {
+      throw new Error(`${tilde(dir)} not found; refusing to sync from an incomplete Nexus root, so nothing shared gets removed`);
+    }
+  }
+}
+
 function main(argv) {
+  assertCompleteRoot();
   const quiet = argv.includes('--quiet');
   const { shareWith } = loadConfig();
-  const out = { linked: [], replaced: [], retired: [], adopted: [], unlinked: [], copies: [], unmanaged: [], duplicates: [], invalid: [] };
+  const out = { linked: [], repointed: [], replaced: [], retired: [], adopted: [], unlinked: [], copies: [], unmanaged: [], duplicates: [], invalid: [] };
   const ctx = {
     replaceCopies: argv.includes('--replace-copies'),
     retireUnrelated: argv.includes('--retire-unrelated'),

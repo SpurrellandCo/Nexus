@@ -206,6 +206,29 @@ test('deleting a source removes only the links and files Nexus generated', () =>
   assert.ok(fs.lstatSync(path.join(d.shared, 'foreign')).isSymbolicLink(), 'foreign link untouched');
 });
 
+test('links made through an old path (e.g. ~/.claude before the move) are re-pointed or cleaned up', () => {
+  const d = makeFixture();
+  const alias = path.join(d.base, 'old-home');
+  fs.symlinkSync(d.root, alias); // like ~/.claude/skills -> ~/.nexus/skills after the move
+  fs.symlinkSync(path.join(alias, 'skills/alpha'), path.join(d.shared, 'alpha'));
+  fs.symlinkSync(path.join(alias, 'skills/gone'), path.join(d.shared, 'gone'));
+  const r = run(d);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(fs.readlinkSync(path.join(d.shared, 'alpha')), path.join(d.root, 'skills/alpha'), 're-pointed to the canonical path');
+  assert.equal(fs.readdirSync(d.shared).includes('gone'), false, 'dangling old-path link removed');
+});
+
+test('refuses to run against a Nexus root with no skills/ or agents/ folder (never mass-removes)', () => {
+  const d = makeFixture();
+  run(d);
+  fs.renameSync(path.join(d.root, 'agents'), path.join(d.base, 'agents-away'));
+  const r = run(d);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /agents/);
+  assert.ok(fs.existsSync(path.join(d.codex, 'builder.toml')), 'generated agents untouched');
+  assert.ok(fs.existsSync(path.join(d.shared, 'alpha')), 'skill links untouched');
+});
+
 test('a tool that is not installed (parent dir missing) is skipped cleanly', () => {
   const d = makeFixture();
   const r = spawnSync('node', [SCRIPT], {
