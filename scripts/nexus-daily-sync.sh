@@ -30,7 +30,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Nexus-owned content. Anything else in the checkout is runtime state (older installs mix it in).
 SYNC_PATHS=(
     agents commands skills rules scripts hooks mcp-configs .agents
-    settings.example.json CLAUDE.md AGENTS.md README.md INVENTORY.md LICENSE
+    settings.example.json NEXUS.md adapters CLAUDE.md AGENTS.md README.md INVENTORY.md LICENSE
     install.sh update.sh bootstrap.sh .gitignore
     plugin.json marketplace.json PLUGIN_SCHEMA_NOTES.md config.json
 )
@@ -42,6 +42,9 @@ log() {
 config_get() {
     node "$NEXUS_DIR/scripts/lib/nexus-config.js" get "$1"
 }
+
+# launchd runs jobs with a minimal PATH; add the usual places node/git/python live.
+export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin"
 
 cd "$NEXUS_DIR"
 

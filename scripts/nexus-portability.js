@@ -36,7 +36,8 @@ function walkMarkdown(dir) {
 function allFiles() {
   const skillFiles = walkMarkdown(path.join(ROOT, 'skills'))
     .filter((f) => path.relative(path.join(ROOT, 'skills'), f).includes(path.sep));
-  return [...skillFiles, ...walkMarkdown(path.join(ROOT, 'agents'))];
+  const shared = path.join(ROOT, 'NEXUS.md'); // instructions every tool receives
+  return [...skillFiles, ...walkMarkdown(path.join(ROOT, 'agents')), ...(fs.existsSync(shared) ? [shared] : [])];
 }
 
 function report(results, { quiet }) {

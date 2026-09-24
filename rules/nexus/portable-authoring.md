@@ -1,6 +1,6 @@
 # Portable Skills & Agents (Nexus)
 
-Every skill in `skills/` and agent in `agents/` is shared with every AI coding tool on this machine: Claude Code, Codex, Gemini CLI, and local-model harnesses (OpenCode, Qwen Code, Hermes via Ollama). Write them so any of those tools can follow them.
+Every skill in `~/.nexus/skills/` and agent in `~/.nexus/agents/` is shared with every AI coding tool on this machine: Claude Code, Codex, Gemini CLI, and local-model tools (OpenCode, Qwen Code, Hermes via Ollama). Write them so any of those tools can follow them.
 
 ## When creating or editing a skill or agent
 
@@ -16,6 +16,5 @@ Every skill in `skills/` and agent in `agents/` is shared with every AI coding t
 
 ## What happens automatically
 
-- `scripts/hooks/portability-check.js` checks each skill or agent you write or edit, and reports anything to fix. Fix it in the same turn.
-- `scripts/hooks/nexus-link-auto.js` (Stop hook, plus the nightly sync and `update.sh`) links new skills into `~/.agents/skills` (read by Codex and Gemini CLI) and writes agents into `~/.codex/agents` and `~/.gemini/agents`. Don't copy skills or agents into other tools by hand.
-- Manual check: `node $NEXUS_HOME/scripts/nexus-portability.js <file>` (or `--all` for the full report).
+- **Check every skill or agent you write or edit** with `node ~/.nexus/scripts/nexus-portability.js <file>` (or `--all` for the full report) and fix what it reports. In Claude Code a hook runs this for you after each edit.
+- **Sharing is automatic:** `scripts/nexus-link.js` gives new and changed skills and agents to every tool set up on this machine (after each Claude Code turn, every 10 minutes in the background, and from `update.sh` and the nightly sync). Don't copy skills or agents into a tool's folder by hand.

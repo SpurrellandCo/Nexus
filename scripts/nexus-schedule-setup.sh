@@ -21,6 +21,10 @@ LOG_PATH="$HOME/.cache/nexus-daily-sync-launchd.log"
 HOUR="${NEXUS_SYNC_HOUR:-21}"
 MINUTE="${NEXUS_SYNC_MINUTE:-0}"
 
+# launchd's default PATH lacks Homebrew/nvm, so record where node lives now.
+NODE_DIR="$(dirname "$(command -v node 2>/dev/null || echo /opt/homebrew/bin/node)")"
+JOB_PATH="$NODE_DIR:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 mkdir -p "$HOME/Library/LaunchAgents" "$(dirname "$LOG_PATH")"
 
 if launchctl list "$LABEL" >/dev/null 2>&1; then
@@ -39,6 +43,11 @@ cat > "$PLIST" <<EOF
         <string>/bin/bash</string>
         <string>$SCRIPT_PATH</string>
     </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>$JOB_PATH</string>
+    </dict>
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>

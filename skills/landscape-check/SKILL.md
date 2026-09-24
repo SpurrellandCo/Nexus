@@ -32,7 +32,7 @@ List 3–6 distinct problem areas the work implies (e.g. "STL mesh boolean ops",
 
 1. Read `~/.claude/INVENTORY.md`. Note its `Last generated` date. If it is more than 30 days old, treat it as a hint only and verify against the live dirs: `ls ~/.claude/skills ~/.claude/agents`.
 2. For each problem area, list the skills, agents, and hooks that already cover it (name + one-line why). Mark uncovered areas as **stack gaps**.
-3. Read `~/.claude/skill-learning/watchlist.jsonl` and `learnings.jsonl` if they exist. Surface prior entries for similar tasks (what was recommended vs. used, alternatives that were promising but unused).
+3. Read `~/.nexus-local/skill-learning/watchlist.jsonl` and `learnings.jsonl` if they exist. Surface prior entries for similar tasks (what was recommended vs. used, alternatives that were promising but unused).
 
 ### Step 3 — External pass (what exists in the wild)
 

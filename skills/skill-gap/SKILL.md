@@ -1,6 +1,6 @@
 ---
 name: skill-gap
-description: Periodic skill library audit. Reads all learnings in the ~/.claude/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow.
+description: Periodic skill library audit. Reads all learnings in the ~/.nexus-local/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow.
 origin: custom
 ---
 
@@ -20,8 +20,8 @@ Reads the learning history across all projects and tells you what skills are mis
 ### Step 1 — Load All Learnings from the Log
 
 Read the cross-project log written by `/skill-learn` (plain JSONL, one JSON object per line — use `cat`/`jq`):
-- `~/.claude/skill-learning/learnings.jsonl` — all task-level learnings across projects (`projectSlug`, `taskSlug`, `recommended`, `used`, `outcome`, …)
-- `~/.claude/skill-learning/watchlist.jsonl` — all alternatives found but not used (`tool`, `taskContext`, `projectSlug`, `worthRevisiting`, …)
+- `~/.nexus-local/skill-learning/learnings.jsonl` — all task-level learnings across projects (`projectSlug`, `taskSlug`, `recommended`, `used`, `outcome`, …)
+- `~/.nexus-local/skill-learning/watchlist.jsonl` — all alternatives found but not used (`tool`, `taskContext`, `projectSlug`, `worthRevisiting`, …)
 
 Group by `taskSlug` (similar task names across projects) and by `recommended` skill. Build a frequency table.
 

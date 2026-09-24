@@ -1,6 +1,6 @@
 ---
 name: skill-learn
-description: Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and append structured learnings to the ~/.claude/skill-learning log so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro.
+description: Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and append structured learnings to the ~/.nexus-local/skill-learning log so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro.
 origin: custom
 ---
 
@@ -40,7 +40,7 @@ Read `DECISIONS.md` if it exists. Note any entries that explain why a recommenda
 
 ### Step 4 — Append Learnings to the Log
 
-For each task where data is available, append **one JSON object per line** to `~/.claude/skill-learning/learnings.jsonl` (create the directory and file if they don't exist — `mkdir -p ~/.claude/skill-learning`). The directory is gitignored, so project-specific data never reaches the synced Nexus repo. Append with `>>` — never rewrite the file. Write each object compactly on a single line; it is shown pretty-printed below for readability.
+For each task where data is available, append **one JSON object per line** to `~/.nexus-local/skill-learning/learnings.jsonl` (create the directory and file if they don't exist — `mkdir -p ~/.nexus-local/skill-learning`). The directory is gitignored, so project-specific data never reaches the synced Nexus repo. Append with `>>` — never rewrite the file. Write each object compactly on a single line; it is shown pretty-printed below for readability.
 
 **Line shape:**
 ```json
@@ -69,7 +69,7 @@ For tasks where the recommended skill was NOT used:
 
 ### Step 5 — Write Watchlist Entries
 
-For every "Watchlist Addition" in SKILL_MAP.md (alternatives found but not used this project), append one line to `~/.claude/skill-learning/watchlist.jsonl` (same rules: `mkdir -p`, append with `>>`, one compact object per line).
+For every "Watchlist Addition" in SKILL_MAP.md (alternatives found but not used this project), append one line to `~/.nexus-local/skill-learning/watchlist.jsonl` (same rules: `mkdir -p`, append with `>>`, one compact object per line).
 
 **Line shape:**
 ```json
@@ -86,7 +86,7 @@ For every "Watchlist Addition" in SKILL_MAP.md (alternatives found but not used 
 ### Step 6 — Summarize
 
 After writing all entries, output a short summary:
-- N learnings appended to `~/.claude/skill-learning/learnings.jsonl`
+- N learnings appended to `~/.nexus-local/skill-learning/learnings.jsonl`
 - N watchlist entries appended to `watchlist.jsonl`
 - Top 2-3 gap signals (skills that didn't match well across multiple tasks)
 - Recommendation: if the same gap appears in 2+ tasks, flag it for `/skill-gap`

@@ -1,6 +1,6 @@
 ---
 name: skill-matcher
-description: Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub, npm/PyPI, and the web for alternatives (with stars, last-push, license, and an adopt/port/wrap/skip verdict), checks the ~/.claude/skill-learning log for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline.
+description: Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub, npm/PyPI, and the web for alternatives (with stars, last-push, license, and an adopt/port/wrap/skip verdict), checks the ~/.nexus-local/skill-learning log for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline.
 model: opus
 tools: ["Read", "Glob", "Grep", "Bash", "WebSearch"]
 ---
@@ -94,8 +94,8 @@ Surface the 1-2 strongest results per task only — not every result.
 ### Step 5 — Check Prior Learnings
 
 Read the cross-project learning log (plain JSONL, one JSON object per line — use `grep`/`jq`):
-- `~/.claude/skill-learning/learnings.jsonl` — fields `projectSlug`, `taskSlug`, `recommended`, `used`, `githubAlternative`, `decisionRef`, `outcome`, `date`
-- `~/.claude/skill-learning/watchlist.jsonl` — fields `tool`, `taskContext`, `projectSlug`, `reason`, `worthRevisiting`, `date`
+- `~/.nexus-local/skill-learning/learnings.jsonl` — fields `projectSlug`, `taskSlug`, `recommended`, `used`, `githubAlternative`, `decisionRef`, `outcome`, `date`
+- `~/.nexus-local/skill-learning/watchlist.jsonl` — fields `tool`, `taskContext`, `projectSlug`, `reason`, `worthRevisiting`, `date`
 
 For each task:
 - Find entries from prior projects with similar task names or keywords

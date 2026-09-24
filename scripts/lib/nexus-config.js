@@ -8,13 +8,15 @@
  * ~/.nexus-local/config.json:
  *
  *   {
- *     "shareWith": ["codex", "gemini"],     // tools that get Nexus skills/agents; [] = Claude Code only
- *     "sync": { "enabled": true,            // nightly sync commits Nexus changes to this checkout
- *               "push": false }             // ...and pushes them to origin (only for your own repo)
+ *     "tools": ["claude", "codex", "gemini"],  // which AI tools Nexus sets up; no tool is special
+ *     "sync": { "enabled": true,               // nightly sync commits Nexus changes to this checkout
+ *               "push": false }                // ...and pushes them to origin (only for your own repo)
  *   }
  *
- * A missing file means the safe defaults below: sharing is additive and
- * reversible, and the nightly sync never pushes unless someone opted in.
+ * A missing file means the safe defaults below: every tool is set up (all of
+ * it additive and reversible), and the nightly sync never pushes unless
+ * someone opted in. Older configs used "shareWith" (tools besides Claude,
+ * which was always set up); that still works.
  * An unreadable or invalid file is an error, never a silent default.
  *
  * CLI (used by install.sh and nexus-daily-sync.sh):
@@ -27,9 +29,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const KNOWN_TOOLS = ['codex', 'gemini'];
+const KNOWN_TOOLS = ['claude', 'codex', 'gemini'];
 const DEFAULTS = Object.freeze({
-  shareWith: KNOWN_TOOLS,
+  tools: KNOWN_TOOLS,
   sync: Object.freeze({ enabled: true, push: false }),
 });
 
@@ -38,9 +40,9 @@ function configPath() {
 }
 
 function validate(config) {
-  if (!Array.isArray(config.shareWith)) throw new Error('config: "shareWith" must be a list');
-  const unknown = config.shareWith.filter((t) => !KNOWN_TOOLS.includes(t));
-  if (unknown.length) throw new Error(`config: unknown tool(s) in "shareWith": ${unknown.join(', ')} (known: ${KNOWN_TOOLS.join(', ')})`);
+  if (!Array.isArray(config.tools)) throw new Error('config: "tools" must be a list');
+  const unknown = config.tools.filter((t) => !KNOWN_TOOLS.includes(t));
+  if (unknown.length) throw new Error(`config: unknown tool(s) in "tools": ${unknown.join(', ')} (known: ${KNOWN_TOOLS.join(', ')})`);
   for (const key of ['enabled', 'push']) {
     if (typeof config.sync[key] !== 'boolean') throw new Error(`config: "sync.${key}" must be true or false`);
   }
@@ -56,11 +58,14 @@ function loadConfig() {
   } catch (err) {
     throw new Error(`config: cannot read ${file}: ${err.message}`);
   }
-  return validate({
-    ...DEFAULTS,
-    ...raw,
-    sync: { ...DEFAULTS.sync, ...(raw.sync || {}) },
-  });
+  return validate(merge(raw));
+}
+
+/** Defaults + file values; maps the older "shareWith" (Claude always on) to "tools". */
+function merge(raw) {
+  const { shareWith, ...rest } = raw;
+  const legacyTools = Array.isArray(shareWith) && !Array.isArray(raw.tools) ? { tools: ['claude', ...shareWith] } : {};
+  return { ...DEFAULTS, ...rest, ...legacyTools, sync: { ...DEFAULTS.sync, ...(raw.sync || {}) } };
 }
 
 function getValue(config, dotted) {
@@ -71,7 +76,7 @@ function writeConfig(json, { force = false } = {}) {
   const file = configPath();
   if (fs.existsSync(file) && !force) return false;
   const parsed = JSON.parse(json);
-  validate({ ...DEFAULTS, ...parsed, sync: { ...DEFAULTS.sync, ...(parsed.sync || {}) } });
+  validate(merge(parsed));
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(parsed, null, 2)}\n`);
   return true;

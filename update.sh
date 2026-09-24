@@ -62,7 +62,7 @@ if command -v node >/dev/null 2>&1; then
     if [ "$NEXUS_DIR" = "$HOME/.claude" ]; then
         echo "-> Nexus now lives in ~/.nexus, with links from ~/.claude. Move this install with:"
         echo "   bash ~/.claude/scripts/nexus-claude-links.sh --migrate"
-    else
+    elif node scripts/lib/nexus-config.js get tools 2>/dev/null | grep -q '"claude"'; then
         bash scripts/nexus-claude-links.sh || echo "-> ~/.claude link refresh failed (non-fatal)."
     fi
     # Link new/changed skills and agents into the other AI tools (Codex, Gemini CLI).

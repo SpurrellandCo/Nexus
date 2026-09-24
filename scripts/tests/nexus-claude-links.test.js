@@ -50,7 +50,7 @@ test('--migrate moves the repo to ~/.nexus and links it back; runtime files stay
 
   assert.ok(fs.existsSync(path.join(d.nexus, '.git')), 'repo moved');
   assert.ok(!fs.existsSync(path.join(d.claude, '.git')), 'no repo left in ~/.claude');
-  for (const entry of ['skills', 'CLAUDE.md', 'scripts', '.gitignore', 'plans']) {
+  for (const entry of ['skills', 'scripts', '.gitignore', 'plans']) {
     assert.equal(linkTarget(path.join(d.claude, entry)), path.join(d.nexus, entry), `${entry} linked`);
   }
   assert.equal(fs.readFileSync(path.join(d.claude, 'settings.json'), 'utf8'), '{"secret": true}');
@@ -59,6 +59,7 @@ test('--migrate moves the repo to ~/.nexus and links it back; runtime files stay
   assert.ok(fs.existsSync(path.join(d.nexus, 'skills/private-one/SKILL.md')), 'untracked content inside a moved dir moves too');
   assert.equal(git(d.nexus, 'status', '--porcelain', '--', 'skills/alpha', 'CLAUDE.md').trim(), '', 'repo still clean');
   assert.equal(fs.readFileSync(path.join(d.claude, 'skills/alpha/SKILL.md'), 'utf8').slice(0, 3), '---', 'readable through the link');
+  assert.ok(!fs.existsSync(path.join(d.claude, 'CLAUDE.md')), 'CLAUDE.md is the repo\'s own project file, not linked (nexus-link writes the real one)');
 });
 
 test('linking is idempotent and says nothing the second time', () => {
@@ -72,13 +73,13 @@ test('linking is idempotent and says nothing the second time', () => {
 test('a real item already where a link goes is backed up, never deleted', () => {
   const d = legacyInstall();
   run(d, '--migrate');
-  fs.rmSync(path.join(d.claude, 'CLAUDE.md'));
-  write(path.join(d.claude, 'CLAUDE.md'), '# someone else\'s own file\n');
+  fs.rmSync(path.join(d.claude, 'scripts'));
+  write(path.join(d.claude, 'scripts/mine.sh'), 'echo mine\n');
   const r = run(d);
   assert.equal(r.status, 0, r.stderr);
-  assert.equal(linkTarget(path.join(d.claude, 'CLAUDE.md')), path.join(d.nexus, 'CLAUDE.md'));
+  assert.equal(linkTarget(path.join(d.claude, 'scripts')), path.join(d.nexus, 'scripts'));
   const backups = fs.readdirSync(path.join(d.claude, 'backups'), { recursive: true }).map(String);
-  assert.ok(backups.some((p) => p.endsWith('CLAUDE.md')));
+  assert.ok(backups.some((p) => p.endsWith('mine.sh')));
   assert.match(r.stdout, /backed up/i);
 });
 
@@ -88,4 +89,15 @@ test('--migrate refuses to overwrite an existing ~/.nexus', () => {
   const r = run(d, '--migrate');
   assert.notEqual(r.status, 0);
   assert.ok(fs.existsSync(path.join(d.claude, '.git')), 'nothing moved');
+});
+
+test('an old link for CLAUDE.md or AGENTS.md (earlier layout) is removed, never recreated', () => {
+  const d = legacyInstall();
+  run(d, '--migrate');
+  fs.symlinkSync(path.join(d.nexus, 'CLAUDE.md'), path.join(d.claude, 'CLAUDE.md'));
+  write(path.join(d.claude, 'AGENTS.md'), 'my own real file\n');
+  const r = run(d);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(!fs.existsSync(path.join(d.claude, 'CLAUDE.md')), 'stale link removed');
+  assert.equal(fs.readFileSync(path.join(d.claude, 'AGENTS.md'), 'utf8'), 'my own real file\n', 'a real file is left alone');
 });

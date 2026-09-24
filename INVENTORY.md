@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 14:50:19.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 15:28:56.
 
 ## Agents
 
@@ -49,7 +49,7 @@ Agents are specialized coordinators for specific tasks or domains. Use them when
 | `security-reviewer` | Security vulnerability detection and remediation specialist. Use PROACTIVELY after writing code that handles user input, authentication, API endpoints, or sensitive data. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10 vulnerabilities. |
 | `seo-specialist` | SEO specialist for technical SEO audits, on-page optimization, structured data, Core Web Vitals, and content/keyword mapping. Use for site audits, meta tag reviews, schema markup, sitemap and robots issues, and SEO remediation plans. |
 | `silent-failure-hunter` | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. |
-| `skill-matcher` | Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub, npm/PyPI, and the web for alternatives (with stars, last-push, license, and an adopt/port/wrap/skip verdict), checks the ~/.claude/skill-learning log for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline. |
+| `skill-matcher` | Post-PRD skill assignment and research agent. Runs after PRD health gate passes, before the planner. Reads PRD/MASTER.md (or a specified sub-PRD path), maps every task/sub-task to the best ECC skill, searches GitHub, npm/PyPI, and the web for alternatives (with stars, last-push, license, and an adopt/port/wrap/skip verdict), checks the ~/.nexus-local/skill-learning log for prior project learnings, and outputs SKILL_MAP.md. Activate when someone says "run skill matcher", "assign skills", or after a PRD is approved in the new-project pipeline. |
 | `tdd-guide` | Test-Driven Development specialist enforcing write-tests-first methodology. Use PROACTIVELY when writing new features, fixing bugs, or refactoring code. Ensures 80%+ test coverage. |
 | `type-design-analyzer` | Analyze type design for encapsulation, invariant expression, usefulness, and enforcement. |
 | `typescript-reviewer` | Expert TypeScript/JavaScript code reviewer specializing in type safety, async correctness, Node/web security, and idiomatic patterns. Use for all TypeScript and JavaScript code changes. MUST BE USED for TypeScript/JavaScript projects. |
@@ -457,7 +457,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `prd-3-skill-map` | Stage 1.5 — run the skill-matcher on PRD/MASTER.md. Assigns best ECC skill per task/sub-task, searches GitHub, npm/PyPI, and the web for alternatives (reusing PRD/LANDSCAPE.md if present), checks the ~/.claude/skill-learning log for prior learnings. Writes SKILL_MAP.md. |
+| `prd-3-skill-map` | Stage 1.5 — run the skill-matcher on PRD/MASTER.md. Assigns best ECC skill per task/sub-task, searches GitHub, npm/PyPI, and the web for alternatives (reusing PRD/LANDSCAPE.md if present), checks the ~/.nexus-local/skill-learning log for prior learnings. Writes SKILL_MAP.md. |
 
 ### prd-4-plan
 
@@ -625,13 +625,13 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `skill-gap` | Periodic skill library audit. Reads all learnings in the ~/.claude/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow. |
+| `skill-gap` | Periodic skill library audit. Reads all learnings in the ~/.nexus-local/skill-learning log across projects, surfaces patterns (repeated custom builds, unused skills, recurring GitHub alternatives), and outputs SKILL_GAPS.md with concrete candidates for new skills, skills to retire, and libraries worth wrapping. Run with /skill-gap at end of sprint or after 3+ projects. Makes the skill library actively self-curate instead of just grow. |
 
 ### skill-learn
 
 | Skill | Description |
 |-------|-------------|
-| `skill-learn` | Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and append structured learnings to the ~/.claude/skill-learning log so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro. |
+| `skill-learn` | Post-project learning loop. Runs at project end to compare what skills were recommended (SKILL_MAP.md) vs. actually used, capture decision context from DECISIONS.md, and append structured learnings to the ~/.nexus-local/skill-learning log so future skill-matcher runs get smarter. Also writes a watchlist for alternatives that were found but not used. Trigger with /skill-learn at project end, or chain from printing-press-retro. |
 
 ### slides
 

@@ -11,7 +11,7 @@ Keeps the Claude Code setup from going stale. `landscape-check` looks for what e
 ## When to Activate
 
 - User says "/stack-scout", "is there anything better than our skills/agents", "audit and search for updates to my setup"
-- Roughly monthly (check `~/.claude/skill-learning/scout-log.md` for the last run; if under ~3 weeks ago, say so and ask before repeating)
+- Roughly monthly (check `~/.nexus-local/skill-learning/scout-log.md` for the last run; if under ~3 weeks ago, say so and ask before repeating)
 
 Not for one project's build-vs-adopt questions — use `landscape-check`.
 
@@ -21,7 +21,7 @@ Not for one project's build-vs-adopt questions — use `landscape-check`.
 
 1. Read `~/.claude/INVENTORY.md` (note its `Last generated` date). If more than 30 days old, verify against `ls ~/.claude/skills ~/.claude/agents ~/.claude/commands`.
 2. Group what we have into categories (e.g. code review, testing, frontend design, marketing, deployment, memory/orchestration, MCP servers). One line per category with the names that cover it.
-3. Read `~/.claude/skill-learning/learnings.jsonl` if it exists. Count `recommended` vs. `used` per skill. Skills recommended repeatedly but never used, or never recommended at all, are **retire candidates**. If there is under 3 projects of data, say the usage signal is too thin and skip retire candidates.
+3. Read `~/.nexus-local/skill-learning/learnings.jsonl` if it exists. Count `recommended` vs. `used` per skill. Skills recommended repeatedly but never used, or never recommended at all, are **retire candidates**. If there is under 3 projects of data, say the usage signal is too thin and skip retire candidates.
 
 ### Step 2 — Search the ecosystem
 
@@ -44,7 +44,7 @@ For each candidate assign one:
 
 ### Step 4 — Write the report
 
-Write `~/.claude/skill-learning/scout-YYYY-MM.md` (gitignored — do not put it in a tracked path):
+Write `~/.nexus-local/skill-learning/scout-YYYY-MM.md` (gitignored — do not put it in a tracked path):
 
 ```markdown
 # Stack Scout — YYYY-MM
@@ -64,7 +64,7 @@ Write `~/.claude/skill-learning/scout-YYYY-MM.md` (gitignored — do not put it 
 - [candidate] — [reason]
 ```
 
-Then append one line to `~/.claude/skill-learning/scout-log.md`: `YYYY-MM-DD | reviewed N candidates | M worth trying`.
+Then append one line to `~/.nexus-local/skill-learning/scout-log.md`: `YYYY-MM-DD | reviewed N candidates | M worth trying`.
 
 ### Step 5 — Summarize
 

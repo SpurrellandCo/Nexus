@@ -4,7 +4,9 @@
 # Nexus lives in its own git checkout (~/.nexus). Claude Code still reads its
 # global config from ~/.claude, so every top-level item the repo tracks
 # (skills, agents, rules, commands, scripts, hooks, CLAUDE.md, ...) plus
-# Nexus-owned extras (plans/) gets a symlink there:
+# Nexus-owned extras (plans/) gets a symlink there, except the repo's own
+# project files (CLAUDE.md, AGENTS.md; ~/.claude/CLAUDE.md is a real file that
+# nexus-link.js keeps a Nexus block in):
 #     ~/.claude/skills -> ~/.nexus/skills
 # Claude Code's own runtime files (settings.json, projects/, sessions/,
 # plugins/, ...) stay real files in ~/.claude and never enter the repo.
@@ -22,6 +24,7 @@ set -euo pipefail
 NEXUS_DIR="${NEXUS_DIR:-$HOME/.nexus}"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 EXTRAS="plans"   # gitignored but Nexus-owned
+EXCLUDES=" CLAUDE.md AGENTS.md "   # the repo's own project files, never linked
 BACKUP_DIR="$CLAUDE_DIR/backups/nexus-links-$(date +%Y%m%d-%H%M%S)"
 
 say() { echo "-> $*"; }
@@ -68,6 +71,12 @@ link_all() {
         [ -n "$entry" ] || continue
         src="$NEXUS_DIR/$entry"
         dst="$CLAUDE_DIR/$entry"
+        case "$EXCLUDES" in
+            *" $entry "*)
+                # An earlier layout linked these; drop that link (a real file is left alone).
+                if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then rm "$dst"; fi
+                continue ;;
+        esac
         [ -e "$src" ] || continue
         if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then continue; fi
         if [ -e "$dst" ] || [ -L "$dst" ]; then

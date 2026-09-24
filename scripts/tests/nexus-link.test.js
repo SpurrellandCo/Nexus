@@ -27,6 +27,10 @@ function makeFixture() {
     gemini: path.join(base, 'gemini', 'agents'),
     backup: path.join(base, 'backup'),
     config: path.join(base, 'config.json'),
+    claudeMd: path.join(base, 'claude-home', 'CLAUDE.md'),
+    codexMd: path.join(base, 'codex', 'AGENTS.md'),
+    geminiMd: path.join(base, 'gemini', 'GEMINI.md'),
+    localMd: path.join(base, 'local-instructions.md'),
   };
   const { root, shared, codex } = dirs;
   write(path.join(root, 'skills/alpha/SKILL.md'), '---\nname: alpha\ndescription: Alpha.\n---\nAlpha body\n');
@@ -44,6 +48,12 @@ function makeFixture() {
   write(path.join(codex, 'x.toml'), 'name = "x"\n');
   write(path.join(codex, 'rev.toml'), 'name = "rev"\ndescription = "hand copy"\n');
   fs.mkdirSync(dirs.gemini, { recursive: true });
+  fs.mkdirSync(path.dirname(dirs.claudeMd), { recursive: true });
+  write(path.join(root, 'NEXUS.md'), '# Nexus\n\nShared rule: ask the user before deleting.\n');
+  write(path.join(root, 'adapters/claude/instructions.md'), 'Claude-only note.\n');
+  write(path.join(root, 'adapters/codex/instructions.md'), 'Codex-only note.\n');
+  write(path.join(root, 'rules/nexus/portable.md'), '# Portable\n\nWrite neutral skills.\n');
+  write(path.join(root, 'rules/ecc/common/testing.md'), '# Testing Requirements\n\n80% coverage.\n');
   return dirs;
 }
 
@@ -57,6 +67,10 @@ function run(dirs, ...args) {
       NEXUS_GEMINI_AGENTS_DIR: dirs.gemini,
       NEXUS_BACKUP_DIR: dirs.backup,
       NEXUS_LOCAL_CONFIG: dirs.config,
+      NEXUS_CLAUDE_INSTRUCTIONS: dirs.claudeMd,
+      NEXUS_CODEX_INSTRUCTIONS: dirs.codexMd,
+      NEXUS_GEMINI_INSTRUCTIONS: dirs.geminiMd,
+      NEXUS_LOCAL_INSTRUCTIONS: dirs.localMd,
     },
     encoding: 'utf8',
   });
@@ -173,10 +187,10 @@ test('non-quiet notices tell same-name copies apart from unrelated folders', () 
   assert.doesNotMatch(r.stdout, /real copies/i);
 });
 
-test('shareWith [] removes only what Nexus shared; shareWith ["codex"] skips Gemini', () => {
+test('tools [] removes only what Nexus shared; tools ["codex"] skips Gemini', () => {
   const d = makeFixture();
   run(d);
-  fs.writeFileSync(d.config, JSON.stringify({ shareWith: [] }));
+  fs.writeFileSync(d.config, JSON.stringify({ tools: [] }));
   const off = run(d);
   assert.equal(off.status, 0, off.stderr);
   assert.ok(!fs.existsSync(path.join(d.shared, 'alpha')), 'our link removed');
@@ -185,7 +199,7 @@ test('shareWith [] removes only what Nexus shared; shareWith ["codex"] skips Gem
   assert.ok(fs.existsSync(path.join(d.codex, 'x.toml')), 'unrelated agent untouched');
   assert.deepEqual(fs.readdirSync(d.gemini), []);
 
-  fs.writeFileSync(d.config, JSON.stringify({ shareWith: ['codex'] }));
+  fs.writeFileSync(d.config, JSON.stringify({ tools: ['codex'] }));
   run(d);
   assert.ok(isLinkTo(path.join(d.shared, 'alpha'), path.join(d.root, 'skills/alpha')));
   assert.ok(fs.existsSync(path.join(d.codex, 'builder.toml')));
@@ -240,9 +254,94 @@ test('a tool that is not installed (parent dir missing) is skipped cleanly', () 
       NEXUS_GEMINI_AGENTS_DIR: d.gemini,
       NEXUS_BACKUP_DIR: d.backup,
       NEXUS_LOCAL_CONFIG: d.config,
+      NEXUS_CLAUDE_INSTRUCTIONS: d.claudeMd,
+      NEXUS_CODEX_INSTRUCTIONS: path.join(d.base, 'no-codex-here', 'AGENTS.md'),
+      NEXUS_GEMINI_INSTRUCTIONS: d.geminiMd,
     },
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, r.stderr);
   assert.ok(!fs.existsSync(path.join(d.base, 'no-codex-here')));
+});
+
+// ---------- instruction files ----------
+
+const BEGIN = '<!-- BEGIN NEXUS';
+const END = '<!-- END NEXUS -->';
+
+test('Claude gets import lines (no copy); Codex and Gemini get the content with a rules index', () => {
+  const d = makeFixture();
+  write(d.localMd, 'My projects: Cookie cutter on :3010.\n');
+  const r = run(d);
+  assert.equal(r.status, 0, r.stderr);
+
+  const claude = fs.readFileSync(d.claudeMd, 'utf8');
+  assert.ok(claude.includes(`@${path.join(d.root, 'NEXUS.md')}`));
+  assert.ok(claude.includes(`@${path.join(d.root, 'adapters/claude/instructions.md')}`));
+  assert.ok(claude.includes(`@${d.localMd}`));
+  assert.doesNotMatch(claude, /Shared rule/, 'Claude imports rather than copies');
+
+  const codex = fs.readFileSync(d.codexMd, 'utf8');
+  assert.match(codex, /Shared rule: ask the user/);
+  assert.match(codex, /Codex-only note/);
+  assert.doesNotMatch(codex, /Claude-only note/);
+  assert.match(codex, /Write neutral skills/, 'rules/nexus inlined');
+  assert.match(codex, /rules\/ecc\/common\/testing\.md[^\n]*Testing Requirements/, 'other rules indexed');
+  assert.match(codex, /Cookie cutter on :3010/, 'personal instructions included');
+
+  const gemini = fs.readFileSync(d.geminiMd, 'utf8');
+  assert.match(gemini, /Shared rule: ask the user/);
+  for (const text of [claude, codex, gemini]) {
+    assert.ok(text.startsWith(BEGIN) && text.includes(END));
+  }
+});
+
+test("someone's own instructions outside the block are kept, and the block is updated in place", () => {
+  const d = makeFixture();
+  write(d.codexMd, '# My own Codex rules\nAlways use tabs.\n');
+  run(d);
+  let codex = fs.readFileSync(d.codexMd, 'utf8');
+  assert.match(codex, /Always use tabs/);
+  assert.ok(codex.indexOf(BEGIN) < codex.indexOf('Always use tabs'));
+
+  write(path.join(d.root, 'NEXUS.md'), '# Nexus\n\nShared rule v2.\n');
+  const r = run(d, '--quiet');
+  codex = fs.readFileSync(d.codexMd, 'utf8');
+  assert.match(codex, /Shared rule v2/);
+  assert.doesNotMatch(codex, /ask the user before deleting/);
+  assert.match(codex, /Always use tabs/);
+  assert.equal(codex.split(BEGIN).length, 2, 'exactly one block');
+  assert.match(r.stdout, /Codex/);
+});
+
+test('--replace-copies backs up a stale instruction file and replaces it; a link into Nexus becomes a real file', () => {
+  const d = makeFixture();
+  write(d.codexMd, 'stale imported copy\n');
+  fs.symlinkSync(path.join(d.root, 'NEXUS.md'), d.claudeMd);
+  run(d, '--replace-copies');
+  const codex = fs.readFileSync(d.codexMd, 'utf8');
+  assert.doesNotMatch(codex, /stale imported copy/);
+  assert.ok(fs.readdirSync(d.backup, { recursive: true }).map(String).some((p) => p.endsWith('AGENTS.md')));
+  assert.ok(!fs.lstatSync(d.claudeMd).isSymbolicLink(), 'CLAUDE.md is now a real file');
+  assert.match(fs.readFileSync(path.join(d.root, 'NEXUS.md'), 'utf8'), /Shared rule/, 'the Nexus file it pointed to is untouched');
+});
+
+test('turning a tool off removes only its block', () => {
+  const d = makeFixture();
+  write(d.geminiMd, 'My Gemini notes.\n');
+  run(d);
+  fs.writeFileSync(d.config, JSON.stringify({ tools: ['claude', 'codex'] }));
+  run(d);
+  assert.equal(fs.readFileSync(d.geminiMd, 'utf8').trim(), 'My Gemini notes.');
+  fs.writeFileSync(d.config, JSON.stringify({ tools: ['codex', 'gemini'] }));
+  run(d);
+  assert.ok(!fs.existsSync(d.claudeMd), 'a file that only held the block is removed');
+});
+
+test('the shared skills folder is created when Codex or Gemini is set up', () => {
+  const d = makeFixture();
+  fs.rmSync(path.dirname(d.shared), { recursive: true });
+  const r = run(d);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(isLinkTo(path.join(d.shared, 'alpha'), path.join(d.root, 'skills/alpha')));
 });
