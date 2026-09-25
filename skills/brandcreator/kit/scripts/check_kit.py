@@ -17,7 +17,8 @@ from brandkit import KIT, kit_file, load_brand, template
 REQUIRED = [
     "SKILL.md", "README.md", "brand.json", "brand-guidelines.md",
     "assets/design-tokens.css", "assets/design-tokens.json", "templates/report-template.html",
-    "scripts/brandkit.py", "scripts/make_docx.py", "scripts/make_pptx.py",
+    "scripts/brandkit.py", "scripts/make_docx.py", "scripts/make_pptx.py", "scripts/make_xlsx.py",
+    "scripts/make_pdf.py", "scripts/pdf_text.py", "scripts/import_logo.py",
     "scripts/make_templates.py", "scripts/import_template.py", "scripts/check_kit.py",
 ]
 OUTSIDE = re.compile(r"(?<![\w.])(/Users/[^\s)\"'`<>]+|/home/[^\s)\"'`<>]+|~/[^\s)\"'`<>]*|\$HOME[^\s)\"'`<>]*|[A-Za-z]:\\[^\s)\"'`<>]+)")
@@ -58,6 +59,7 @@ def smoke_test(brand, problems):
     try:
         import make_docx
         import make_pptx
+        import make_xlsx
         with tempfile.TemporaryDirectory() as tmp:
             sample = Path(tmp) / "sample.md"
             sample.write_text("# Sample\n\nBody text.\n\n## Section\n\n- point\n")
@@ -65,10 +67,13 @@ def smoke_test(brand, problems):
             outline = Path(tmp) / "deck.md"
             outline.write_text("# Sample deck\n\n---\n\n## Slide\n- point\n")
             make_pptx.build(outline, Path(tmp) / "deck.pptx", brand)
+            table = Path(tmp) / "table.csv"
+            table.write_text("Name,Value\nA,1\n")
+            make_xlsx.build(table, Path(tmp) / "table.xlsx", brand)
     except SystemExit as err:
-        problems.append(f"Word/PowerPoint scripts can't run: {err}")
+        problems.append(f"Word/PowerPoint/Excel scripts can't run: {err}")
     except Exception as err:  # report, don't crash
-        problems.append(f"Word/PowerPoint scripts failed on a sample: {err}")
+        problems.append(f"Word/PowerPoint/Excel scripts failed on a sample: {err}")
 
 
 def main():
@@ -84,7 +89,7 @@ def main():
     if brand:
         if not kit_file(brand.get("logo")):
             warnings.append(f"no logo at {brand.get('logo') or 'assets/logo-primary.png'} (documents will be built without one)")
-        for kind in ("docx", "pptx"):
+        for kind in ("docx", "pptx", "xlsx"):
             if template(brand, kind)[0] is None:
                 problems.append(f"no {kind} template; run: python3 scripts/make_templates.py")
     check_paths(problems)

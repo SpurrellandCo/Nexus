@@ -239,3 +239,193 @@ class BrandKitTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# SVG logos, Excel, and PDF
+# ---------------------------------------------------------------------------
+
+def simple_pdf(path, lines):
+    """Write a small valid PDF: lines = [(font_size, text)], top to bottom, Helvetica."""
+    y, ops = 740, []
+    for size, text in lines:
+        safe = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        ops.append(f"BT /F1 {size} Tf 1 0 0 1 72 {y} Tm ({safe}) Tj ET")
+        y -= int(size * 1.8)
+    stream = "\n".join(ops).encode("latin-1")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out, offsets = bytearray(b"%PDF-1.4\n"), []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{number} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode()
+    out += b"".join(f"{o:010d} 00000 n \n".encode() for o in offsets)
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    Path(path).write_bytes(bytes(out))
+
+
+class LogoExcelPdfTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="brandkit2-"))
+        self.kit = make_kit(self.tmp)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def brand(self):
+        return json.loads((self.kit / "brand.json").read_text())
+
+    # ---------- logos ----------
+    def test_import_logo_png(self):
+        tiny_png(self.tmp / "new-logo.png", rgb=(200, 0, 0))
+        r = run(self.kit, "import_logo.py", self.tmp / "new-logo.png")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual((self.kit / "assets" / "logo-primary.png").read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(self.brand()["logo"], "assets/logo-primary.png")
+
+    def test_import_logo_svg_is_converted_and_the_svg_kept(self):
+        sys.path.insert(0, str(self.kit / "scripts"))
+        try:
+            import import_logo
+            if not import_logo.svg_converters():
+                self.skipTest("no SVG converter on this machine")
+        finally:
+            sys.path.pop(0)
+        (self.tmp / "logo.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100">'
+            '<rect x="5" y="10" width="280" height="60" fill="#C97A2C"/></svg>')  # a wide logo
+        r = run(self.kit, "import_logo.py", self.tmp / "logo.svg")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        png = self.kit / "assets" / "logo-primary.png"
+        self.assertEqual(png.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertTrue((self.kit / "assets" / "logo.svg").exists(), "original SVG kept for web use")
+        self.assertEqual(self.brand()["logo_svg"], "assets/logo.svg")
+        from PIL import Image
+        width, height = Image.open(png).size
+        self.assertGreater(width, 100)
+        self.assertLess(height, width, "trimmed to the artwork, not a padded square")
+
+    def test_import_logo_rejects_unknown_files(self):
+        (self.tmp / "logo.txt").write_text("not an image")
+        self.assertNotEqual(run(self.kit, "import_logo.py", self.tmp / "logo.txt").returncode, 0)
+
+    # ---------- Excel ----------
+    def test_csv_to_branded_xlsx(self):
+        from openpyxl import load_workbook
+        (self.tmp / "sales.csv").write_text("Region,Revenue,Growth\nEU,412000,0.09\nUS,268000,0.18\n")
+        r = run(self.kit, "make_xlsx.py", self.tmp / "sales.csv", "-o", self.tmp / "sales.xlsx")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        ws = load_workbook(self.tmp / "sales.xlsx").active
+        self.assertEqual(ws["A1"].value, "Region")
+        self.assertEqual(ws["B2"].value, 412000, "numbers stay numbers")
+        self.assertTrue(ws["A1"].font.bold)
+        self.assertEqual(ws["A1"].font.name, "Space Grotesk")
+        self.assertEqual(ws["A1"].fill.fgColor.rgb[-6:], PRIMARY[1:])
+        self.assertEqual(ws["A2"].font.name, "Inter")
+        self.assertEqual(ws.freeze_panes, "A2")
+        self.assertEqual(ws.sheet_properties.tabColor.rgb[-6:], PRIMARY[1:])
+
+    def test_markdown_table_to_xlsx(self):
+        from openpyxl import load_workbook
+        (self.tmp / "t.md").write_text("Some intro.\n\n| Item | Qty |\n|---|---|\n| Beans | 12 |\n")
+        r = run(self.kit, "make_xlsx.py", self.tmp / "t.md", "-o", self.tmp / "t.xlsx")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        ws = load_workbook(self.tmp / "t.xlsx").active
+        self.assertEqual([ws["A2"].value, ws["B2"].value], ["Beans", 12])
+
+    def test_rebrand_xlsx_keeps_values_and_formulas_and_reports_charts(self):
+        from openpyxl import Workbook, load_workbook
+        from openpyxl.chart import BarChart, Reference
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["Month", "Sales"])
+        ws.append(["Jan", 10])
+        ws.append(["Feb", 20])
+        ws["B4"] = "=SUM(B2:B3)"
+        ws["A2"].font = ws["A2"].font.copy(name="Comic Sans MS", bold=True)
+        chart = BarChart()
+        chart.add_data(Reference(ws, min_col=2, min_row=1, max_row=3), titles_from_data=True)
+        ws.add_chart(chart, "D2")
+        wb.save(self.tmp / "old.xlsx")
+        r = run(self.kit, "make_xlsx.py", self.tmp / "old.xlsx", "-o", self.tmp / "new.xlsx")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        new = load_workbook(self.tmp / "new.xlsx").active
+        self.assertEqual(new["B4"].value, "=SUM(B2:B3)")
+        self.assertEqual(new["A3"].value, "Feb")
+        self.assertEqual(new["A2"].font.name, "Inter")
+        self.assertTrue(new["A2"].font.bold, "bold kept")
+        self.assertEqual(new["A1"].font.name, "Space Grotesk")
+        self.assertIn("chart", r.stdout.lower())
+
+    def test_xltx_template_import(self):
+        from openpyxl import Workbook
+        wb = Workbook()
+        wb.active.title = "Company"
+        wb.save(self.tmp / "t.xlsx")
+        shutil.copy(self.tmp / "t.xlsx", self.tmp / "t.xltx")
+        r = run(self.kit, "import_template.py", self.tmp / "t.xltx")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.brand()["templates"]["xlsx"]["source"], "user")
+
+    def test_make_templates_includes_a_spreadsheet(self):
+        from openpyxl import load_workbook
+        self.assertEqual(run(self.kit, "make_templates.py").returncode, 0)
+        self.assertEqual(self.brand()["templates"]["xlsx"], {"path": "templates/spreadsheet-template.xlsx", "source": "generated"})
+        self.assertEqual(load_workbook(self.kit / "templates" / "spreadsheet-template.xlsx").active["A1"].font.name, "Space Grotesk")
+
+    # ---------- PDF ----------
+    def test_pdf_to_branded_docx_rebuilds_headings_bullets_and_paragraphs(self):
+        simple_pdf(self.tmp / "old.pdf", [
+            (24, "Annual Review"), (12, "We had a strong year across all regions."),
+            (16, "Highlights"), (12, "- Opened two roasteries"), (12, "- Launched online store"),
+        ])
+        r = run(self.kit, "make_docx.py", self.tmp / "old.pdf", "-o", self.tmp / "new.docx")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        doc = Document(self.tmp / "new.docx")
+        styles = {p.text: p.style.name for p in doc.paragraphs if p.text}
+        self.assertEqual(styles.get("Annual Review"), "Title")
+        self.assertEqual(styles.get("Highlights"), "Heading 1")
+        self.assertIn("List", styles.get("Opened two roasteries", ""))
+        self.assertIn("We had a strong year across all regions.", styles)
+
+    def test_pdf_without_text_is_reported_not_faked(self):
+        simple_pdf(self.tmp / "scan.pdf", [])
+        r = run(self.kit, "make_docx.py", self.tmp / "scan.pdf", "-o", self.tmp / "x.docx")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("no text", (r.stdout + r.stderr).lower())
+
+    def _needs_pdf_engine(self):
+        sys.path.insert(0, str(self.kit / "scripts"))
+        try:
+            import make_pdf
+            if not make_pdf.pdf_engine():
+                self.skipTest("no Chrome/Chromium/Edge/LibreOffice on this machine")
+        finally:
+            sys.path.pop(0)
+
+    def test_markdown_to_branded_pdf(self):
+        self._needs_pdf_engine()
+        from pypdf import PdfReader
+        (self.tmp / "memo.md").write_text("# Memo\n\nThe roastery opens **Monday**.\n\n- Bring aprons\n")
+        r = run(self.kit, "make_pdf.py", self.tmp / "memo.md", "-o", self.tmp / "memo.pdf")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        text = PdfReader(self.tmp / "memo.pdf").pages[0].extract_text()
+        self.assertIn("Memo", text)
+        self.assertIn("Bring aprons", text)
+
+    def test_rebrand_pdf_to_pdf(self):
+        self._needs_pdf_engine()
+        from pypdf import PdfReader
+        simple_pdf(self.tmp / "old.pdf", [(24, "Old Report"), (12, "Keep this sentence.")])
+        r = run(self.kit, "make_pdf.py", self.tmp / "old.pdf", "-o", self.tmp / "new.pdf")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        text = PdfReader(self.tmp / "new.pdf").pages[0].extract_text()
+        self.assertIn("Old Report", text)
+        self.assertIn("Keep this sentence.", text)

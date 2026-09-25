@@ -5,6 +5,9 @@
   make_docx.py existing.docx -o branded.docx re-brand an existing document: keeps every word,
                                              table, and image; applies the brand's fonts,
                                              colors, and logo
+  make_docx.py existing.pdf -o branded.docx  rebuild a PDF's text (headings, paragraphs, bullets)
+                                             as a branded document; layout and images are not
+                                             carried over (reported)
 
 The base is templates/word-template.docx when present (a user's own letterhead
 keeps its headers and footers; its sample body text is dropped).
@@ -210,15 +213,29 @@ def render_blocks(doc, brand, blocks):
                     run.italic = True
 
 
-def build(source, output, brand):
+def build_blocks(blocks, output, brand):
     base, _source = template(brand, "docx")
     doc = docx.Document(str(base)) if base else docx.Document()
     if base:
         clear_body(doc)
     apply_brand_styles(doc, brand)
     add_logo_header(doc, brand)
-    render_blocks(doc, brand, parse_markdown(Path(source).read_text()))
+    render_blocks(doc, brand, blocks)
     doc.save(str(output))
+
+
+def build(source, output, brand):
+    build_blocks(parse_markdown(Path(source).read_text()), output, brand)
+
+
+def pdf_to_blocks(source):
+    """Blocks from a PDF's text, or exit with a clear message when it has none."""
+    from pdf_text import pdf_blocks
+    blocks, report = pdf_blocks(source)
+    if not blocks:
+        sys.exit(f"No text found in {Path(source).name} (it may be a scanned image). "
+                 "OCR isn't supported; run the PDF through an OCR tool first, then re-brand the result.")
+    return blocks, report
 
 
 def _clear_direct_fonts(paragraph, keep_color=False):
@@ -255,6 +272,11 @@ def main(argv=None):
     if source.suffix.lower() in (".docx", ".dotx"):
         rebrand(source, output, brand)
         print(f"Re-branded {source.name} -> {output} (content kept; brand fonts, colors, and logo applied)")
+    elif source.suffix.lower() == ".pdf":
+        blocks, report = pdf_to_blocks(source)
+        build_blocks(blocks, output, brand)
+        print(f"Rebuilt {source.name} ({report['pages']} page(s)) as {output}: text, headings, and lists kept; "
+              f"original layout not kept" + (f"; {report['images']} image(s) to re-add by hand" if report["images"] else ""))
     else:
         build(source, output, brand)
         print(f"Wrote {output}")

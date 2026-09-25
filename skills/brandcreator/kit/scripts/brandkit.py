@@ -14,6 +14,7 @@ KIT = Path(__file__).resolve().parent.parent
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 DOCX_TEMPLATE = "templates/word-template.docx"
 PPTX_TEMPLATE = "templates/slides-template.pptx"
+XLSX_TEMPLATE = "templates/spreadsheet-template.xlsx"
 
 
 def require(module, package):
@@ -183,3 +184,30 @@ def parse_slides(text):
         slide["notes"] = " ".join(slide["notes"])
         slides.append(slide)
     return slides
+
+
+# ---------- optional helper programs (found at run time, never required) ----------
+
+def find_chrome():
+    """A Chrome/Chromium/Edge binary for headless rendering, or None. BRANDKIT_CHROME overrides."""
+    import os
+    import shutil
+    candidates = [os.environ.get("BRANDKIT_CHROME"),
+                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return candidate
+    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge", "chrome"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return None
+
+
+def find_soffice():
+    """LibreOffice's soffice binary, or None."""
+    import shutil
+    mac = Path("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+    return shutil.which("soffice") or shutil.which("libreoffice") or (str(mac) if mac.exists() else None)

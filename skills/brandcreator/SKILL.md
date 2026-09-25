@@ -1,6 +1,6 @@
 ---
 name: brandcreator
-description: "Interviews the user about a specific business and generates a standalone, shareable brand kit (brandcreator-<company>): one self-contained folder with its logo, brand guidelines, design tokens, and Word, PowerPoint, and HTML templates, plus scripts that make branded .docx and .pptx files or re-brand existing ones. Use when the user wants to create a brand identity, build a brand kit, or set up branded document generation for a company. The generated kit is later invoked directly (e.g. /brandcreator-acme) to produce reports, documents, decks, PDFs, or images in that brand."
+description: "Interviews the user about a specific business and generates a standalone, shareable brand kit (brandcreator-<company>): one self-contained folder with its logo, brand guidelines, design tokens, and Word, PowerPoint, Excel, and HTML templates, plus scripts that make branded .docx, .pptx, .xlsx, and .pdf files or re-brand existing ones (including PDFs and SVG logos). Use when the user wants to create a brand identity, build a brand kit, or set up branded document generation for a company. The generated kit is later invoked directly (e.g. /brandcreator-acme) to produce reports, documents, decks, PDFs, or images in that brand."
 ---
 
 # Brand Creator
@@ -39,8 +39,8 @@ Ask only what you don't already know from the user's message. Cover:
 4. **Personality** — 3–5 adjectives describing how the brand should feel (e.g. "trustworthy, modern, approachable")
 5. **Style direction** — ask the user to choose from: Editorial/magazine, Neo-brutalism, Glassmorphism, Dark or light luxury, Bento layout, Swiss/International, Retro-futurism, or "Pick for me based on the industry/personality." Never default to a vague "clean minimal": pick something specific.
 6. **Colors** — existing brand colors (hex codes) to lock in, or should you choose a palette that fits the style direction and industry?
-7. **Existing logo** — a logo file to reuse, or should one be generated?
-8. **Existing Office templates** — a Word letterhead or document template (`.docx`/`.dotx`) or a PowerPoint slide master (`.pptx`/`.potx`) the company already uses? If yes, the kit builds on those instead of generating its own.
+7. **Existing logo** — a logo file to reuse (SVG, PNG, JPG, GIF, TIFF, WebP, BMP, or HEIC), or should one be generated?
+8. **Existing Office templates** — a Word letterhead or document template (`.docx`/`.dotx`), a PowerPoint slide master (`.pptx`/`.potx`), or an Excel template (`.xlsx`/`.xltx`) the company already uses? If yes, the kit builds on those instead of generating its own.
 9. **Existing brand material** — brand guidelines, a styled document, or a deck (`.docx`, `.pptx`, `.pdf`, `.md`)? If yes, read it and take colors, fonts, and voice from it instead of asking. To read Word or PowerPoint text: `python3 -c "import docx,sys; print('\n'.join(p.text for p in docx.Document(sys.argv[1]).paragraphs))" file.docx` or the equivalent with `pptx.Presentation(...)`.
 
 Do not ask about deliverable depth (CIP, video, etc.) here: that is offered later, when relevant.
@@ -76,14 +76,17 @@ Target layout (everything relative to the kit folder; nothing outside it):
   brand-guidelines.md          the full brand rules
   assets/
     logo-primary.png
+    logo.svg                   the original, when the logo came as SVG
     design-tokens.json
     design-tokens.css
   templates/
     report-template.html
     word-template.docx         the company's own template, or generated from the brand
     slides-template.pptx       the company's own master, or generated from the brand
-  scripts/                     make_docx.py, make_pptx.py, make_templates.py,
-                               import_template.py, check_kit.py, brandkit.py
+    spreadsheet-template.xlsx  the company's own template, or generated from the brand
+  scripts/                     make_docx.py, make_pptx.py, make_xlsx.py, make_pdf.py,
+                               import_logo.py, import_template.py, make_templates.py,
+                               check_kit.py, brandkit.py, pdf_text.py
 ```
 
 ---
@@ -102,7 +105,11 @@ Write this file to `<kit>/brand-guidelines.md`. It is the brand's source of trut
 
 Check for `GEMINI_API_KEY` using the same lookup order as `design/scripts/logo/generate.py` (repo-root `.env`, then `~/.nexus-local/.env`, then the older per-tool spots the script also checks).
 
-**If the user provided an existing logo file**: copy it to `<kit>/assets/logo-primary.png` (convert to PNG if needed) and skip generation.
+**If the user provided an existing logo file** (any format above, including SVG): import it and skip generation:
+```bash
+python3 "$KIT/scripts/import_logo.py" /path/to/logo.svg
+```
+It saves a trimmed, transparent `assets/logo-primary.png` (converting SVG with the best converter available: cairosvg, rsvg-convert, Inkscape, Chrome, or macOS Quick Look) and keeps an SVG original as `assets/logo.svg`.
 
 **If the key is present and no logo was provided**: generate options with
 ```bash
@@ -110,7 +117,7 @@ python3 ~/.nexus/skills/design/scripts/logo/generate.py \
   --brand "<Company Name>" --industry "<industry>" --style "<style direction>" \
   --output-dir "$HOME/.nexus/skills/<slug>/assets/" --batch 4
 ```
-Show the user the generated options (or their file paths) and have them pick one; save the chosen file as `assets/logo-primary.png` and remove the rest.
+Show the user the generated options (or their file paths) and have them pick one; import the chosen file with `import_logo.py` and remove the rest.
 
 **If the key is missing and no logo was provided**: tell the user logo generation isn't configured (`GEMINI_API_KEY` not found), ask them for a logo file instead, and continue without blocking. A note in `brand-guidelines.md` is fine ("Logo: pending — add `assets/logo-primary.png`"); the scripts build documents without a logo until one is added.
 
@@ -150,16 +157,17 @@ Then write `<kit>/brand.json`, the small file the kit's scripts read (paths rela
 
 **HTML:** write `<kit>/templates/report-template.html`, a self-contained scaffold that `<link>`s `../assets/design-tokens.css` and uses `var(--...)` for every color, font, and spacing value (no hardcoded hex codes or font names), with a cover block (logo + title + date), styles for headings, body text, tables, and callout boxes, and a footer with the brand mark. Refer to the logo as `../assets/logo-primary.png`.
 
-**Word and PowerPoint:** if the user supplied their own templates in Step 1, import them first (template formats `.dotx`/`.potx` are converted automatically):
+**Word, PowerPoint, and Excel:** if the user supplied their own templates in Step 1, import them first (template formats `.dotx`/`.potx`/`.xltx` are converted automatically):
 ```bash
 python3 "$KIT/scripts/import_template.py" /path/to/letterhead.dotx
 python3 "$KIT/scripts/import_template.py" /path/to/master.potx
+python3 "$KIT/scripts/import_template.py" /path/to/sheet.xltx
 ```
 Then create whatever is still missing from the brand (imported templates are never replaced):
 ```bash
 python3 "$KIT/scripts/make_templates.py"
 ```
-This writes `templates/word-template.docx` (brand fonts and colors in Word's styles, logo in the header) and `templates/slides-template.pptx` (a title slide and a content slide in the brand look), and records them in `brand.json`. Both open directly in Word/PowerPoint with no AI needed.
+This writes `templates/word-template.docx` (brand fonts and colors in Word's styles, logo in the header), `templates/slides-template.pptx` (a title slide and a content slide in the brand look), and `templates/spreadsheet-template.xlsx` (a branded header row with banding and filters), and records them in `brand.json`. All three open directly in Office with no AI needed.
 
 ---
 
@@ -181,7 +189,7 @@ Confirm `<slug>`: lowercase letters, digits, and hyphens only; ≤64 characters;
 python3 "$KIT/scripts/check_kit.py"
 ```
 
-It verifies required files, `brand.json`, that nothing points outside the folder, that every link resolves inside it, and that the Word and PowerPoint scripts produce files. Fix every reported problem and re-run until it prints "ready to share". A missing logo is only a warning.
+It verifies required files, `brand.json`, that nothing points outside the folder, that every link resolves inside it, and that the Word, PowerPoint, and Excel scripts produce files. Fix every reported problem and re-run until it prints "ready to share". A missing logo is only a warning.
 
 ---
 
@@ -199,13 +207,16 @@ Everything is in that one folder:
   assets/                                  logo + design tokens
   templates/word-template.docx             Word template <(the company's own) | (generated)>
   templates/slides-template.pptx           PowerPoint template <(the company's own) | (generated)>
+  templates/spreadsheet-template.xlsx      Excel template <(the company's own) | (generated)>
   templates/report-template.html           HTML report template
-  scripts/                                 make/re-brand .docx and .pptx, check the kit
+  scripts/                                 make/re-brand .docx, .pptx, .xlsx, .pdf; check the kit
 
 Try it:
   /<slug> write a Q3 performance report as a Word document
   /<slug> re-brand path/to/existing-deck.pptx
   /<slug> make a 5-slide pitch deck
+  /<slug> re-brand path/to/old-brochure.pdf
+  /<slug> turn path/to/sales.csv into a branded spreadsheet
 ```
 
 Then offer to package the folder for sharing (don't do it unasked):
@@ -215,6 +226,20 @@ cd ~/.nexus/skills && zip -qr ~/Desktop/<slug>.zip <slug>
 The recipient can open the Office templates directly, or unzip the folder into their AI tool's skills folder (the kit's README explains where).
 
 New skills are picked up by a new session in most tools.
+
+---
+
+## Files a brand kit accepts
+
+| Purpose | File types |
+|---|---|
+| Logo | `.svg`, `.png`, `.jpg`, `.gif`, `.tiff`, `.webp`, `.bmp`, `.heic` |
+| Company templates | `.docx`/`.dotx`, `.pptx`/`.potx`, `.xlsx`/`.xltx` |
+| Re-brand existing files | `.docx`, `.pptx`, `.xlsx`, `.pdf` (text-based; scanned PDFs need OCR first) |
+| New content | `.md`, `.txt`; for spreadsheets `.csv` or a markdown table |
+| Brand material to learn from (interview) | `.docx`, `.pptx`, `.xlsx`, `.pdf`, `.md`, `.txt` |
+
+Not supported: pre-2007 Office files (`.doc`, `.ppt`, `.xls`), macro-enabled files (`.docm`, `.pptm`), and Pages/Keynote/Numbers (export to Office first).
 
 ---
 
