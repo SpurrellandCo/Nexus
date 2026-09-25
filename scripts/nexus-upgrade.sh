@@ -43,7 +43,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     sync_enabled=false
     if [ -f "$DAILY_PLIST" ]; then sync_enabled=true; fi
     push=false
-    origin="$(git remote get-url origin 2>/dev/null || echo "")"
+    origin="$(git config --get remote.origin.url 2>/dev/null || echo "")"   # as configured (not rewritten)
     case "$origin" in
         *SpurrellandCo/Nexus*|"") ;;
         *) if [ "$sync_enabled" = true ]; then push=true; fi ;;
