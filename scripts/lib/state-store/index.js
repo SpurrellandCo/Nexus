@@ -1,13 +1,13 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const initSqlJs = require('sql.js');
 
 const { applyMigrations, getAppliedMigrations } = require('./migrations');
 const { createQueryApi } = require('./queries');
 const { assertValidEntity, validateEntity } = require('./schema');
+const { toolHome } = require('../nexus-home');
 
 const DEFAULT_STATE_STORE_RELATIVE_PATH = path.join('.claude', 'ecc', 'state.db');
 
@@ -19,7 +19,7 @@ function resolveStateStorePath(options = {}) {
     return path.resolve(options.dbPath);
   }
 
-  const homeDir = options.homeDir || process.env.HOME || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   return path.join(homeDir, DEFAULT_STATE_STORE_RELATIVE_PATH);
 }
 

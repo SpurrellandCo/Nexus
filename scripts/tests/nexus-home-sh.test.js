@@ -147,3 +147,85 @@ test('nexus-link.js (Node) shares into USERPROFILE when HOME points elsewhere', 
   assert.equal(fs.readlinkSync(path.join(profile, '.agents', 'skills', 'alpha')), path.join(root, 'skills', 'alpha'));
   assert.deepEqual(fs.readdirSync(home), [], 'nothing written to the bad HOME');
 });
+
+// ---------- stray tool folders (follow-up to the network-drive fix) ----------
+// On the real laptop, hooks launched through Git Bash had left W:\.claude holding only
+// hook output. A bare .claude folder must not outrank a real install under USERPROFILE.
+
+function strayCase() {
+  const home = tmp('strayhome');
+  for (const dir of ['session-data', 'metrics', path.join('skills', 'learned')]) {
+    fs.mkdirSync(path.join(home, '.claude', dir), { recursive: true });
+  }
+  fs.writeFileSync(path.join(home, '.claude', 'metrics', 'costs.jsonl'), '{}\n');
+  const profile = tmp('realprofile');
+  fs.mkdirSync(path.join(profile, '.claude'));
+  fs.writeFileSync(path.join(profile, '.claude', 'settings.json'), '{}\n');
+  return { home, profile };
+}
+
+function sourced(env, expr) {
+  const r = spawnSync('bash', ['-c', `set -euo pipefail; . "${HELPER}"; printf '%s' "${expr}"`],
+    { env: cleanEnv(env), encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return r.stdout;
+}
+
+test('stray HOME/.claude (hook output only) + real install under USERPROFILE: HOME becomes USERPROFILE', () => {
+  const { home, profile } = strayCase();
+  fs.mkdirSync(path.join(profile, '.nexus', '.git'), { recursive: true });
+  assert.equal(homeAfterSourcing({ HOME: home, USERPROFILE: profile }), profile);
+  assert.equal(sourced({ HOME: home, USERPROFILE: profile }, '$NEXUS_STRAY_HOME'), home, 'the stray folder is reported');
+});
+
+test('each strong marker alone identifies the real install', () => {
+  for (const marker of [['.nexus', '.git'], ['.claude', 'settings.json'], ['.codex', 'config.toml'], ['.gemini', 'settings.json']]) {
+    const home = tmp('strayhome');
+    fs.mkdirSync(path.join(home, '.claude', 'session-data'), { recursive: true });
+    const profile = tmp('realprofile');
+    fs.mkdirSync(path.join(profile, marker[0]), { recursive: true });
+    if (marker[1] === '.git') fs.mkdirSync(path.join(profile, ...marker));
+    else fs.writeFileSync(path.join(profile, ...marker), '');
+    assert.equal(homeAfterSourcing({ HOME: home, USERPROFILE: profile }), profile, marker.join('/'));
+  }
+});
+
+test('HOME with a strong marker is kept, even when USERPROFILE has one too', () => {
+  const { profile } = strayCase();
+  const home = tmp('realhome');
+  fs.mkdirSync(path.join(home, '.claude'));
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{}\n');
+  assert.equal(homeAfterSourcing({ HOME: home, USERPROFILE: profile }), home);
+  assert.equal(sourced({ HOME: home, USERPROFILE: profile }, '$NEXUS_STRAY_HOME'), '');
+});
+
+test('neither has a strong marker (fresh installs): loose folders decide, HOME first, as before', () => {
+  const home = tmp('freshhome');
+  fs.mkdirSync(path.join(home, '.claude'));
+  const profile = tmp('freshprofile');
+  fs.mkdirSync(path.join(profile, '.claude'));
+  assert.equal(homeAfterSourcing({ HOME: home, USERPROFILE: profile }), home);
+  assert.equal(homeAfterSourcing({ HOME: tmp('emptyhome'), USERPROFILE: profile }), profile);
+});
+
+test('update.sh on the laptop layout: uses USERPROFILE/.nexus and mentions the stray folder', () => {
+  const { home, profile } = strayCase();
+  repoAt(path.join(profile, '.nexus'));
+  const r = spawnSync('bash', [path.join(REPO, 'update.sh')], { env: cleanEnv({ HOME: home, USERPROFILE: profile }), encoding: 'utf8' });
+  const out = r.stdout + r.stderr;
+  assert.doesNotMatch(out, /not a git checkout/);
+  assert.match(out, /== Updating Nexus ==/);
+  assert.match(out, new RegExp(`Note: using ${profile}.*${home} also has tool folders`));
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'metrics', 'costs.jsonl')), 'nothing is deleted');
+});
+
+test('update.sh with a stray HOME still honors NEXUS_HOME first', () => {
+  const { home, profile } = strayCase();
+  repoAt(path.join(profile, '.nexus'));
+  const custom = tmp('custom');
+  repoAt(custom);
+  const r = spawnSync('bash', ['-c', `bash "${path.join(REPO, 'update.sh')}"; echo; pwd`],
+    { env: cleanEnv({ HOME: home, USERPROFILE: profile, NEXUS_HOME: custom }), encoding: 'utf8' });
+  assert.match(r.stdout + r.stderr, /== Updating Nexus ==/);
+  assert.match(r.stdout + r.stderr, /Pull failed/);
+});

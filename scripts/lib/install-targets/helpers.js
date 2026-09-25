@@ -1,6 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { toolHome } = require('../nexus-home');
 
 const PLATFORM_SOURCE_PATH_OWNERS = Object.freeze({
   '.claude-plugin': 'claude',
@@ -35,7 +36,7 @@ function isForeignPlatformPath(sourceRelativePath, adapterTarget) {
 
 function resolveBaseRoot(scope, input = {}) {
   if (scope === 'home') {
-    return input.homeDir || os.homedir();
+    return input.homeDir || toolHome();
   }
 
   if (scope === 'project') {

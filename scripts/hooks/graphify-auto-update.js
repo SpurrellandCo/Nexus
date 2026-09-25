@@ -4,7 +4,7 @@
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { toolHome } = require('../lib/nexus-home');
 
 // Only updates a graph that already exists for this project — bootstrapping
 // a fresh graphify-out/ for every directory Claude touches (scratch dirs,
@@ -12,7 +12,7 @@ const os = require('os');
 const PRUNE_DIRS = ['graphify-out', 'node_modules', '.git', '.venv', 'venv', 'dist', 'build', '__pycache__', '.next'];
 
 function resolveGraphifyBin() {
-  const home = os.homedir();
+  const home = toolHome();
   const candidates = [
     path.join(home, '.local', 'bin', 'graphify'),
     '/usr/local/bin/graphify',

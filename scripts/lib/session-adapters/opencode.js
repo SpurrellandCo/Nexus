@@ -1,11 +1,11 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
 const { normalizeOpencodeSession, persistCanonicalSnapshot } = require('./canonical-session');
+const { toolHome } = require('../nexus-home');
 
 const OPENCODE_TARGET_PREFIXES = ['opencode:'];
 const RECENT_ACTIVITY_THRESHOLD_MS = 5 * 60 * 1000;
@@ -34,7 +34,7 @@ function resolveStorageDir(options = {}, context = {}) {
     return path.resolve(explicit);
   }
 
-  return path.join(os.homedir(), '.local', 'share', 'opencode', 'storage');
+  return path.join(toolHome(), '.local', 'share', 'opencode', 'storage');
 }
 
 function isSessionInfoFile(filePath) {

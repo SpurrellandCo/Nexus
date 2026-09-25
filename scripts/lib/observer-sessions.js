@@ -1,9 +1,9 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { ensureDir, sanitizeSessionId } = require('./utils');
+const { toolHome } = require('./nexus-home');
 
 function getHomunculusDir() {
   const override = process.env.CLV2_HOMUNCULUS_DIR;
@@ -22,7 +22,7 @@ function getHomunculusDir() {
     process.stderr.write(`[ecc] XDG_DATA_HOME=${xdgDataHome} is not absolute; ignoring\n`);
   }
 
-  return path.join(os.homedir(), '.local', 'share', 'ecc-homunculus');
+  return path.join(toolHome(), '.local', 'share', 'ecc-homunculus');
 }
 
 function getProjectsDir() {

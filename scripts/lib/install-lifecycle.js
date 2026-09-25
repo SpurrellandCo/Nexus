@@ -1,9 +1,9 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const { resolveInstallPlan, loadInstallManifests } = require('./install-manifests');
 const { readInstallState, writeInstallState } = require('./install-state');
+const { toolHome } = require('./nexus-home');
 const {
   createManifestInstallPlan,
 } = require('./install-executor');
@@ -697,7 +697,7 @@ function buildDiscoveryRecord(adapter, context) {
 
 function discoverInstalledStates(options = {}) {
   const context = {
-    homeDir: options.homeDir || process.env.HOME || os.homedir(),
+    homeDir: options.homeDir || toolHome(),
     projectRoot: options.projectRoot || process.cwd(),
   };
   const targets = normalizeTargets(options.targets);
@@ -905,7 +905,7 @@ function buildDoctorReport(options = {}) {
   }).filter(record => record.exists);
   const context = {
     repoRoot,
-    homeDir: options.homeDir || process.env.HOME || os.homedir(),
+    homeDir: options.homeDir || toolHome(),
     projectRoot: options.projectRoot || process.cwd(),
     manifestVersion: manifests.modulesVersion,
     packageVersion: readPackageVersion(repoRoot),
@@ -989,7 +989,7 @@ function repairInstalledStates(options = {}) {
   const manifests = loadInstallManifests({ repoRoot });
   const context = {
     repoRoot,
-    homeDir: options.homeDir || process.env.HOME || os.homedir(),
+    homeDir: options.homeDir || toolHome(),
     projectRoot: options.projectRoot || process.cwd(),
     manifestVersion: manifests.modulesVersion,
     packageVersion: readPackageVersion(repoRoot),

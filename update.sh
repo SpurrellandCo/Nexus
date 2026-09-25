@@ -32,6 +32,9 @@ if [ ! -d .git ]; then
 fi
 
 echo "== Updating Nexus =="
+if [ -n "${NEXUS_STRAY_HOME:-}" ]; then
+    echo "-> Note: using $HOME (your real install). $NEXUS_STRAY_HOME also has tool folders, likely stray hook output; merge anything you need from it, then remove it. Nothing was deleted."
+fi
 
 if [ -n "$(git status --porcelain)" ]; then
     echo "-> You have local uncommitted changes — pulling anyway. This only fails"

@@ -1,16 +1,16 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const { appendFile } = require('../utils');
+const { toolHome } = require('../nexus-home');
 
 const VALID_OUTCOMES = new Set(['success', 'failure', 'partial']);
 const VALID_FEEDBACK = new Set(['accepted', 'corrected', 'rejected']);
 
 function resolveHomeDir(homeDir) {
-  return homeDir ? path.resolve(homeDir) : os.homedir();
+  return homeDir ? path.resolve(homeDir) : toolHome();
 }
 
 function getRunsFilePath(options = {}) {

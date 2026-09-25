@@ -1,7 +1,7 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { getInstallTargetAdapter, planInstallTargetScaffold } = require('./install-targets/registry');
+const { toolHome } = require('./nexus-home');
 
 const DEFAULT_REPO_ROOT = path.join(__dirname, '../..');
 const SUPPORTED_INSTALL_TARGETS = ['claude', 'claude-project', 'cursor', 'antigravity', 'codex', 'gemini', 'opencode', 'codebuddy', 'joycode', 'qwen', 'zed'];
@@ -559,7 +559,7 @@ function resolveInstallPlan(options = {}) {
     ? {
       repoRoot: manifests.repoRoot,
       projectRoot: validatedProjectRoot || manifests.repoRoot,
-      homeDir: validatedHomeDir || os.homedir(),
+      homeDir: validatedHomeDir || toolHome(),
     }
     : null;
   const targetAdapter = target ? getInstallTargetAdapter(target) : null;

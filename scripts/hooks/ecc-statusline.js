@@ -11,9 +11,9 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { sanitizeSessionId, readBridge, writeBridgeAtomic } = require('../lib/session-bridge');
+const { toolHome } = require('../lib/nexus-home');
 
 const AUTO_COMPACT_BUFFER_PCT = 16.5;
 const MAX_STDIN = 1024 * 1024;
@@ -65,7 +65,7 @@ function readCurrentTask(sessionId) {
     const safeSessionId = sanitizeSessionId(sessionId);
     if (!safeSessionId) return '';
 
-    const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+    const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(toolHome(), '.claude');
     const todosDir = path.join(claudeDir, 'todos');
     if (!fs.existsSync(todosDir)) return '';
 

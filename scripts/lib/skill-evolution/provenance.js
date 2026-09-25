@@ -1,10 +1,10 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const { ensureDir } = require('../utils');
+const { toolHome } = require('../nexus-home');
 
 const PROVENANCE_FILE_NAME = '.provenance.json';
 const SKILL_TYPES = Object.freeze({
@@ -23,7 +23,7 @@ function resolveRepoRoot(repoRoot) {
 }
 
 function resolveHomeDir(homeDir) {
-  return homeDir ? path.resolve(homeDir) : os.homedir();
+  return homeDir ? path.resolve(homeDir) : toolHome();
 }
 
 function normalizeSkillDir(skillPath) {

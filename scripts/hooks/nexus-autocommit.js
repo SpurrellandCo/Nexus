@@ -3,9 +3,9 @@
 
 const { execSync } = require('child_process');
 const path = require('path');
-const os = require('os');
+const { toolHome } = require('../lib/nexus-home');
 
-const CLAUDE_DIR = path.join(os.homedir(), '.claude');
+const CLAUDE_DIR = path.join(toolHome(), '.claude');
 const MAX_LISTED_FILES = 5;
 
 function isDirty() {

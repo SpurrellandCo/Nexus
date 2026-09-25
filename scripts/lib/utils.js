@@ -8,6 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { execSync, spawnSync } = require('child_process');
+const { toolHome } = require('./nexus-home');
 
 // Platform detection
 const isWindows = process.platform === 'win32';
@@ -28,11 +29,9 @@ const WINDOWS_RESERVED_SESSION_IDS = new Set([
  * Get the user's home directory (cross-platform)
  */
 function getHomeDir() {
-  const explicitHome = process.env.HOME || process.env.USERPROFILE;
-  if (explicitHome && explicitHome.trim().length > 0) {
-    return path.resolve(explicitHome);
-  }
-  return os.homedir();
+  // toolHome() honors HOME, but skips a stray folder when USERPROFILE holds the real
+  // install (Windows Git Bash with HOME on a network drive; see nexus-home.js).
+  return toolHome();
 }
 
 /**
