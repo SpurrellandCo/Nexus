@@ -20,6 +20,10 @@ Safe to re-run any time — re-running only fills in keys that are still placeho
 
 Requires `git`, `python3`, and `node` (the hooks and helper scripts are Node).
 
+### Already using an older Nexus?
+
+Earlier versions installed the repo directly as `~/.claude`. Just run `/nexus-update` (or `bash ~/.claude/update.sh`) as usual: after pulling, it moves your install to `~/.nexus`, links `~/.claude` to it, adds the new hooks to your `settings.json` (after backing it up), refreshes the nightly sync, and shares Nexus with Codex and Gemini CLI if you have them. Your settings, history, and projects stay where they are. Afterwards, run git commands in `~/.nexus`, and optionally re-run `bash ~/.nexus/install.sh` to review which tools Nexus sets up.
+
 ### New Machine Setup (manual, without `install.sh`)
 
 If you'd rather do it by hand: clone this repo to `~/.nexus`, run `bash ~/.nexus/scripts/nexus-claude-links.sh` to link it into `~/.claude`, then run `bash bootstrap.sh` to install machine-level dependencies (`uv` + the `graphify` CLI). It prints the remaining manual step of copying `settings.example.json` / `mcp-configs/mcp-servers.example.json` to their real filenames and filling in API keys yourself, since secrets are intentionally excluded from this repo. Then run `node scripts/nexus-link.js` to share skills and agents with Codex and Gemini CLI (optional). Per-project tooling (Playwright screenshot setup, project npm deps) is not part of this script — it installs automatically the first time Claude works in a given project, per the policy in `CLAUDE.md`.
