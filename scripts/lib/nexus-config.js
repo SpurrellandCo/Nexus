@@ -26,8 +26,8 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const { toolHome } = require('./nexus-home');
 
 const KNOWN_TOOLS = ['claude', 'codex', 'gemini'];
 const DEFAULTS = Object.freeze({
@@ -36,7 +36,7 @@ const DEFAULTS = Object.freeze({
 });
 
 function configPath() {
-  return process.env.NEXUS_LOCAL_CONFIG || path.join(os.homedir(), '.nexus-local', 'config.json');
+  return process.env.NEXUS_LOCAL_CONFIG || path.join(toolHome(), '.nexus-local', 'config.json');
 }
 
 function validate(config) {

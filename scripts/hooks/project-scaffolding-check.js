@@ -18,7 +18,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { log } = require('../lib/utils');
 
 const PROJECT_MARKERS = [
@@ -37,7 +36,7 @@ const PROJECT_MARKERS = [
 const NOISY_MODES = new Set(['compact']);
 
 function isNonProjectDir(cwd) {
-  const home = os.homedir();
+  const home = require('../lib/nexus-home').toolHome();
   const configDirs = [path.join(home, '.claude'), path.join(home, '.nexus')].map((d) => path.resolve(d));
   const normalizedCwd = path.resolve(cwd);
 

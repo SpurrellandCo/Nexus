@@ -6,6 +6,9 @@
 #   NEXUS_SYNC_HOUR=9 NEXUS_SYNC_MINUTE=30 ./scripts/nexus-schedule-setup.sh
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh"; fi
+
 LABEL="com.nexus.dailysync"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 # Where Nexus lives: $NEXUS_HOME, else ~/.nexus (current layout), else ~/.claude (older installs).

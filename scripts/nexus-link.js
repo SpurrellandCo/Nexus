@@ -35,14 +35,13 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { parseFrontmatter } = require('./generate-inventory.js');
 const { lintFile } = require('./lib/portability');
 const { loadConfig, configPath } = require('./lib/nexus-config');
 const { syncInstructions } = require('./lib/nexus-instructions');
 
-const HOME = os.homedir();
+const HOME = require('./lib/nexus-home').toolHome();
 const env = process.env;
 const ROOT = require('./lib/nexus-home').nexusHome();
 const SKILLS_DIR = path.join(ROOT, 'skills');

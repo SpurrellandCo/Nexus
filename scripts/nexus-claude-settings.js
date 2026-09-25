@@ -19,11 +19,10 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { nexusHome } = require('./lib/nexus-home');
+const { nexusHome, toolHome } = require('./lib/nexus-home');
 
-const SETTINGS = process.env.NEXUS_CLAUDE_SETTINGS || path.join(os.homedir(), '.claude', 'settings.json');
+const SETTINGS = process.env.NEXUS_CLAUDE_SETTINGS || path.join(toolHome(), '.claude', 'settings.json');
 const HOOKS_DIR = path.join(nexusHome(), 'scripts', 'hooks');
 
 const NEXUS_HOOKS = [
