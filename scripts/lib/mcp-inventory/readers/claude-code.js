@@ -1,8 +1,8 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const { toolHome } = require('../../nexus-home');
 
 // Claude Code stores MCP servers under "mcpServers" in ~/.claude.json (user
 // scope) and in project-local .mcp.json files (project scope). Each entry:
@@ -50,7 +50,7 @@ function readMcpServersBlock(filePath, scope) {
 }
 
 function readClaudeCodeMcp(options = {}) {
-  const homeDir = options.homeDir || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   const userConfig = options.userConfigPath || path.join(homeDir, '.claude.json');
   const projectConfigPaths = Array.isArray(options.projectConfigPaths)
     ? options.projectConfigPaths

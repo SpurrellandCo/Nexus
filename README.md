@@ -20,7 +20,7 @@ Safe to re-run any time — re-running only fills in keys that are still placeho
 
 Requires `git`, `python3`, and `node` (the hooks and helper scripts are Node).
 
-**Windows (Git Bash):** some machines set `HOME` to a network drive (built from `HOMEDRIVE`+`HOMEPATH`) while Claude Code, Codex, and Gemini CLI keep their folders under your profile (`C:\Users\<name>`). Nexus's scripts notice this and use the profile folder, so `.nexus` always ends up next to your AI tool folders. If `~/.nexus` doesn't resolve in your shell, run scripts by their full path, e.g. `bash "$(cygpath -u "$USERPROFILE")/.nexus/update.sh"`. Setting `NEXUS_HOME` always takes priority.
+**Windows (Git Bash):** some machines set `HOME` to a network drive (built from `HOMEDRIVE`+`HOMEPATH`) while Claude Code, Codex, and Gemini CLI keep their folders under your profile (`C:\Users\<name>`). Nexus's scripts notice this and use the profile folder, so `.nexus` always ends up next to your AI tool folders. A real install (`.claude/settings.json`, `.nexus/.git`, `.codex/config.toml`, or `.gemini/settings.json`) outranks a stray `.claude` of hook output on the network drive; `update.sh` points such a folder out but never deletes it. If `~/.nexus` doesn't resolve in your shell, run scripts by their full path, e.g. `bash "$(cygpath -u "$USERPROFILE")/.nexus/update.sh"`. Setting `NEXUS_HOME` always takes priority.
 
 ### Already using an older Nexus?
 

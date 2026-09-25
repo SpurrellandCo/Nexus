@@ -29,6 +29,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { toolHome } = require('../lib/nexus-home');
 
 const CURRENT_PLUGIN_SLUG = 'ecc';
 const LEGACY_PLUGIN_SLUG = 'everything-claude-code';
@@ -76,7 +77,7 @@ function resolvePluginRoot() {
     return path.resolve(envRoot.trim());
   }
 
-  const home = require('os').homedir();
+  const home = toolHome();
   const claudeDir = path.join(home, '.claude');
 
   if (hasRunnerRoot(claudeDir)) {

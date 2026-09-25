@@ -1,11 +1,11 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
 const { normalizeCodexWorktreeSession, persistCanonicalSnapshot } = require('./canonical-session');
+const { toolHome } = require('../nexus-home');
 
 const CODEX_TARGET_PREFIXES = ['codex-worktree:', 'codex:'];
 const ROLLOUT_PREFIX = 'rollout-';
@@ -34,7 +34,7 @@ function resolveSessionsDir(options = {}, context = {}) {
     return path.resolve(explicit);
   }
 
-  return path.join(os.homedir(), '.codex', 'sessions');
+  return path.join(toolHome(), '.codex', 'sessions');
 }
 
 function isRolloutFile(filePath) {

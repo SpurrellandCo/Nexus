@@ -1,8 +1,8 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const { toolHome } = require('../../nexus-home');
 
 // OpenCode stores MCP servers under "mcp" in ~/.config/opencode/opencode.json.
 // Shape differs from Claude/Codex:
@@ -37,7 +37,7 @@ function mapOpencodeServer(name, raw, configPath) {
 }
 
 function readOpencodeMcp(options = {}) {
-  const homeDir = options.homeDir || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   const candidatePaths = options.configPath
     ? [options.configPath]
     : [

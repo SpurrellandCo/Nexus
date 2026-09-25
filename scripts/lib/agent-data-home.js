@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { toolHome } = require('./nexus-home');
 
 const AGENT_DATA_HOME_ENV = 'ECC_AGENT_DATA_HOME';
 const DEFAULT_CLAUDE_DIR_NAME = '.claude';
@@ -37,11 +38,9 @@ const PROJECT_CONFIG_RELATIVE = path.join('.cursor', 'ecc-agent-data.json');
  * | Move all resolution here; thin-wrap from `utils` | Larger refactor |
  */
 function getHomeDirFromEnv() {
-  const explicitHome = process.env.HOME || process.env.USERPROFILE;
-  if (explicitHome && String(explicitHome).trim().length > 0) {
-    return path.resolve(explicitHome);
-  }
-  return require('os').homedir();
+  // Both this and utils.getHomeDir() delegate to toolHome() (nexus-home.js has no
+  // dependencies, so there is no cycle).
+  return toolHome();
 }
 
 function expandHomePath(value, baseDir) {

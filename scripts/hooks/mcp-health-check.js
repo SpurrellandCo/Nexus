@@ -13,11 +13,11 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const http = require('http');
 const https = require('https');
 const { spawn, spawnSync } = require('child_process');
+const { toolHome } = require('../lib/nexus-home');
 
 const MAX_STDIN = 1024 * 1024;
 const DEFAULT_TTL_MS = 2 * 60 * 1000;
@@ -48,7 +48,7 @@ function stateFilePath() {
   if (process.env.ECC_MCP_HEALTH_STATE_PATH) {
     return path.resolve(process.env.ECC_MCP_HEALTH_STATE_PATH);
   }
-  return path.join(os.homedir(), '.claude', 'mcp-health-cache.json');
+  return path.join(toolHome(), '.claude', 'mcp-health-cache.json');
 }
 
 function configPaths() {
@@ -61,7 +61,7 @@ function configPaths() {
   }
 
   const cwd = process.cwd();
-  const home = os.homedir();
+  const home = toolHome();
 
   return [
     path.join(cwd, '.claude.json'),

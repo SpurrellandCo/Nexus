@@ -1,5 +1,4 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -12,6 +11,7 @@ const {
   resolveInstallPlan,
 } = require('./install-manifests');
 const { getInstallTargetAdapter } = require('./install-targets/registry');
+const { toolHome } = require('./nexus-home');
 
 const LANGUAGE_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const CLAUDE_ECC_NAMESPACE = 'ecc';
@@ -551,7 +551,7 @@ function planAntigravityLegacyInstall(context) {
 function createLegacyInstallPlan(options = {}) {
   const sourceRoot = options.sourceRoot || getSourceRoot();
   const projectRoot = options.projectRoot || process.cwd();
-  const homeDir = options.homeDir || process.env.HOME || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   const target = options.target || 'claude';
 
   validateLegacyTarget(target);

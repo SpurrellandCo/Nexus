@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { toolHome } = require('./nexus-home');
 
 const CURRENT_PLUGIN_SLUG = 'ecc';
 const LEGACY_PLUGIN_SLUG = 'everything-claude-code';
@@ -44,7 +44,7 @@ function resolveEccRoot(options = {}) {
     return envRoot.trim();
   }
 
-  const homeDir = options.homeDir || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   const claudeDir = path.join(homeDir, '.claude');
   const probe = options.probe || path.join('scripts', 'lib', 'utils.js');
 

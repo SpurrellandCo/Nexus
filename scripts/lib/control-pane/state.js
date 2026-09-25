@@ -8,11 +8,13 @@ const initSqlJs = require('sql.js');
 const toml = require('@iarna/toml');
 
 const { buildControlPaneActions } = require('./actions');
+const { toolHome } = require('../nexus-home');
 
 const SNAPSHOT_SCHEMA_VERSION = 'ecc.control-pane.snapshot.v1';
 const DEFAULT_STATE_STORE_RELATIVE_PATH = path.join('.claude', 'ecc', 'state.db');
 
 function homeDir(env = process.env) {
+  if (env === process.env) return toolHome();
   return env.HOME || env.USERPROFILE || os.homedir() || '.';
 }
 

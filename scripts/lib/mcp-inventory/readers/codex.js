@@ -1,8 +1,8 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const { toolHome } = require('../../nexus-home');
 
 // Codex stores MCP servers in ~/.codex/config.toml as TOML tables:
 //   [mcp_servers.NAME]
@@ -48,7 +48,7 @@ function mapCodexServer(name, raw, configPath) {
 }
 
 function readCodexMcp(options = {}) {
-  const homeDir = options.homeDir || os.homedir();
+  const homeDir = options.homeDir || toolHome();
   const configPath = options.configPath || path.join(homeDir, '.codex', 'config.toml');
 
   if (!fs.existsSync(configPath) || !fs.statSync(configPath).isFile()) {
