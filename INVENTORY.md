@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 17:35:23.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 20:28:20.
 
 ## Agents
 
@@ -122,7 +122,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `brandcreator` | Interviews the user about a specific business and generates a standalone, permanent brand-identity skill (brandcreator-<company>) containing its logo, brand guidelines, design tokens, and a document template. Use when the user wants to create a brand identity, build a brand kit, or set up branded document generation for a company. The generated skill is later invoked directly (e.g. /brandcreator-acme) to produce reports, PDFs, presentations, or images in that brand automatically. |
+| `brandcreator` | Interviews the user about a specific business and generates a standalone, shareable brand kit (brandcreator-<company>): one self-contained folder with its logo, brand guidelines, design tokens, and Word, PowerPoint, and HTML templates, plus scripts that make branded .docx and .pptx files or re-brand existing ones. Use when the user wants to create a brand identity, build a brand kit, or set up branded document generation for a company. The generated kit is later invoked directly (e.g. /brandcreator-acme) to produce reports, documents, decks, PDFs, or images in that brand. |
 
 ### brandkit
 
