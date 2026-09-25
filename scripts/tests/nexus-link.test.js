@@ -271,7 +271,7 @@ const END = '<!-- END NEXUS -->';
 
 test('Claude gets import lines (no copy); Codex and Gemini get the content with a rules index', () => {
   const d = makeFixture();
-  write(d.localMd, 'My projects: Cookie cutter on :3010.\n');
+  write(d.localMd, 'My projects: My App on :3000.\n');
   const r = run(d);
   assert.equal(r.status, 0, r.stderr);
 
@@ -287,7 +287,7 @@ test('Claude gets import lines (no copy); Codex and Gemini get the content with 
   assert.doesNotMatch(codex, /Claude-only note/);
   assert.match(codex, /Write neutral skills/, 'rules/nexus inlined');
   assert.match(codex, /rules\/ecc\/common\/testing\.md[^\n]*Testing Requirements/, 'other rules indexed');
-  assert.match(codex, /Cookie cutter on :3010/, 'personal instructions included');
+  assert.match(codex, /My App on :3000/, 'personal instructions included');
 
   const gemini = fs.readFileSync(d.geminiMd, 'utf8');
   assert.match(gemini, /Shared rule: ask the user/);

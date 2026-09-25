@@ -88,17 +88,7 @@ ask_yes_no() { # $1 question, $2 default answer (y|n); no terminal -> default
     case "$answer" in [Yy]*) return 0 ;; *) return 1 ;; esac
 }
 
-# Which AI tools are on this machine? None is required, and none is special.
-tool_found() {
-    case "$1" in
-        claude) command -v claude >/dev/null 2>&1 || [ -d "$HOME/.claude" ] ;;
-        codex)  command -v codex >/dev/null 2>&1 || [ -d "$HOME/.codex" ] || [ -d /Applications/Codex.app ] ;;
-        gemini) command -v gemini >/dev/null 2>&1 || [ -d "$HOME/.gemini" ] ;;
-    esac
-}
-tool_name() {
-    case "$1" in claude) echo "Claude Code" ;; codex) echo "Codex" ;; gemini) echo "Gemini CLI" ;; esac
-}
+. scripts/lib/detect-tools.sh
 
 echo ""
 echo "== Which AI tools should Nexus set up? =="
@@ -157,6 +147,8 @@ if uses claude; then
     if [ ! -f "$CLAUDE_DIR/settings.json" ]; then
         cp settings.example.json "$CLAUDE_DIR/settings.json"
         echo "-> Created ~/.claude/settings.json from template"
+    else
+        node scripts/nexus-claude-settings.js || echo "-> Couldn't add Nexus's hooks to your settings.json (left it untouched)."
     fi
     if [ ! -f mcp-configs/mcp-servers.json ]; then
         mkdir -p mcp-configs

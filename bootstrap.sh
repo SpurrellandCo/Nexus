@@ -33,6 +33,13 @@ else
     echo "-> gh CLI present"
 fi
 
+# 4. Older installs (repo at ~/.claude) move to ~/.nexus. Every update.sh runs this
+#    file after pulling, so /nexus-update alone upgrades them. No-op otherwise.
+BOOTSTRAP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$BOOTSTRAP_DIR/scripts/nexus-upgrade.sh" ]; then
+    bash "$BOOTSTRAP_DIR/scripts/nexus-upgrade.sh"
+fi
+
 echo ""
 echo "== Bootstrap complete =="
 echo ""
