@@ -12,6 +12,9 @@
 # Safe to re-run.
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh"; fi
+
 LABEL="com.nexus.link"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_PATH="$HOME/.cache/nexus-link.log"

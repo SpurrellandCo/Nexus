@@ -6,6 +6,10 @@
 # given project, per the standing policy in CLAUDE.md.
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+NEXUS_HOME_SH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/lib/nexus-home.sh"
+if [ -f "$NEXUS_HOME_SH" ]; then . "$NEXUS_HOME_SH"; fi
+
 echo "== Nexus bootstrap =="
 
 # 1. uv — needed to install/run the graphify CLI

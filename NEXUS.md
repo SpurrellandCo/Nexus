@@ -27,7 +27,7 @@ Nexus is a shared toolkit of skills, agents, coding standards, and workflows use
 
 ## Keeping Nexus up to date
 
-- To check for or apply updates, run `bash ~/.nexus/update.sh` rather than a bare `git pull`: it also refreshes links, dependencies, the inventory, and every tool's copy of these instructions, and reports what changed.
+- To check for or apply updates, run `bash ~/.nexus/update.sh` rather than a bare `git pull`: it also refreshes links, dependencies, the inventory, and every tool's copy of these instructions, and reports what changed. On Windows, if `~/.nexus` isn't there, Git Bash's `HOME` may point to a network drive: run it from the profile folder instead, `bash "$(cygpath -u "$USERPROFILE")/.nexus/update.sh"`.
 - A nightly sync (if enabled in `~/.nexus-local/config.json`) commits changes to Nexus's own files and pushes them only when `sync.push` is on, so a same-day "no updates yet" is expected.
 - After restructuring Nexus, check nothing changed with `node ~/.nexus/scripts/nexus-baseline.js --compare <saved-baseline.json>`.
 

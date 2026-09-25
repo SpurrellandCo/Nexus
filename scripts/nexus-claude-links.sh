@@ -21,6 +21,9 @@
 # Env overrides (tests): NEXUS_DIR (default ~/.nexus), CLAUDE_DIR (default ~/.claude)
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh"; fi
+
 NEXUS_DIR="${NEXUS_DIR:-$HOME/.nexus}"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 EXTRAS="plans"   # gitignored but Nexus-owned

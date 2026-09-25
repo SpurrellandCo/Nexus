@@ -15,6 +15,9 @@
 # working tree is left dirty (unstaged) for review and a warning is logged.
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh"; fi
+
 # Where Nexus lives: $NEXUS_HOME, else ~/.nexus (current layout), else ~/.claude (older installs).
 if [ -n "${NEXUS_HOME:-}" ]; then
     NEXUS_DIR="$NEXUS_HOME"

@@ -9,6 +9,9 @@
 # is deleted, and settings.json is backed up before hooks are added.
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh"; fi
+
 CLAUDE_DIR="$HOME/.claude"
 NEXUS_DIR="$HOME/.nexus"
 CONFIG_FILE="$HOME/.nexus-local/config.json"
@@ -22,7 +25,7 @@ is_old_layout() {
 is_old_layout || exit 0
 
 if ! command -v node >/dev/null 2>&1; then
-    echo "-> Nexus has moved to ~/.nexus, but upgrading needs node. Install node, then run: bash ~/.claude/install.sh"
+    echo "-> Nexus has moved to ~/.nexus, but upgrading needs node. Install node, then run: bash $CLAUDE_DIR/install.sh"
     exit 0
 fi
 
@@ -62,7 +65,7 @@ fi
 if { uses codex && tool_found codex; } || { uses gemini && tool_found gemini; }; then
     bash scripts/nexus-link-schedule.sh || echo "-> Background sync not set up (non-fatal)."
 fi
-node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal); run bash ~/.nexus/update.sh to retry."
+node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal); run bash $NEXUS_DIR/update.sh to retry."
 
 echo "-> Upgrade complete. Nexus now lives in ~/.nexus and ~/.claude links to it; run git commands in ~/.nexus."
-echo "   To review which tools Nexus sets up, run: bash ~/.nexus/install.sh (it keeps your settings)."
+echo "   To review which tools Nexus sets up, run: bash $NEXUS_DIR/install.sh (it keeps your settings)."

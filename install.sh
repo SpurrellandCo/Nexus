@@ -21,6 +21,10 @@
 # Safe to re-run at any time.
 set -euo pipefail
 
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+NEXUS_HOME_SH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/lib/nexus-home.sh"
+if [ -f "$NEXUS_HOME_SH" ]; then . "$NEXUS_HOME_SH"; fi
+
 TARGET="$HOME/.nexus"
 CLAUDE_DIR="$HOME/.claude"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -187,7 +191,7 @@ fi
 
 echo ""
 echo "== Setting up your tools =="
-node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal); run bash ~/.nexus/update.sh to retry."
+node scripts/nexus-link.js || echo "-> nexus-link failed (non-fatal); run bash $TARGET/update.sh to retry."
 
 echo ""
 echo "== Nexus install complete =="

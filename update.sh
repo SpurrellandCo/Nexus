@@ -2,12 +2,18 @@
 # Pulls the latest Nexus changes into your Nexus checkout (~/.nexus; ~/.claude on older installs)
 # and refreshes the ~/.claude links, dependencies, inventory, and tool sharing.
 #
-# Usage: bash ~/.nexus/update.sh   (bash ~/.claude/update.sh also works through the links)
+# Usage: bash ~/.nexus/update.sh   (bash ~/.claude/update.sh also works through the links).
+# On Windows Git Bash where HOME points to a network drive, run it by its real path, e.g.
+# bash "$(cygpath -u "$USERPROFILE")/.nexus/update.sh"; it corrects HOME for everything it runs.
 #
 # Safe to run any time. If you have local uncommitted changes, git only fails
 # this pull on a real conflict — nothing is lost either way; on conflict,
 # resolve it (git status shows what's conflicting) and re-run.
 set -euo pipefail
+
+# Windows Git Bash can report a HOME that isn't where the AI tool folders live; fix that first.
+NEXUS_HOME_SH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/lib/nexus-home.sh"
+if [ -f "$NEXUS_HOME_SH" ]; then . "$NEXUS_HOME_SH"; fi
 
 # Where Nexus lives: $NEXUS_HOME, else ~/.nexus (current layout), else ~/.claude (older installs).
 if [ -n "${NEXUS_HOME:-}" ]; then
