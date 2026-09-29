@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-24 at 20:58:14.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-09-28 at 20:32:32.
 
 ## Agents
 
@@ -93,6 +93,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `analytics-tracking` | When the user wants to set up, improve, or audit analytics tracking and measurement. Also use when the user mentions "set up tracking," "GA4," "Google Analytics," "conversion tracking," "event tracking," "UTM parameters," "tag manager," "GTM," "analytics implementation," "tracking plan," "how do I measure this," "track conversions," "attribution," "Mixpanel," "Segment," "are my events firing," or "analytics isn't working." Use this whenever someone asks how to know if something is working or wants to measure marketing results. For A/B test measurement, see ab-test-setup. |
+
+### archify
+
+| Skill | Description |
+|-------|-------------|
+| `archify` | Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid. |
 
 ### auth-patterns
 
@@ -896,7 +902,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 168
+- **Skills:** 169
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
