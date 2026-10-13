@@ -7,6 +7,7 @@ Nexus is a shared toolkit of skills, agents, coding standards, and workflows use
 - Nexus is a git checkout at `~/.nexus` (`$NEXUS_HOME`). Skills are in `~/.nexus/skills/<name>/SKILL.md`, agents in `~/.nexus/agents/`, coding standards in `~/.nexus/rules/`. `~/.nexus/INVENTORY.md` lists everything (generated; don't hand-edit it).
 - Your tool sees these through links or generated files: Claude Code through `~/.claude/skills` and friends; Codex and Gemini CLI through `~/.agents/skills`, plus agents in `~/.codex/agents` and `~/.gemini/agents`. `scripts/nexus-link.js` keeps every tool in step, so never copy a skill or agent into a tool's folder by hand. <!-- nexus-portability: ignore (names each tool's own folders on purpose) -->
 - Per-machine settings and personal notes live in `~/.nexus-local/` and never enter the repo.
+- External applications Nexus can use (video production, local speech and text models) are described in `~/.nexus/integrations/`; they stay installed separately, and `node ~/.nexus/scripts/nexus-integrations.js list` or `health` shows which are set up on this machine.
 - Run git commands in `~/.nexus`.
 
 ## Creating or changing skills and agents

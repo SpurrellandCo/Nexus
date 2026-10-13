@@ -114,3 +114,14 @@ test('links to items that left the repo are removed; unrelated links are kept', 
   assert.ok(fs.lstatSync(path.join(d.claude, 'someone-elses-link')).isSymbolicLink(), 'other links untouched');
   assert.match(r.stdout, /Removed 1/);
 });
+
+test('integrations/ (external-app definitions) is not linked into ~/.claude', () => {
+  const d = legacyInstall();
+  write(path.join(d.claude, 'integrations/demo/integration.json'), '{}\n');
+  git(d.claude, 'add', '-A');
+  git(d.claude, 'commit', '-qm', 'add integrations');
+  const r = run(d, '--migrate');
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(fs.existsSync(path.join(d.nexus, 'integrations/demo/integration.json')), 'moved with the repo');
+  assert.ok(!fs.existsSync(path.join(d.claude, 'integrations')), 'not linked: Claude Code has no use for it');
+});

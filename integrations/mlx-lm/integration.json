@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "mlx-lm",
+  "name": "MLX LM",
+  "description": "Optional local text generation on Apple silicon (summaries, script drafts, structured text) through mlx-lm, as a separate capability from your coding assistant.",
+  "upstream": {
+    "repository": "https://github.com/ml-explore/mlx-lm",
+    "tested": "0.32.0",
+    "license": "MIT"
+  },
+  "capabilities": ["text.generate"],
+  "install": {
+    "kind": "python-env",
+    "setup": "uv venv --python 3.12 ~/.nexus-local/runtimes/mlx-lm && uv pip install --python ~/.nexus-local/runtimes/mlx-lm/bin/python mlx-lm==0.32.0"
+  },
+  "requires": {
+    "commands": [],
+    "files": []
+  },
+  "config": {
+    "python": { "type": "path", "required": true, "description": "Python in the isolated mlx-lm environment" },
+    "model": { "type": "string", "required": false, "description": "Default model repo (an MLX model on Hugging Face), e.g. mlx-community/Qwen3-4B-Instruct-2507-4bit" }
+  },
+  "invocation": {
+    "method": "local-process",
+    "entry": "worker.py",
+    "summary": "Nexus runs worker.py with the environment's Python per request: mlx_lm.load(), the tokenizer's chat template, then mlx_lm.generate(). No server stays running; the model is freed when the process exits."
+  },
+  "io": {
+    "input": "A prompt (text or file), optional system prompt, token limit, sampling settings",
+    "output": "Generated text on stdout or in a file; with --json, parsed and checked JSON"
+  },
+  "limitations": [
+    "This is a separate tool you call; it does not replace the model inside Claude Code, Codex, or Gemini CLI.",
+    "Only models already downloaded are used; download one explicitly after checking its size.",
+    "Small local models write weaker scripts than large cloud models; video jobs never depend on this integration.",
+    "Run it before or after speech generation and video rendering, not alongside them, on a 36 GB machine."
+  ]
+}

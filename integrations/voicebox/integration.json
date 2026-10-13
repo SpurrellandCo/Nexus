@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "voicebox",
+  "name": "Voicebox",
+  "description": "Local voice-cloning studio (Qwen3-TTS and other engines) with a local HTTP API; used to render narration in a cloned voice.",
+  "upstream": {
+    "repository": "https://github.com/jamiepine/voicebox",
+    "tested": "0.5.0",
+    "license": "MIT"
+  },
+  "capabilities": ["narration.tts"],
+  "install": {
+    "kind": "app",
+    "setup": "Install the Voicebox app (https://voicebox.sh), create a cloned voice profile, and leave the app running."
+  },
+  "requires": {
+    "commands": [],
+    "files": []
+  },
+  "config": {
+    "baseUrl": { "type": "url", "required": false, "description": "Voicebox's local server (default: http://127.0.0.1:17493)" },
+    "profile": { "type": "string", "required": false, "description": "Default voice profile name or id for narration" }
+  },
+  "invocation": {
+    "method": "local-http",
+    "entry": "/generate",
+    "summary": "POST /generate with a profile id and text, poll /history/<id> until completed, then download /audio/<id> (WAV)."
+  },
+  "io": {
+    "input": "Narration text and a voice profile",
+    "output": "WAV audio (the tested install writes 24 kHz mono 16-bit PCM)"
+  },
+  "limitations": [
+    "The Voicebox app must be running; its server only listens on localhost.",
+    "Voice quality and consent for the cloned voice are the user's responsibility; Nexus only sends text to the local server."
+  ]
+}

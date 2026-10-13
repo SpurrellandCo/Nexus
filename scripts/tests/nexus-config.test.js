@@ -61,3 +61,36 @@ test('older configs with shareWith still work (Claude was always set up then)', 
   fs.writeFileSync(file, JSON.stringify({ shareWith: ['codex'] }));
   assert.equal(cli(file, 'get', 'tools').stdout.trim(), '["claude","codex"]');
 });
+
+test('set writes one nested key and keeps every other setting', () => {
+  const file = tmpConfig();
+  fs.writeFileSync(file, JSON.stringify({ tools: ['codex'], sync: { enabled: false, push: true }, custom: { keep: 1 } }));
+  const r = cli(file, 'set', 'integrations.openmontage.path', JSON.stringify('/tmp/Open Montage'));
+  assert.equal(r.status, 0, r.stderr);
+  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.deepEqual(saved.tools, ['codex']);
+  assert.deepEqual(saved.sync, { enabled: false, push: true });
+  assert.deepEqual(saved.custom, { keep: 1 });
+  assert.equal(saved.integrations.openmontage.path, '/tmp/Open Montage');
+  cli(file, 'set', 'integrations.openmontage.enabled', 'false');
+  const again = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(again.integrations.openmontage.path, '/tmp/Open Montage', 'sibling key kept');
+  assert.equal(again.integrations.openmontage.enabled, false);
+});
+
+test('set creates the file when missing and refuses values that make the config invalid', () => {
+  const file = tmpConfig();
+  assert.equal(cli(file, 'set', 'integrations.voicebox.profile', '"Narrator"').status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).integrations.voicebox.profile, 'Narrator');
+  const before = fs.readFileSync(file, 'utf8');
+  assert.equal(cli(file, 'set', 'sync.push', '"yes"').status, 1, 'non-boolean sync.push rejected');
+  assert.equal(cli(file, 'set', 'integrations.voicebox.enabled', '"no"').status, 1, 'non-boolean enabled rejected');
+  assert.equal(cli(file, 'set', 'integrations.voicebox.profile', '{not json').status, 1, 'bad JSON rejected');
+  assert.equal(fs.readFileSync(file, 'utf8'), before, 'file untouched after a rejected set');
+});
+
+test('integrations must be an object of objects', () => {
+  const file = tmpConfig();
+  fs.writeFileSync(file, JSON.stringify({ integrations: { openmontage: 'yes' } }));
+  assert.equal(cli(file, 'get', 'tools').status, 1);
+});

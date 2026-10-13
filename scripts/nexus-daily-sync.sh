@@ -33,7 +33,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Nexus-owned content. Anything else in the checkout is runtime state (older installs mix it in).
 SYNC_PATHS=(
     agents commands skills rules scripts hooks mcp-configs
-    settings.example.json NEXUS.md adapters CLAUDE.md AGENTS.md README.md INVENTORY.md LICENSE
+    settings.example.json NEXUS.md adapters integrations CLAUDE.md AGENTS.md README.md INVENTORY.md LICENSE
     install.sh update.sh bootstrap.sh .gitignore config.json
 )
 

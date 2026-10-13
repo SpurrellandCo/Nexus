@@ -27,7 +27,7 @@ if [ -f "$(dirname "${BASH_SOURCE[0]}")/lib/nexus-home.sh" ]; then . "$(dirname 
 NEXUS_DIR="${NEXUS_DIR:-$HOME/.nexus}"
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 EXTRAS="plans"   # gitignored but Nexus-owned
-EXCLUDES=" CLAUDE.md AGENTS.md NEXUS.md adapters "   # repo docs and instruction sources (reached via nexus-link blocks), never linked
+EXCLUDES=" CLAUDE.md AGENTS.md NEXUS.md adapters integrations "   # repo docs, instruction sources (reached via nexus-link blocks), external-app definitions; never linked
 BACKUP_DIR="$CLAUDE_DIR/backups/nexus-links-$(date +%Y%m%d-%H%M%S)"
 
 say() { echo "-> $*"; }
