@@ -88,6 +88,8 @@ In cloning mode mlx-audio raises `repetition_penalty` to at least 1.5; the manif
 
 ### Adding a take
 
+The quickest way is the `voice-take` skill (`/voice-take ~/Desktop/upbeat.m4a` in Claude Code). It runs the command below, checks the transcript with you, and can render a side-by-side listening test. Directly:
+
 ```bash
 node ~/.nexus/scripts/nexus-integrations.js mlx-audio add-take <profile> ~/Desktop/upbeat.m4a
 #   --id upbeat          name it (default: from the file name)
