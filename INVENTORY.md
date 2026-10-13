@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-13 at 10:07:13.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-13 at 10:11:29.
 
 ## Agents
 
@@ -715,7 +715,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `voice-take` | Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. |
+| `voice-take` | Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file). |
 
 ### vps-deployment
 

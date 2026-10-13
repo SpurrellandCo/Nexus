@@ -1,8 +1,8 @@
 ---
 name: voice-take
-description: "Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice."
+description: "Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file)."
 metadata:
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # Voice take
@@ -11,15 +11,25 @@ Adds one recording to a voice profile in a single step, then helps the user conf
 
 All commands below start with `node $NEXUS_HOME/scripts/nexus-integrations.js mlx-audio`, written `mlx-audio …` here.
 
+## 0. A script to read (when the user has no recording yet)
+
+Do this when there is no recording in the argument, or when the user asks for something to read.
+
+1. Run `mlx-audio voice-check <profile>` (profile chosen as in step 1) to see the existing takes and their labels.
+2. Suggest the scripts in `references/reading-scripts.md` whose delivery the profile is missing. A profile with only neutral takes, for example, gets the upbeat hook and the conversational script first. Show one to three scripts, word for word, each under its suggested take id, together with the "How to record" tips from the same file.
+3. If the user's videos are about something the scripts don't fit, and you know their topic from the conversation or the project, write a custom script following the file's "Writing a custom script" rules instead.
+4. Tell the user to come back with `/voice-take <file>` (or just the file path) for each recording, and remember which script each recording is for. Stop here until they have recorded.
+
 ## 1. Gather inputs
 
-- **Recording:** the argument, or a file the user mentioned. If there is none, ask for the path. Any audio ffmpeg reads is fine (`.m4a` voice memos, `.mp3`, `.wav`). Expand `~` and check the file exists.
+- **Recording:** the argument, or a file the user mentioned. If there is none, go to step 0. Any audio ffmpeg reads is fine (`.m4a` voice memos, `.mp3`, `.wav`). Expand `~` and check the file exists.
 - **Profile:** run `node $NEXUS_HOME/scripts/nexus-integrations.js health mlx-audio` and read the `voice <id>` lines. One profile means use it; several means ask which; none (or mlx-audio not configured) means stop and point the user to the README's set-up section.
 - **Options from the user's words** (don't ask for them unless the user seems to want them):
   - `--id <name>`: lowercase letters, digits and dashes. Default comes from the file name, so suggest a clearer one when the file is called something like `new-recording-12`.
   - `--label "..."`: what the take is for, such as "upbeat hook".
   - `--default`: only when the user says to make this the main take.
-  - `--transcript "..."`: when the user has said exactly what they read.
+  - `--transcript "..."`: only when the user typed out exactly what they said. For a recording read from a script in step 0, **don't** pass the script as the transcript; let Whisper transcribe it, so step 3 can catch any word the user changed or skipped.
+  - When the recording is of a step-0 script, use that script's take id as `--id` unless the user picks another.
 
 ## 2. Add it
 
@@ -32,7 +42,12 @@ Run `mlx-audio add-take <profile> <recording> [options]`.
 
 ## 3. Confirm the transcript
 
-Show the user the transcript and ask whether it matches what they said **word for word**. The model aligns the audio with this text, so a wrong word degrades every line generated from the take. If they correct it, rerun step 2 with `--transcript "<corrected text>" --replace` and the same `--id`.
+The model aligns the audio with this text, so a wrong word degrades every line generated from the take.
+
+- **Read from a step-0 script:** compare Whisper's transcript with the script word by word, ignoring case, punctuation, and spelling variants (`centimetres`/`centimeters`, `32`/`thirty-two`).
+  - If they match, say so and use the **script's** wording: rerun step 2 with `--transcript "<script>" --replace` and the same `--id`. The script has the exact words and punctuation.
+  - If they differ, list each difference (script vs heard) and ask what the user actually said. What was said wins, not the script. Rerun with `--transcript "<what was said>" --replace`. If they skipped or garbled a lot, suggest recording it again.
+- **Anything else:** show the transcript and ask whether it matches what they said **word for word**. If they correct it, rerun step 2 with `--transcript "<corrected text>" --replace` and the same `--id`.
 
 ## 4. Offer a listening test (optional)
 
