@@ -86,6 +86,26 @@ In cloning mode mlx-audio raises `repetition_penalty` to at least 1.5; the manif
 - **Picking a take per scene** (`"take": "excited"`) is an experiment. The reference shapes the voice's character, but there's no guarantee the output carries that emotion. Listen and compare.
 - Check a profile with `nexus-integrations.js mlx-audio voice-check <id>`. Your recordings are only read; never edit the originals, and convert copies if needed.
 
+### Adding a take
+
+```bash
+node ~/.nexus/scripts/nexus-integrations.js mlx-audio add-take <profile> ~/Desktop/upbeat.m4a
+#   --id upbeat          name it (default: from the file name)
+#   --label "upbeat hook"
+#   --transcript "exactly what you said"   (otherwise Whisper transcribes it via OpenMontage)
+#   --default            use it as the profile's default take
+#   --replace            overwrite a take with the same id
+```
+
+`add-take`:
+- converts a **copy** of any audio file ffmpeg can read (`.m4a`, `.mp3`, `.wav`, …) to 24 kHz mono WAV in the profile's `takes/`; the original is never touched;
+- gets the transcript, either the one you pass or a Whisper transcript (OpenMontage's `transcriber`, `small` model) when the OpenMontage integration is set up;
+- adds the take to `profile.json` and re-checks the profile, undoing the change if the profile would become invalid.
+
+**Check the printed transcript.** It must match what you said word for word; edit `profile.json` if Whisper got a word wrong. Then compare takes by generating the same lines with each one: a narration job whose scenes repeat a line with different `take` values.
+
+What makes a good take: 15–30 s of clean speech in the same mic and room as your videos, read at the pace and energy you want, starting and ending on complete sentences.
+
 ## Narration jobs
 
 ```json

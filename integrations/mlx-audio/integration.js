@@ -4,6 +4,7 @@
  * MLX Audio integration: a speech provider for Nexus narration jobs, plus commands.
  *
  *   models                                 model adapters, what each can do, verified/cached
+ *   add-take <profile> <recording>         add a reference recording (converted copy, auto-transcribed)
  *   voice-check <profile>                  validate a voice profile against its model
  *   validate <job.json>                    plan a narration job without generating (dry run)
  *   generate <job.json> [--force]          generate every new or stale scene (one batch, one model load)
@@ -23,6 +24,7 @@ const { MODELS, resolveModel, checkRequest, effectiveSettings } = require('./mod
 const { loadProfile } = require('../../scripts/lib/speech/profile');
 const { scenesFromScript, CONTRACT: JOB_CONTRACT } = require('../../scripts/lib/speech/job');
 const { planNarration, generateNarration, narrationStatus } = require('../../scripts/lib/speech/run');
+const { addTake } = require('./takes');
 
 const WORKER = path.join(__dirname, 'worker.py');
 const BASE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -142,6 +144,11 @@ const commands = {
       }
       return EXIT.ok;
     },
+  },
+  'add-take': {
+    usage: 'add-take <profile> <recording> [--id name] [--label "..."] [--transcript "..."] [--default] [--replace]',
+    summary: 'add a new reference recording to a voice profile (converted copy, auto-transcribed)',
+    run(args, ctx) { return addTake(args, ctx, dirs(ctx)); },
   },
   'voice-check': {
     usage: 'voice-check <profile id or profile.json>', summary: 'validate a voice profile and its recordings',

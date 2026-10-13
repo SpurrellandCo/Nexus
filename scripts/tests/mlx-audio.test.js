@@ -166,3 +166,66 @@ test('[mocked] voice-check, models, and split', () => {
   assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')).scenes.map((x) => x.id), ['s01', 's02']);
   assert.equal(s.run(['split', script, '--job-id', 'split-job', '--voice', 'narrator', '--out', out]).status, 1, 'never overwrites');
 });
+
+// add-take: real ffmpeg conversion of a synthetic tone; transcription is MOCKED (fake OpenMontage python).
+const { spawnSync } = require('child_process');
+const { makeCheckout } = require('./fixtures/integration-fixtures');
+
+function phoneRecording(dir) {
+  const src = path.join(dir, 'my recordings', 'Upbeat Take.m4a');
+  fs.mkdirSync(path.dirname(src), { recursive: true });
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=5:sample_rate=44100', '-ac', '2', '-c:a', 'aac', src]);
+  return r.status === 0 ? src : null;
+}
+
+test('[mocked transcript] add-take converts a recording into the profile and keeps the original untouched', (t) => {
+  const s = setup();
+  const src = phoneRecording(s.dir);
+  if (!src) return t.skip('ffmpeg not installed');
+  const before = fs.readFileSync(src);
+  const r = s.run(['add-take', 'narrator', src, '--transcript', 'Okay, this one is a game changer.', '--label', 'upbeat hook']);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.deepEqual(fs.readFileSync(src), before, 'source recording unchanged');
+  const profile = JSON.parse(fs.readFileSync(s.voice.file, 'utf8'));
+  const take = profile.takes.find((x) => x.id === 'upbeat-take');
+  assert.deepEqual([take.audio, take.label, take.transcript], ['takes/upbeat-take.wav', 'upbeat hook', 'Okay, this one is a game changer.']);
+  assert.equal(profile.takes.length, 3, 'existing takes kept');
+  assert.equal(profile.defaultTake, 'calm', 'default unchanged unless --default');
+  const { readWav } = require('../lib/speech/profile');
+  const wav = readWav(path.join(s.voice.dir, 'takes', 'upbeat-take.wav'));
+  assert.deepEqual([wav.sampleRate, wav.channels, Math.round(wav.durationSeconds)], [24000, 1, 5]);
+  assert.equal(s.run(['voice-check', 'narrator']).status, 0);
+  const again = s.run(['add-take', 'narrator', src, '--transcript', 'x']);
+  assert.equal(again.status, 1);
+  assert.match(again.stderr, /already has a take "upbeat-take".*--replace/);
+  return undefined;
+});
+
+test('[mocked transcript] add-take transcribes with OpenMontage when no transcript is given, and can set the default', (t) => {
+  const s = setup();
+  const src = phoneRecording(s.dir);
+  if (!src) return t.skip('ffmpeg not installed');
+  const checkout = makeCheckout(path.join(s.dir, 'Open Montage'));
+  const cfg = JSON.parse(fs.readFileSync(s.config, 'utf8'));
+  cfg.integrations.openmontage = { path: checkout };
+  fs.writeFileSync(s.config, JSON.stringify(cfg));
+  const r = s.run(['add-take', 'narrator', src, '--id', 'upbeat', '--default']);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /Transcript \(check it\): This is the fake transcript of the new take\./);
+  const profile = JSON.parse(fs.readFileSync(s.voice.file, 'utf8'));
+  assert.equal(profile.defaultTake, 'upbeat');
+  assert.equal(profile.takes.find((x) => x.id === 'upbeat').transcript, 'This is the fake transcript of the new take.');
+  return undefined;
+});
+
+test('add-take without a transcript or OpenMontage stops and says how to give one', (t) => {
+  const s = setup();
+  const src = phoneRecording(s.dir);
+  if (!src) return t.skip('ffmpeg not installed');
+  const r = s.run(['add-take', 'narrator', src]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /no transcript.*--transcript/s);
+  assert.equal(JSON.parse(fs.readFileSync(s.voice.file, 'utf8')).takes.length, 2, 'profile untouched');
+  assert.equal(fs.existsSync(path.join(s.voice.dir, 'takes', 'upbeat-take.wav')), false, 'no stray audio left behind');
+  return undefined;
+});

@@ -39,6 +39,9 @@ if [ -n "$FAKE_PY_LOG" ]; then
   { pwd; for a in "$@"; do printf '%s\\n' "$a"; done; } > "$FAKE_PY_LOG"
 fi
 case "$2" in
+  *Transcriber*)
+    echo '{"text": "This is the fake transcript of the new take."}'
+    exit 0 ;;
   *validate_artifact*)
     if [ "$FAKE_VALIDATE" = "fail" ]; then echo '{"errors": ["script: ValidationError: end_seconds is a required property"]}'; else echo '{"errors": []}'; fi
     exit 0 ;;
