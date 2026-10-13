@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "mlx-audio",
+  "name": "MLX Audio",
+  "description": "Local speech generation on Apple silicon (Qwen3-TTS first): scene-by-scene narration from voice profiles, with a manifest and stale-output detection.",
+  "upstream": {
+    "repository": "https://github.com/Blaizzy/mlx-audio",
+    "tested": "0.5.8",
+    "license": "MIT"
+  },
+  "capabilities": ["speech.tts", "narration.tts"],
+  "install": {
+    "kind": "python-env",
+    "setup": "uv venv --python 3.12 ~/.nexus-local/runtimes/mlx-audio && uv pip install --python ~/.nexus-local/runtimes/mlx-audio/bin/python mlx-audio==0.5.8"
+  },
+  "requires": {
+    "commands": [],
+    "files": []
+  },
+  "config": {
+    "python": { "type": "path", "required": true, "description": "Python in the isolated mlx-audio environment" },
+    "voicesDir": { "type": "path", "required": false, "description": "Voice profiles folder (default: ~/.nexus-local/voices)" },
+    "narrationDir": { "type": "path", "required": false, "description": "Default output folder for narration jobs (default: ~/.nexus-local/narration)" }
+  },
+  "invocation": {
+    "method": "local-process",
+    "entry": "worker.py",
+    "summary": "Nexus runs worker.py with the environment's Python once per batch: mlx_audio.tts.utils.load_model() then model.generate() per scene. The model is freed when the process exits; downloads are off unless asked for."
+  },
+  "io": {
+    "input": "A narration job (contract nexus.narration-job/v1) and a voice profile (nexus.voice-profile/v1)",
+    "output": "<outputDir>/scenes/<sceneId>.wav, narration.wav, and manifest.json (24 kHz mono 16-bit WAV with Qwen3-TTS)"
+  },
+  "limitations": [
+    "Only qwen3-tts-1.7b-base is verified on this machine; the other Qwen3-TTS variants are defined but untested here.",
+    "Cloning is reference-based (recordings + transcripts at generation time); nothing is trained, and the voice is not fine-tuned.",
+    "Delivery instructions and speed aren't available for a cloned voice on Qwen3-TTS Base; requests for them are rejected, not ignored.",
+    "Same-seed output was bit-identical within one process on this machine; that is not a cross-version guarantee.",
+    "Peak memory is about 10 GB for the 1.7B model with a 29 s reference; don't run it alongside video rendering on a 36 GB machine."
+  ]
+}

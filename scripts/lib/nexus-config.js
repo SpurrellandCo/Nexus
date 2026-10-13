@@ -10,7 +10,8 @@
  *   {
  *     "tools": ["claude", "codex", "gemini"],  // which AI tools Nexus sets up; no tool is special
  *     "sync": { "enabled": true,               // nightly sync commits Nexus changes to this checkout
- *               "push": false }                // ...and pushes them to origin (only for your own repo)
+ *               "push": false },               // ...and pushes them to origin (only for your own repo)
+ *     "integrations": { "<id>": { ... } }      // optional: external apps (see integrations/README.md)
  *   }
  *
  * A missing file means the safe defaults below: every tool is set up (all of
@@ -22,6 +23,7 @@
  * CLI (used by install.sh and nexus-daily-sync.sh):
  *   node nexus-config.js get <dotted.key>        prints the value as JSON
  *   node nexus-config.js write '<json>' [--force] creates the file (keeps an existing one unless --force)
+ *   node nexus-config.js set <dotted.key> '<json>' sets one value, keeping every other setting
  * Env: NEXUS_LOCAL_CONFIG overrides the file path (tests).
  */
 
@@ -46,7 +48,21 @@ function validate(config) {
   for (const key of ['enabled', 'push']) {
     if (typeof config.sync[key] !== 'boolean') throw new Error(`config: "sync.${key}" must be true or false`);
   }
+  validateIntegrations(config.integrations);
   return config;
+}
+
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+function validateIntegrations(integrations) {
+  if (integrations === undefined) return;
+  if (!isPlainObject(integrations)) throw new Error('config: "integrations" must be an object');
+  for (const [id, section] of Object.entries(integrations)) {
+    if (!isPlainObject(section)) throw new Error(`config: "integrations.${id}" must be an object`);
+    if ('enabled' in section && typeof section.enabled !== 'boolean') {
+      throw new Error(`config: "integrations.${id}.enabled" must be true or false`);
+    }
+  }
 }
 
 function loadConfig() {
@@ -82,6 +98,39 @@ function writeConfig(json, { force = false } = {}) {
   return true;
 }
 
+/** Sets one dotted key in the file (created if missing), keeping every other setting. */
+function setValue(dotted, json) {
+  const file = configPath();
+  let raw = {};
+  if (fs.existsSync(file)) {
+    try {
+      raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (err) {
+      throw new Error(`config: cannot read ${file}: ${err.message}`);
+    }
+  }
+  let value;
+  try {
+    value = JSON.parse(json);
+  } catch (err) {
+    throw new Error(`config: value for "${dotted}" is not valid JSON: ${err.message}`);
+  }
+  const keys = dotted.split('.');
+  if (keys.some((key) => !key || key === '__proto__' || key === 'constructor' || key === 'prototype')) {
+    throw new Error(`config: invalid key "${dotted}"`);
+  }
+  const next = withValue(raw, keys, value);
+  validate(merge(next));
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`);
+  return file;
+}
+
+function withValue(node, [key, ...rest], value) {
+  const base = isPlainObject(node) ? node : {};
+  return { ...base, [key]: rest.length ? withValue(base[key], rest, value) : value };
+}
+
 function main([command, arg, ...rest]) {
   if (command === 'get' && arg) {
     const value = getValue(loadConfig(), arg);
@@ -94,7 +143,11 @@ function main([command, arg, ...rest]) {
     console.log(written ? `Wrote ${configPath()}` : `Kept existing ${configPath()}`);
     return 0;
   }
-  console.error('usage: nexus-config.js get <key> | write <json> [--force]');
+  if (command === 'set' && arg && rest.length) {
+    console.log(`Set ${arg} in ${setValue(arg, rest[0])}`);
+    return 0;
+  }
+  console.error('usage: nexus-config.js get <key> | write <json> [--force] | set <key> <json>');
   return 2;
 }
 
@@ -107,4 +160,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { loadConfig, configPath, KNOWN_TOOLS };
+module.exports = { loadConfig, configPath, setValue, KNOWN_TOOLS };

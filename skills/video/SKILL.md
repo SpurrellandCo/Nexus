@@ -1,8 +1,8 @@
 ---
 name: video
-description: "When the user wants to create, generate, or produce video content using AI tools or programmatic frameworks. Also use when the user mentions 'video production,' 'AI video,' 'Remotion,' 'Hyperframes,' 'HeyGen,' 'Synthesia,' 'Veo,' 'Runway,' 'Kling,' 'Pika,' 'video generation,' 'AI avatar,' 'talking head video,' 'programmatic video,' 'video template,' 'explainer video,' 'product demo video,' 'video pipeline,' or 'make me a video.' Use this for video creation, generation, and production workflows. For video content strategy and what to post, see social-content. For paid video ad creative, see ad-creative."
+description: "When the user wants to create, generate, or produce video content using AI tools or programmatic frameworks. Also use when the user mentions 'video production,' 'AI video,' 'Remotion,' 'Hyperframes,' 'HeyGen,' 'Synthesia,' 'Veo,' 'Runway,' 'Kling,' 'Pika,' 'video generation,' 'AI avatar,' 'talking head video,' 'programmatic video,' 'video template,' 'explainer video,' 'product demo video,' 'video pipeline,' 'OpenMontage,' 'edit this footage into a video,' 'narrate it in my voice,' or 'make me a video.' Use this for video creation, generation, and production workflows, including full productions handed to the OpenMontage integration. For video content strategy and what to post, see social-content. For paid video ad creative, see ad-creative."
 metadata:
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # Video
@@ -11,10 +11,10 @@ You are an expert video producer who helps create marketing videos using AI gene
 
 ## Before Starting
 
-**Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+**Check for existing context first:**
+If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Also reuse any brand material the project already has (a brand guide, a `brandcreator-<company>` kit, logos, an earlier script or edit) and anything the user has already said in this conversation. Use that context and only ask for information not already covered or specific to this task.
 
-Gather this context (ask if not provided):
+Gather this context (ask only for what is still missing):
 
 ### 1. Video Goal
 - What type of video? (Product demo, explainer, testimonial, social clip, ad, tutorial)
@@ -44,6 +44,25 @@ Pick the right tool for the job:
 | **AI Generation** | Original footage from text/image prompts | Veo, Runway, Kling, Pika | B-roll, hero shots, creative visuals you can't film |
 | **AI Avatars** | Talking-head presenter without filming | HeyGen, Synthesia | Explainers, tutorials, multilingual content |
 | **Editing/Repurposing** | Cutting long-form into short clips | Descript, Opus Clip, CapCut | Podcast/webinar → social clips |
+| **Full production** | An edited video from a brief, script, footage, and narration, with graphics and captions | OpenMontage (Nexus integration) | The user hands over material and wants a finished cut, not a single asset |
+
+---
+
+## Full Production Through OpenMontage
+
+Nexus has an integration with [OpenMontage](https://github.com/calesthio/OpenMontage), an agent-driven production system that runs pipelines with approval gates and renders with Remotion, HyperFrames, or FFmpeg. Use it when the user wants a finished, edited video assembled from their material: a brief or script, footage or screenshots, references, and narration (optionally in their own cloned voice through the Voicebox integration).
+
+Don't use it for one asset (a single generated clip, an avatar take, a caption pass, a quick trim) or when the user wants to edit by hand. The approaches above, or a direct FFmpeg or Remotion job, are faster for those.
+
+How it works:
+
+1. Check it is usable: run `node $NEXUS_HOME/scripts/nexus-integrations.js health openmontage` (and `health voicebox` if the narration should be in the user's voice). If it reports `unconfigured` or `fail`, tell the user exactly what it says and offer the non-OpenMontage route.
+2. Gather only the missing production details: brief or script, footage and asset paths, platform and aspect ratio, target duration (and whether there is a hard maximum), style or brand references, narration source, and whether paid generation is allowed (default: no).
+3. For narration in the user's own voice, write a narration job (scenes with stable ids) and generate it with the speech integration (`mlx-audio`). It is the single script for the video, and single scenes can be regenerated. Then write the video job file outside Nexus and run `validate`, `prepare`, `narrate`, and `start`. Follow [references/openmontage.md](references/openmontage.md) step by step.
+4. OpenMontage is driven by a coding agent working in its own checkout, and that session stops at approval gates for the user. Give the user the launch details that `start` prints. Never describe the job as running or finished on the strength of the hand-off; use `status`, which reads the real checkpoints and checks the render.
+5. Report the job workspace, the status, the output path once `status` says `completed`, and any failure with its log locations and the resume step.
+
+Unattended runs aren't supported (`start --mode unattended` explains why). Never approve a gate for the user, turn on paid generation they haven't asked for, or publish the result.
 
 ---
 
@@ -317,8 +336,10 @@ Output: Ready-to-publish video
 
 | Tool | Type | MCP | Guide |
 |------|------|:---:|-------|
-| **HeyGen** | AI avatars | Yes | [heygen.md](../../tools/integrations/heygen.md) |
-| **Hyperframes** | Programmatic video | - | [hyperframes.md](../../tools/integrations/hyperframes.md) |
+| **OpenMontage** | Full production (Nexus integration) | - | [references/openmontage.md](references/openmontage.md) |
+| **Voicebox** | Cloned-voice narration (Nexus integration) | - | `$NEXUS_HOME/integrations/voicebox/README.md` |
+| **HeyGen** | AI avatars | Yes | [docs.heygen.com](https://docs.heygen.com) |
+| **Hyperframes** | Programmatic video | - | [github.com/heygen-com/hyperframes](https://github.com/heygen-com/hyperframes) |
 | **Remotion** | Programmatic video | - | [remotion.dev](https://www.remotion.dev/docs) |
 | **Runway** | AI generation | - | [runwayml.com/docs](https://docs.dev.runwayml.com) |
 
@@ -330,3 +351,4 @@ Output: Ready-to-publish video
 - **ad-creative**: For paid video ad creative and iteration
 - **copywriting**: For video scripts and messaging
 - **marketing-psychology**: For hooks and persuasion in video
+- **brand** / **brandcreator**: For brand voice and visual identity to pass in as style references
