@@ -5,7 +5,7 @@ Larger applications that Nexus knows how to use, without carrying them. The appl
 | | Lives in | Example |
 |---|---|---|
 | **Tool adapters** | `adapters/<tool>/` | Notes for one AI coding tool (Claude Code, Codex, Gemini CLI) |
-| **Integrations** | `integrations/<id>/` | An external application any tool can use (OpenMontage, Voicebox) |
+| **Integrations** | `integrations/<id>/` | An external application any tool can use (OpenMontage, Voicebox, REA) |
 
 Current integrations:
 
@@ -13,6 +13,7 @@ Current integrations:
 - [`mlx-audio`](mlx-audio/README.md): local speech (Qwen3-TTS on MLX). Scene-by-scene narration in a cloned voice, with stale-output detection. This is the narration path for new video jobs.
 - [`mlx-lm`](mlx-lm/README.md): optional local text generation (MLX). A separate tool; it doesn't replace your coding assistant's model.
 - [`voicebox`](voicebox/README.md): the Voicebox app's local API. Kept as a fallback narration source while the mlx-audio voice is being evaluated.
+- [`rea`](rea/README.md): reverse-engineering tools served over MCP (websites, JavaScript/Electron, .NET, APKs, native binaries). Each AI tool calls REA directly; Nexus checks readiness and keeps REA's skill in step with the installed version.
 
 Speech and text are independent: either can be unconfigured or disabled without affecting the other, or the rest of Nexus. The provider-neutral speech code (voice profiles, narration jobs, manifests) is in `scripts/lib/speech/`.
 
@@ -43,7 +44,7 @@ Every field is used by the code; `scripts/lib/integrations.js` rejects a definit
 | `install.kind`, `install.setup` | `git-checkout` (checks files and revision under the configured `path`), `python-env` (checks the configured `python` exists), or `app`. `setup` is printed when it's missing. |
 | `requires.commands`, `requires.files` | Programs that must be on PATH, and files that must exist in the checkout. |
 | `config` | The per-machine settings it accepts: `{ "type": "path" \| "string" \| "url" \| "boolean", "required": bool, "description" }`. |
-| `invocation.method`, `invocation.entry`, `invocation.summary` | How it is driven: `agent-session` (a coding agent works in the app), `local-http` (a local API), or `local-process` (Nexus runs a small worker with the app's own Python, one process per request). |
+| `invocation.method`, `invocation.entry`, `invocation.summary` | How it is driven: `agent-session` (a coding agent works in the app), `local-http` (a local API), `local-process` (Nexus runs a small worker with the app's own Python, one process per request), or `mcp-server` (each AI tool starts the app's MCP server and calls its tools directly; Nexus only checks readiness). |
 | `io.input`, `io.output` | The input and output contract, in one line each. |
 | `modes` (optional) | `prepare` / `interactive` / `unattended`, each `supported` or `unsupported`. Commands refuse unsupported modes. |
 | `limitations` | What it can't do. Printed by `show`, and repeated wherever a refusal happens. |

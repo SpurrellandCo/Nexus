@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "rea",
+  "name": "REA (Reverse Engineer Anything)",
+  "description": "Reverse-engineering tools for agents, served over MCP: inspect websites, JavaScript/Electron apps, .NET assemblies, APKs, packages, firmware, and (with Hopper, Ghidra, or IDA) native binaries, with the evidence behind every finding.",
+  "upstream": {
+    "repository": "https://github.com/morluto/rea",
+    "tested": "6.4.0",
+    "license": "MIT"
+  },
+  "capabilities": ["reverse-engineering.static", "reverse-engineering.runtime", "web.analysis"],
+  "install": {
+    "kind": "app",
+    "setup": "npm install --global rea-agents, then register it with your agents (nexus-integrations.js rea register) and copy its skill into Nexus (nexus-integrations.js rea sync-skill)."
+  },
+  "requires": {
+    "commands": ["rea"],
+    "files": []
+  },
+  "config": {},
+  "invocation": {
+    "method": "mcp-server",
+    "entry": "rea mcp",
+    "summary": "Each coding agent starts `rea mcp` itself and calls REA's tools directly, guided by the reverse-engineer-anything skill. Nexus only checks readiness, prints the registration commands, and keeps that skill in step with the installed CLI."
+  },
+  "io": {
+    "input": "A local target the user supplies (app bundle, binary, ASAR or JavaScript tree, APK, .NET assembly, firmware, saved network capture) or a website URL, plus a question about how something works",
+    "output": "Findings with their evidence (code, references, observations, and what stays unknown) returned to the agent; optional Evidence JSON files"
+  },
+  "limitations": [
+    "Native binary analysis needs Hopper, Ghidra 12.1.x, or IDA, which Nexus does not install. Websites, JavaScript/Electron, .NET, APK and package inspection work without one.",
+    "Registering REA edits each agent's own config file (for example ~/.claude.json), so Nexus prints the command and the user runs it.",
+    "Runtime capture (browser, Electron, process, device) runs or drives the target under the user's account; static inspection only reads files.",
+    "Some targets are Linux-only: firmware extraction, packet and logic-signal recordings, ELF diagnostics, recorded crashes.",
+    "Use findings to understand behaviour and write your own implementation; check the target's licence or terms before analysing commercial software, and don't copy recovered code."
+  ]
+}

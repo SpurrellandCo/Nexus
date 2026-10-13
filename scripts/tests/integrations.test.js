@@ -17,7 +17,7 @@ const realDefinition = (id) => JSON.parse(fs.readFileSync(path.join(REPO, 'integ
 test('the shipped definitions are valid', () => {
   const { definitions, invalid } = integrations.loadDefinitions(path.join(REPO, 'integrations'));
   assert.deepEqual(invalid, []);
-  assert.deepEqual(definitions.map((d) => d.id), ['mlx-audio', 'mlx-lm', 'openmontage', 'voicebox']);
+  assert.deepEqual(definitions.map((d) => d.id), ['mlx-audio', 'mlx-lm', 'openmontage', 'rea', 'voicebox']);
 });
 
 test('invalid definitions are reported with every problem, not loaded', () => {

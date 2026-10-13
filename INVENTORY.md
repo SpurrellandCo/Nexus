@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-13 at 10:11:29.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-13 at 11:17:32.
 
 ## Agents
 
@@ -591,6 +591,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `Resume Builder` | Build a complete, polished resume end-to-end by orchestrating specialized skills for research, branding, copywriting, design, LinkedIn, and QA. Use when creating a new resume from scratch, overhauling an existing one, targeting a specific role or industry, or preparing a full job-search package including LinkedIn and cover letter. |
 
+### reverse-engineer-anything
+
+| Skill | Description |
+|-------|-------------|
+| `reverse-engineer-anything` | Reverse engineer native, managed, Electron/JavaScript, packaged, firmware, and browser targets with REA. Use shipped-artifact or requested runtime evidence to explain features, compare versions, decompile code, or guide a reconstruction. Skip REA for ordinary source-repository architecture analysis. |
+
 ### revops
 
 | Skill | Description |
@@ -908,7 +914,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 170
+- **Skills:** 171
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

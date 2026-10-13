@@ -2,7 +2,7 @@
 name: competitor-profiling
 description: "When the user wants to research, profile, or analyze competitors from their URLs. Also use when the user mentions 'competitor profile,' 'competitor research,' 'competitor analysis,' 'profile this competitor,' 'analyze competitor,' 'competitive intelligence,' 'competitor deep dive,' 'who are my competitors,' 'competitor landscape,' 'competitor dossier,' 'competitive audit,' or 'research these competitors.' Input is a list of competitor URLs. Output is structured competitor profile markdown files. For creating comparison/alternative pages from profiles, see competitor-alternatives. For sales-specific battle cards, see sales-enablement."
 metadata:
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # Competitor Profiling
@@ -171,6 +171,12 @@ Use **dataforseo_labs_google_competitors_domain** to find:
 Use **dataforseo_labs_google_relevant_pages** to find:
 - Their highest-traffic pages
 - Content that drives the most organic value
+
+---
+
+### Phase 2.5: How the product works (optional, REA)
+
+Only when the user wants to know how a competitor's feature works, not just what they claim, and `node $NEXUS_HOME/scripts/nexus-integrations.js health rea` is healthy. Follow the `reverse-engineer-anything` skill against their public web app (page structure, scripts, network requests) or a desktop app the user has installed. Save the findings and their evidence to `competitor-profiles/raw/<competitor-slug>/<YYYY-MM-DD>/rea/`, and put a short "How it works" note under **Product & Features**, stating what stayed unknown. Check the product's terms first, observe without logging in to anyone else's account or stressing their servers, and describe behaviour rather than copying code.
 
 ---
 
