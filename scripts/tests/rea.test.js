@@ -19,14 +19,23 @@ const skillText = (version, tools) => `---\nname: ${SKILL}\ndescription: Reverse
 function makeFakeRea({ version = '6.4.0', skillVersion = '37', registered = ['claude_code'], engines = [] } = {}) {
   const root = tmpDir('nexus rea');
   const pkg = path.join(root, 'lib', 'node_modules', 'rea-agents');
+  // Shaped like real `rea doctor --json` 6.4.0 output: an aligned registration appears only in
+  // identity.registrations; `checks` lists the failing ones.
+  const clients = ['claude_code', 'codex', 'gemini_cli'];
   const doctor = {
     healthy: false,
     checks: [
       { name: 'node', ok: true, classification: 'healthy' },
       ...['hopper', 'ghidra', 'ida-registration'].map((n) => ({ name: n, ok: engines.includes(n), classification: engines.includes(n) ? 'healthy' : 'missing_analysis_engine' })),
-      ...['claude_code', 'codex', 'gemini_cli'].map((c) => ({ name: `registration:${c}`, ok: registered.includes(c), classification: registered.includes(c) ? 'healthy' : 'config_drift' })),
+      ...clients.filter((c) => !registered.includes(c)).map((c) => ({ name: `registration:${c}`, ok: false, classification: 'config_drift' })),
     ],
-    identity: { cli_package_version: version, expected_skill_version: skillVersion },
+    identity: {
+      cli_package_version: version,
+      expected_skill_version: skillVersion,
+      registrations: clients.map((c) => (registered.includes(c)
+        ? { client: c, state: 'aligned', command: ['/usr/local/bin/rea', 'mcp'] }
+        : { client: c, state: 'missing', command: [] })),
+    },
   };
   fs.mkdirSync(path.join(pkg, 'scripts'), { recursive: true });
   fs.mkdirSync(path.join(pkg, 'skills', SKILL, 'references'), { recursive: true });
@@ -72,7 +81,8 @@ test('[mocked] health: version, missing skill, registrations per configured tool
   assert.match(checks.skill.detail, /isn't in Nexus yet\. Run: .*rea sync-skill/);
   assert.equal(checks['registration claude'].status, 'ok');
   assert.equal(checks['registration codex'].status, 'warn');
-  assert.match(checks['registration gemini'].detail, /not registered \(config_drift\)\. See: .*rea register/);
+  assert.match(checks['registration gemini'].detail, /not registered \(missing\)\. See: .*rea register/);
+  assert.match(checks['registration claude'].detail, /registered \(\/usr\/local\/bin\/rea mcp\)/);
   assert.equal(checks['analysis engines'].status, 'ok');
   assert.match(checks['analysis engines'].detail, /^none: native binaries need Hopper, Ghidra or IDA/);
 });

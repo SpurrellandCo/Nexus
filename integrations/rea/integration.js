@@ -189,12 +189,14 @@ async function health(ctx) {
     checks.push(check('doctor', 'warn', `rea doctor --json gave no report: ${(d.error || d.stderr).trim().split('\n').pop()}`));
     return checks;
   }
+  // Registration state lives in identity.registrations; `checks` lists only the failing ones.
   const byName = new Map((report.checks || []).map((c) => [c.name, c]));
+  const registrations = new Map(((report.identity || {}).registrations || []).map((r) => [r.client, r]));
   for (const tool of loadConfig().tools.filter((t) => CLIENTS[t])) {
-    const c = byName.get(`registration:${CLIENTS[tool]}`);
-    checks.push(c && c.ok
-      ? check(`registration ${tool}`, 'ok', 'REA MCP server registered')
-      : check(`registration ${tool}`, 'warn', `not registered${c ? ` (${c.classification})` : ''}. See: node ${cliPath(ctx)} rea register`));
+    const reg = registrations.get(CLIENTS[tool]);
+    checks.push(reg && reg.state === 'aligned'
+      ? check(`registration ${tool}`, 'ok', `REA MCP server registered (${(reg.command || []).join(' ')})`)
+      : check(`registration ${tool}`, 'warn', `not registered (${reg ? reg.state : 'not reported by rea doctor'}). See: node ${cliPath(ctx)} rea register`));
   }
   const engines = Object.entries(ENGINES).filter(([name]) => (byName.get(name) || {}).ok).map(([, label]) => label);
   checks.push(check('analysis engines', 'ok', engines.length
