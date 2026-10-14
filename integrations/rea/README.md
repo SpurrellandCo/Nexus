@@ -85,7 +85,7 @@ node ~/.nexus/scripts/nexus-integrations.js health rea
 
 - **Install:** `rea-agents` 6.4.0 from npm (with provenance attestation, no install scripts), on Node 26.
 - **Skill:** `sync-skill` copied skill version 37 (170 tools), byte-identical to the bundled one plus `LICENSE` and `UPSTREAM.md`. `nexus-link` linked it into `~/.agents/skills`, and `rea doctor --skill --json` reports it `aligned`.
-- **Registration:** `rea setup --client claude_code --client codex --client gemini_cli --skill=false --dry-run` planned three config updates with backups and no skill install. Applying it is up to the user.
+- **Registration:** `rea setup --client claude_code --client codex --client gemini_cli --skill=false --yes` registered all three (backups at `<file>.rea.backup`) without installing a skill copy. Every `health rea` check is ok. In `rea doctor --json`, an aligned registration appears only under `identity.registrations` (state `aligned`); `checks` lists just the failing ones.
 - **Not verified yet:** a real analysis through MCP, and any native engine (none installed).
 
 ## Tests
