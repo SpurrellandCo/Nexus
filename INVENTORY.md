@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-13 at 11:17:32.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-26 at 16:33:12.
 
 ## Agents
 
@@ -374,6 +374,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `lead-magnets` | When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence. |
+
+### makerworld-publish
+
+| Skill | Description |
+|-------|-------------|
+| `makerworld-publish` | Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD). Always starts by asking for the folder path and a quick description of what the model is (both required), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld. |
 
 ### marketing-ideas
 
@@ -914,7 +920,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 171
+- **Skills:** 172
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

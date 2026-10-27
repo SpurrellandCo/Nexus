@@ -1,0 +1,13 @@
+{
+  "models_root": "<folder where your model folders usually live, or null>",
+  "content_folder": "photos",
+  "upload_folder": "makerworld upload",
+  "printer": "<printer and nozzle, for example Bambu Lab A1, 0.4 mm nozzle>",
+  "exclusive": "<Exclusive Model | 14-Day Exclusive Launch Model | null>",
+  "license_if_not_exclusive": "Yes, any derivative works must be published exclusively on MakerWorld and comply with Standard Digital File License – Community Use (SDFL-C)",
+  "amazon": {
+    "tag": "<your Amazon Associates tracking tag, or set amazon to null>",
+    "disclosure": "As an Amazon Associate I earn from qualifying purchases."
+  },
+  "affiliate_links": []
+}
