@@ -1,13 +1,13 @@
 ---
 name: voice-take
-description: "Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file)."
+description: "Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file), or wants to grow or check the voice training dataset ('add this to my voice dataset', 'more training audio', 'how much voice data do I have', 'check my voice clips')."
 metadata:
-  version: 1.1.0
+  version: 1.2.0
 ---
 
 # Voice take
 
-Adds one recording to a voice profile in a single step, then helps the user confirm the transcript and hear whether the take is any good. Everything runs locally through the `mlx-audio` integration (`$NEXUS_HOME/integrations/mlx-audio/README.md` has the details). Adding a take never trains or changes a model; it gives the model another reference to clone from.
+Adds one recording to a voice profile in a single step, then helps the user confirm the transcript and hear whether the take is any good. Everything runs locally through the `mlx-audio` integration (`$NEXUS_HOME/integrations/mlx-audio/README.md` has the details). Adding a take never trains or changes a model; it gives the model another reference to clone from. Every recording also goes into the profile's **voice dataset**, the clips a future fine-tune will train on (step 5).
 
 All commands below start with `node $NEXUS_HOME/scripts/nexus-integrations.js mlx-audio`, written `mlx-audio …` here.
 
@@ -63,6 +63,34 @@ Offer to render the same line with each take so the user can hear which sounds m
 
 Never claim a take sounds like the user, or better than another; only their listening decides that.
 
+## 5. Add it to the training dataset
+
+After the take is added (whether or not the user ran the listening test), run `mlx-audio dataset add <profile> <recording>` with the same original recording. It transcribes the recording with word timestamps, cuts it into 3–15 s clips, and prints the dataset's new total. The same file added twice is skipped, so this is safe to repeat.
+
+- If any clip is listed as **check**, offer to go through it (see "Checking clips" below).
+- Tell the user the total and how far it is to the next milestone the command prints (10 minutes is enough for a first fine-tune).
+- If it fails with "OpenMontage is unconfigured" or a Whisper model that isn't downloaded, say so; the take itself is still added.
+
+## Growing the dataset (no new take needed)
+
+Use this when the user only wants more training audio, not a new reference take.
+
+- **One-off files:** `mlx-audio dataset add <profile> <file> [...]`. Any audio or video works; only a video's audio track is used. Before adding a video, check that the narration is the user speaking. A video narrated by the cloned voice must never go in: training on the model's own output teaches it its mistakes.
+- **The drop folder (easiest):** the user drops recordings and videos into the drop folder (the integration's `datasetInbox`, usually iCloud Drive → Voice Inbox). On iPhone, that's Voice Memos or Photos → Share → Save to Files → Voice Inbox. They wait there until the user runs the `voice-inbox` skill (`/voice-inbox`), which adds them and reports the result. That is unless `mlx-audio dataset watch status` says the automatic watcher is on. If no drop folder is set up, point the user to the "Voice dataset" section of the mlx-audio README.
+- **Names Whisper mishears:** add them with `mlx-audio dataset vocab <profile> "Name, Other name"`. Run it without names first to see the current list, and pass the whole list, since the command replaces it.
+- **How much there is:** `mlx-audio dataset status <profile>`.
+
+### Checking clips
+
+1. Run `mlx-audio dataset status <profile> --check`. Each line shows a clip id, the low-confidence words, the transcript and the clip's WAV path.
+2. For each clip, give the user the WAV path and the transcript, and ask whether the transcript matches what they said **word for word**.
+3. Then, depending on the answer:
+   - **It matches:** run `mlx-audio dataset fix <profile> <clip> --checked`.
+   - **Some words differ:** run `mlx-audio dataset fix <profile> <clip> --text "<what they actually said>"`.
+   - **Music, another voice, or garbled audio:** run `mlx-audio dataset fix <profile> <clip> --exclude`.
+
+When a clip came from a take whose transcript the user already confirmed, compare the two; where they agree, you can mark the clip checked without asking.
+
 ## What makes a good take
 
 Tell the user if it's useful:
@@ -77,3 +105,6 @@ Tell the user if it's useful:
 - Never edit or move the user's original recording. `add-take` works on a converted copy.
 - Don't change `defaultTake` unless the user asked.
 - Don't delete takes. To remove one, the user deletes its entry from `profile.json` and its WAV in `takes/`, then runs `mlx-audio voice-check <profile>`.
+- Don't delete dataset clips or edit `dataset.json` by hand; use `mlx-audio dataset fix … --exclude` so the clip stays on record but is never trained on.
+- Never claim the dataset makes the voice better yet. Nothing trains on it until a fine-tune is run.
+- Never add audio generated by the cloned voice (Nexus narration, rendered video jobs) to the dataset.

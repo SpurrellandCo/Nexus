@@ -5,6 +5,7 @@
  *
  *   models                                 model adapters, what each can do, verified/cached
  *   add-take <profile> <recording>         add a reference recording (converted copy, auto-transcribed)
+ *   dataset add|status|fix|vocab|inbox|watch   collect clips of the voice for fine-tuning (dataset.js, inbox.js)
  *   voice-check <profile>                  validate a voice profile against its model
  *   validate <job.json>                    plan a narration job without generating (dry run)
  *   generate <job.json> [--force]          generate every new or stale scene (one batch, one model load)
@@ -25,6 +26,9 @@ const { loadProfile } = require('../../scripts/lib/speech/profile');
 const { scenesFromScript, CONTRACT: JOB_CONTRACT } = require('../../scripts/lib/speech/job');
 const { planNarration, generateNarration, narrationStatus } = require('../../scripts/lib/speech/run');
 const { addTake } = require('./takes');
+const { datasetDir, loadDataset, datasetStats, formatDuration } = require('../../scripts/lib/speech/dataset');
+
+const DATASET_COMMANDS = { ...require('./dataset').subcommands, ...require('./inbox').subcommands };
 
 const WORKER = path.join(__dirname, 'worker.py');
 const BASE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -110,8 +114,22 @@ async function health(ctx) {
   for (const id of profiles) {
     const p = loadProfile(id, { voicesDir });
     checks.push(p.errors.length ? check(`voice ${id}`, 'fail', p.errors.join('; ')) : check(`voice ${id}`, 'ok', `${p.profile.kind}, ${p.profile.model}, ${p.profile.takes.length} take(s)`));
+    const dataset = datasetCheck(check, id, voicesDir);
+    if (dataset) checks.push(dataset);
   }
   return checks;
+}
+
+/** How much of a voice's dataset is ready to train, when it has one. */
+function datasetCheck(check, id, voicesDir) {
+  try {
+    const d = loadDataset(datasetDir(voicesDir, id), id);
+    if (!d.clips.length) return null;
+    const st = datasetStats(d);
+    return check(`dataset ${id}`, 'ok', `${formatDuration(st.readySeconds)} ready to train, ${st.checkClips} clip(s) to check`);
+  } catch (err) {
+    return check(`dataset ${id}`, 'warn', err.message);
+  }
 }
 
 function printPlan(plan) {
@@ -149,6 +167,18 @@ const commands = {
     usage: 'add-take <profile> <recording> [--id name] [--label "..."] [--transcript "..."] [--default] [--replace]',
     summary: 'add a new reference recording to a voice profile (converted copy, auto-transcribed)',
     run(args, ctx) { return addTake(args, ctx, dirs(ctx)); },
+  },
+  dataset: {
+    usage: 'dataset add|status|fix|vocab|inbox|watch ...',
+    summary: 'collect clips of your voice for fine-tuning (README: "Voice dataset")',
+    run([sub, ...rest], ctx) {
+      const command = DATASET_COMMANDS[sub];
+      if (!command) {
+        console.error(`mlx-audio dataset commands:\n${Object.values(DATASET_COMMANDS).map((c) => `  dataset ${c.usage}\n      ${c.summary}`).join('\n')}`);
+        return EXIT.usage;
+      }
+      return command.run(rest, ctx, dirs(ctx));
+    },
   },
   'voice-check': {
     usage: 'voice-check <profile id or profile.json>', summary: 'validate a voice profile and its recordings',

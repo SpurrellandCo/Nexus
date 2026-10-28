@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-26 at 16:33:12.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-27 at 13:53:56.
 
 ## Agents
 
@@ -723,11 +723,17 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `visual-validation` | Capture screenshots during and after UI implementation to visually validate that code changes match the intended design. Use when building UI, implementing design changes, or verifying layout after edits. Also use when the user says "check it looks right", "screenshot this", "validate visually", "does it look correct", "take a screenshot", "verify the UI", or "confirm the layout". Works with any local dev server. Pairs with ui-styling, design-system, page-cro, image-to-code-skill, and any coder agent doing frontend work. |
 
+### voice-inbox
+
+| Skill | Description |
+|-------|-------------|
+| `voice-inbox` | Process the voice dataset's drop folder (Voice Inbox) on demand: adds every recording or video waiting there to the voice training dataset, files each one under Added or Needs attention, and reports what was added and the new total. Use when the user says '/voice-inbox', 'process my voice inbox', 'add the recordings I dropped in', 'I put some audio in the voice inbox', or 'sync my voice recordings'. |
+
 ### voice-take
 
 | Skill | Description |
 |-------|-------------|
-| `voice-take` | Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file). |
+| `voice-take` | Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file), or wants to grow or check the voice training dataset ('add this to my voice dataset', 'more training audio', 'how much voice data do I have', 'check my voice clips'). |
 
 ### vps-deployment
 
@@ -920,7 +926,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 172
+- **Skills:** 173
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

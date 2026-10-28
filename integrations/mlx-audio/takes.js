@@ -30,15 +30,21 @@ const TRANSCRIBE_PY = [
 
 const slug = (name) => name.toLowerCase().replace(/\.[^.]+$/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
 
-/** Whisper transcript via OpenMontage's transcriber, or { error } when that isn't available. */
-function transcribe(ctx, wavFile) {
+/** OpenMontage's Python and checkout (it has faster-whisper), or { error } when OpenMontage isn't set up. */
+function openMontagePython() {
   let om;
   try { om = core.getIntegration('openmontage'); } catch (err) { return { error: err.message }; }
   const cfg = core.integrationConfig(om.definition);
   if (cfg.state !== 'enabled' || cfg.errors.length) return { error: `OpenMontage is ${cfg.state}, so automatic transcription isn't available` };
-  const python = cfg.values.python || path.join(cfg.values.path, '.venv', 'bin', 'python');
+  return { python: cfg.values.python || path.join(cfg.values.path, '.venv', 'bin', 'python'), checkout: cfg.values.path };
+}
+
+/** Whisper transcript via OpenMontage's transcriber, or { error } when that isn't available. */
+function transcribe(ctx, wavFile) {
+  const om = openMontagePython();
+  if (om.error) return om;
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'nexus-take-tx-'));
-  const r = ctx.run(python, ['-c', TRANSCRIBE_PY, wavFile, out], { cwd: cfg.values.path, timeoutMs: 10 * 60 * 1000 });
+  const r = ctx.run(om.python, ['-c', TRANSCRIBE_PY, wavFile, out], { cwd: om.checkout, timeoutMs: 10 * 60 * 1000 });
   fs.rmSync(out, { recursive: true, force: true });
   const line = r.stdout.trim().split('\n').reverse().find((l) => l.startsWith('{'));
   try {
@@ -115,4 +121,4 @@ function addTake(args, ctx, { voicesDir }) {
   return EXIT.ok;
 }
 
-module.exports = { addTake, slug };
+module.exports = { addTake, slug, openMontagePython };

@@ -8,7 +8,7 @@
     "tested": "0.5.8",
     "license": "MIT"
   },
-  "capabilities": ["speech.tts", "narration.tts"],
+  "capabilities": ["speech.tts", "narration.tts", "voice.dataset"],
   "install": {
     "kind": "python-env",
     "setup": "uv venv --python 3.12 ~/.nexus-local/runtimes/mlx-audio && uv pip install --python ~/.nexus-local/runtimes/mlx-audio/bin/python mlx-audio==0.5.8"
@@ -20,7 +20,10 @@
   "config": {
     "python": { "type": "path", "required": true, "description": "Python in the isolated mlx-audio environment" },
     "voicesDir": { "type": "path", "required": false, "description": "Voice profiles folder (default: ~/.nexus-local/voices)" },
-    "narrationDir": { "type": "path", "required": false, "description": "Default output folder for narration jobs (default: ~/.nexus-local/narration)" }
+    "narrationDir": { "type": "path", "required": false, "description": "Default output folder for narration jobs (default: ~/.nexus-local/narration)" },
+    "datasetInbox": { "type": "path", "required": false, "description": "Drop folder for new voice recordings; `mlx-audio dataset inbox` adds them to the voice dataset" },
+    "datasetProfile": { "type": "string", "required": false, "description": "Voice profile the drop folder adds to (default: the only profile)" },
+    "whisperModel": { "type": "string", "required": false, "description": "faster-whisper model for dataset transcripts (default: large-v3-turbo; must already be downloaded)" }
   },
   "invocation": {
     "method": "local-process",
@@ -36,6 +39,7 @@
     "Cloning is reference-based (recordings + transcripts at generation time); nothing is trained, and the voice is not fine-tuned.",
     "Delivery instructions and speed aren't available for a cloned voice on Qwen3-TTS Base; requests for them are rejected, not ignored.",
     "Same-seed output was bit-identical within one process on this machine; that is not a cross-version guarantee.",
-    "Peak memory is about 10 GB for the 1.7B model with a 29 s reference; don't run it alongside video rendering on a 36 GB machine."
+    "Peak memory is about 10 GB for the 1.7B model with a 29 s reference; don't run it alongside video rendering on a 36 GB machine.",
+    "The voice dataset only collects training clips; nothing trains on it yet. Its transcripts come from Whisper and need OpenMontage (faster-whisper) set up."
   ]
 }

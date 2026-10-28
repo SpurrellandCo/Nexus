@@ -108,6 +108,66 @@ node ~/.nexus/scripts/nexus-integrations.js mlx-audio add-take <profile> ~/Deskt
 
 What makes a good take: 15–30 s of clean speech in the same mic and room as your videos, read at the pace and energy you want, starting and ending on complete sentences.
 
+## Voice dataset (training material for fine-tuning)
+
+Takes are a few references the model copies from at generation time; adding more of them doesn't teach the model anything. A **fine-tune** does: training a model on many clips of your voice. The dataset collects those clips now, so a fine-tune can use them later. **Nothing trains on it yet.**
+
+Each recording you add is:
+- copied as mono FLAC into `<voicesDir>/<profile>/dataset/sources/` (the original is only read);
+- transcribed with word timestamps by faster-whisper in OpenMontage's Python (`transcribe.py`, model `large-v3-turbo` unless `whisperModel` says otherwise; downloads are off, so download the model once first);
+- cut at sentence ends and pauses into 3–15 s clips: 24 kHz mono 16-bit WAV in `dataset/clips/`;
+- recorded in `dataset/dataset.json` (contract `nexus.voice-dataset/v1`). The same file added twice is recognised by its SHA-256 and skipped.
+
+A clip with a low-confidence word (probability under 0.5) is marked **check**: listen before training on it. **Ready** audio is clips marked auto or checked. Flags are a hint, not a guarantee: a misheard word can still score high, so spot-listen.
+
+### The drop folder (the easy way)
+
+Set it up once:
+
+```bash
+node ~/.nexus/scripts/nexus-integrations.js config mlx-audio 'datasetInbox=~/Library/Mobile Documents/com~apple~CloudDocs/Voice Inbox' datasetProfile=<profile>
+```
+
+Then put any audio or video file at the top level of that folder: from the Mac, or from iPhone Voice Memos or Photos (**Share → Save to Files → iCloud Drive → Voice Inbox**). The files wait there until the folder is processed. That happens either:
+- **by hand (the default):** run the `voice-inbox` skill (`/voice-inbox` in Claude Code), which shows what's waiting, runs `dataset inbox`, and reports the result; or run `mlx-audio dataset inbox` yourself;
+- **automatically:** `mlx-audio dataset watch on` installs a launchd job (`com.nexus.voice-inbox`) that runs whenever the folder changes, plus hourly as a catch-up, and shows a notification. `dataset watch off` removes it.
+
+Either way, each run:
+- waits until a file has stopped changing, so a recording that is still copying or syncing isn't read half-written;
+- adds the recording and moves it into `Added/`;
+- moves a recording it can't use into `Needs attention/`, with a `.txt` note saying why. Fix the problem and move the file back to retry;
+- leaves recordings where they are when the problem is the setup (OpenMontage, the Whisper model, a timeout), so the next run retries them.
+
+Files in subfolders, and files that aren't audio or video, are left alone.
+
+The automatic job needs macOS to let `node` access iCloud Drive: the first run asks, and you allow it. If it was denied, the notification says so: allow `node` in **System Settings → Privacy & Security → Files and Folders**. A major Node upgrade can make macOS ask again. Its log is `~/.cache/nexus-voice-inbox.log`.
+
+### Commands
+
+Prefix `node ~/.nexus/scripts/nexus-integrations.js mlx-audio dataset`:
+
+| Command | What it does |
+|---|---|
+| `add <profile> <file> [...]` | Adds recordings directly. |
+| `inbox [--profile id]` | Processes the drop folder once (what the watcher runs). |
+| `status <profile> [--check]` | Ready and to-check totals, and how far to 10, 30 and 60 minutes. `--check` lists the clips to listen to, with their WAV paths. |
+| `fix <profile> <clip> --text "exact words"` | Corrects a clip's transcript and marks it checked. Also `--checked` (it's right), `--exclude` (never train on it), `--include`. |
+| `vocab <profile> "Name, Other name"` | Names Whisper should expect (products, places, people). Applies to recordings added afterwards. |
+| `watch on\|off\|status` | The drop-folder watcher (macOS). |
+
+### What to collect
+
+- **Only your voice:** no music, no other speakers. Narration with background music makes poor clips; exclude those (`fix --exclude`).
+- **Videos work the same as audio:** only the audio track is kept (as FLAC); the video itself isn't copied into the dataset. From iPhone Photos: **Share → Save to Files → Voice Inbox**. A video with no sound goes to `Needs attention/`. Formats: mov, mp4, m4v, webm, mkv, avi, mts, 3gp.
+- **Never your cloned voice:** don't add videos narrated by Nexus (the cloned voice). Training on the model's own output teaches it its mistakes; only recordings of you actually speaking belong here.
+- **Same mic and room as your videos**, at your normal pace and energy.
+- **Variety:** different topics and deliveries (explaining, upbeat, casual) are worth more than the same script read many times.
+- **How much:** about 10 minutes of ready audio for a first fine-tune, 30–60 minutes for a good one. Past an hour the gains level off.
+
+### Verified on this machine (2026-10-27)
+
+The three existing takes (85 s) went in with `large-v3-turbo` on the CPU in 18 s, giving 12 clips of 3.6–14.8 s. The `vocab` hint fixed names whisper-small had misheard ("Claude Code", "a sales report"). One word in 85 s was misheard without being flagged ("Four" heard as "or"), which is why the flags are only a hint.
+
 ## Narration jobs
 
 ```json
@@ -177,4 +237,4 @@ A scene whose fingerprint changed, whose file is missing, or whose file was edit
 
 ## Tests
 
-`node --test ~/.nexus/scripts/tests/speech.test.js ~/.nexus/scripts/tests/mlx-audio.test.js`. These use synthetic WAVs and a **mocked** interpreter that speaks the worker protocol, labelled `[mocked]`; they never load a model. The real-model results are the ones listed above.
+`node --test ~/.nexus/scripts/tests/speech.test.js ~/.nexus/scripts/tests/mlx-audio.test.js ~/.nexus/scripts/tests/voice-dataset.test.js`. The dataset tests run ffmpeg for real on synthetic tones and **mock** Whisper with canned word timestamps. The others use synthetic WAVs and a **mocked** interpreter that speaks the worker protocol, labelled `[mocked]`; they never load a model. The real-model results are the ones listed above.
