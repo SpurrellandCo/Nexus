@@ -110,7 +110,7 @@ What makes a good take: 15–30 s of clean speech in the same mic and room as yo
 
 ## Voice dataset (training material for fine-tuning)
 
-Takes are a few references the model copies from at generation time; adding more of them doesn't teach the model anything. A **fine-tune** does: training a model on many clips of your voice. The dataset collects those clips now, so a fine-tune can use them later. **Nothing trains on it yet.**
+Takes are a few references the model copies from at generation time; adding more of them doesn't teach the model anything. A **fine-tune** does: training a model on many clips of your voice. The dataset collects those clips; **"Training a version"** below trains on them, only when asked (the `voice-train` skill, `/voice-train`).
 
 Each recording you add is:
 - copied as mono FLAC into `<voicesDir>/<profile>/dataset/sources/` (the original is only read);
@@ -167,6 +167,49 @@ Prefix `node ~/.nexus/scripts/nexus-integrations.js mlx-audio dataset`:
 ### Verified on this machine (2026-10-27)
 
 The three existing takes (85 s) went in with `large-v3-turbo` on the CPU in 18 s, giving 12 clips of 3.6–14.8 s. The `vocab` hint fixed names whisper-small had misheard ("Claude Code", "a sales report"). One word in 85 s was misheard without being flagged ("Four" heard as "or"), which is why the flags are only a hint.
+
+## Training a version (fine-tuning, on this Mac)
+
+A **version** is Qwen3-TTS 1.7B Base fine-tuned on the voice dataset: `train.py` runs the training step of the official [single-speaker fine-tuning script](https://github.com/QwenLM/Qwen3-TTS/tree/main/finetuning) (Apache-2.0) on Apple's GPU. It changes three things: `sdpa` attention instead of NVIDIA-only flash-attention, Accelerate's mixed precision off (the weights are already bf16), and only the last epoch is saved. The result is a `custom_voice` model whose only speaker is the voice; mlx-audio loads it as is, with no conversion.
+
+The usual way through is the `voice-train` skill (`/voice-train`): train, blind listening test, and switch only if you pick the new version. The commands, prefixed `node ~/.nexus/scripts/nexus-integrations.js mlx-audio`:
+
+| Command | What it does |
+|---|---|
+| `train <profile> [--epochs 3] [--lr 2e-5] [--seed 42]` | Trains the next version (`v1`, `v2`, …) from **every** ready clip (auto or checked), always starting from the base model. The default take is the reference recording. Nothing switches. |
+| `compare <profile> <version>` | Blind A/B test: three lines (or `--text "..."`) in the current voice and in the version, with seed 42 for both. `--reveal` says which was which. |
+| `use-version <profile> <version\|takes>` | Narrate with a version (sets `activeVersion` in `profile.json`), or go back to cloning from the takes. Switching re-renders narration the next time it's generated. |
+| `versions <profile>` | Every version, what it was trained on, and which one is active. |
+
+**How a version is stored:** in `<voicesDir>/<profile>/versions/<vN>/`. That folder holds `version.json` (contract `nexus.voice-version/v1`: what it was trained on, settings, loss per epoch, when it was chosen), `model/` (about 4 GB), `train-request.json` and `train.log`. A version is never changed after training. A failed run keeps only `versions/<vN>.failed.log`.
+
+**While a version is active:**
+- The profile reports kind `fine-tuned`, and narration uses the version's model in preset-speaker mode.
+- Its takes stay, for comparisons and switching back.
+- A scene's `take` is ignored with a warning.
+- Delivery instructions are refused: the base model wasn't trained for them.
+
+**Setting up the training environment (once, about 6 GB):**
+
+```bash
+R=~/.nexus-local/runtimes/qwen3-tts-train
+uv venv --python 3.12 "$R/venv"
+uv pip install --python "$R/venv/bin/python" qwen-tts==0.1.1 tensorboard
+"$R/venv/bin/hf" download Qwen/Qwen3-TTS-Tokenizer-12Hz --local-dir "$R/models/Qwen3-TTS-Tokenizer-12Hz"
+"$R/venv/bin/hf" download Qwen/Qwen3-TTS-12Hz-1.7B-Base --local-dir "$R/models/Qwen3-TTS-12Hz-1.7B-Base"
+mkdir -p "$R/finetuning" && curl -fsSL -o "$R/finetuning/dataset.py" \
+  https://raw.githubusercontent.com/QwenLM/Qwen3-TTS/022e286b98fbec7e1e916cb940cdf532cd9f488e/finetuning/dataset.py
+```
+
+`trainHome` points elsewhere if you keep it in another place. The SoX and flash-attn warnings at start-up are harmless.
+
+### Verified on this machine (2026-10-31, 36 GB M5 Max)
+
+- **Probe:** 11 clips (67 s), 12 training steps on `mps`, about 0.8 s per step, Metal memory peak 23 GB, no CPU fallbacks.
+- **v1:** 18 clips (2 min 1 s), 3 epochs. It trained in 20 s, with loss falling 12.3 → 8.9 → 8.0 and memory peaking at 25.7 GB.
+- **Loading:** Nexus's own worker loaded v1 directly (`custom_voice`, 1.7 s to load).
+- **Speech:** in the comparison, all six lines (both voices) were transcribed back word for word by Whisper.
+- **Not verified:** whether a version *sounds like you*. That's what the listening test is for. A version trained on a couple of minutes is expected to lose to the cloned voice; about 10 minutes is the point to try in earnest.
 
 ## Narration jobs
 
@@ -237,4 +280,4 @@ A scene whose fingerprint changed, whose file is missing, or whose file was edit
 
 ## Tests
 
-`node --test ~/.nexus/scripts/tests/speech.test.js ~/.nexus/scripts/tests/mlx-audio.test.js ~/.nexus/scripts/tests/voice-dataset.test.js`. The dataset tests run ffmpeg for real on synthetic tones and **mock** Whisper with canned word timestamps. The others use synthetic WAVs and a **mocked** interpreter that speaks the worker protocol, labelled `[mocked]`; they never load a model. The real-model results are the ones listed above.
+`node --test ~/.nexus/scripts/tests/speech.test.js ~/.nexus/scripts/tests/mlx-audio.test.js ~/.nexus/scripts/tests/voice-dataset.test.js ~/.nexus/scripts/tests/voice-train.test.js`. The training tests **mock** the training environment and the speech worker. The dataset tests run ffmpeg for real on synthetic tones and **mock** Whisper with canned word timestamps. The others use synthetic WAVs and a **mocked** interpreter that speaks the worker protocol, labelled `[mocked]`; they never load a model. The real-model results are the ones listed above.

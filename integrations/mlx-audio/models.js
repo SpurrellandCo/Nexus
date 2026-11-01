@@ -44,10 +44,21 @@ function resolveModel(id) {
   return model;
 }
 
+/**
+ * A trained voice version (train.js): Qwen3-TTS Base fine-tuned on the voice dataset and saved as a
+ * custom_voice model whose only speaker is the voice. mlx-audio loads the folder as is. It isn't
+ * trained for delivery instructions. "verified" once the user picked it in a listening test.
+ */
+const versionModel = (version) => ({
+  ...qwen(`${version.profile}@${version.id}`, version.modelPath, 'custom_voice', version.sizeGB, Boolean(version.chosenAt), { presetVoices: true }),
+  revision: version.createdAt,
+});
+
 const KIND_NEEDS = {
   'reference-clone': ['referenceClone', 'clone a voice from your recordings'],
   preset: ['presetVoices', 'use preset speakers'],
   'voice-design': ['voiceDesign', 'design a voice from a description'],
+  'fine-tuned': ['presetVoices', 'speak with a trained voice version'],
 };
 
 /** Every reason this profile/job can't run on this model. Nothing is silently dropped or substituted. */
@@ -67,7 +78,8 @@ function checkRequest({ profile, job, model, language }) {
     }
   }
   for (const scene of job.scenes) {
-    if (scene.take && profile.kind !== 'reference-clone') errors.push(`scene ${scene.id}: "take" only applies to reference-clone profiles`);
+    // A trained version has no takes; run.js warns that a scene's take is ignored instead of failing the job.
+    if (scene.take && !['reference-clone', 'fine-tuned'].includes(profile.kind)) errors.push(`scene ${scene.id}: "take" only applies to reference-clone profiles`);
     if (scene.take && profile.kind === 'reference-clone' && !profile.takes.some((t) => t.id === scene.take)) {
       errors.push(`scene ${scene.id}: profile "${profile.id}" has no take "${scene.take}" (takes: ${profile.takes.map((t) => t.id).join(', ')})`);
     }
@@ -102,4 +114,4 @@ function pick(settings) {
   return out;
 }
 
-module.exports = { MODELS, resolveModel, checkRequest, effectiveSettings, QWEN_DEFAULTS };
+module.exports = { MODELS, resolveModel, versionModel, checkRequest, effectiveSettings, QWEN_DEFAULTS };

@@ -225,8 +225,10 @@ function statusCommand(args, ctx, { voicesDir }) {
 function fixCommand(args, ctx, { voicesDir }) {
   const { flags, positional } = core.parseFlags(args, ['checked', 'exclude', 'include']);
   const [ref, clipId] = positional;
+  const source = flags.source === undefined ? null : String(flags.source);
   const actions = ['text', 'checked', 'exclude', 'include'].filter((k) => flags[k] !== undefined);
-  if (!ref || !clipId || actions.length !== 1 || (actions[0] === 'text' && !String(flags.text).trim())) {
+  const badTarget = Boolean(clipId) === Boolean(source) || (source && actions[0] === 'text');
+  if (!ref || badTarget || actions.length !== 1 || (actions[0] === 'text' && !String(flags.text).trim())) {
     console.error(`usage: mlx-audio dataset ${subcommands.fix.usage}`);
     return EXIT.usage;
   }
@@ -239,15 +241,21 @@ function fixCommand(args, ctx, { voicesDir }) {
     exclude: () => ({ status: 'excluded' }),
     include: (clip) => ({ status: clip.checkedAt ? 'checked' : (clip.lowConfidence || []).length ? 'check' : 'auto' }),
   }[actions[0]];
-  let updated = null;
+  const matches = (c) => (source ? c.source === source : c.id === clipId);
+  let updated = [];
   ds.updateDataset(profile.dir, profile.id, (dataset) => {
-    const clip = dataset.clips.find((c) => c.id === clipId);
-    if (!clip) return null;
-    updated = { ...clip, ...change(clip) };
-    return { ...dataset, clips: dataset.clips.map((c) => (c.id === clipId ? updated : c)) };
+    if (!dataset.clips.some(matches)) return null;
+    const clips = dataset.clips.map((c) => (matches(c) ? { ...c, ...change(c) } : c));
+    updated = clips.filter(matches);
+    return { ...dataset, clips };
   });
-  if (!updated) { console.error(`no clip "${clipId}" in the ${profile.id} dataset; list them with: mlx-audio dataset status ${profile.id} --check`); return EXIT.failed; }
-  console.log(`${clipId}: ${updated.status}${actions[0] === 'text' ? `, text now "${updated.text}"` : ''}`);
+  if (!updated.length) {
+    console.error(source ? `no recording "${source}" in the ${profile.id} dataset; see the source ids in dataset.json`
+      : `no clip "${clipId}" in the ${profile.id} dataset; list them with: mlx-audio dataset status ${profile.id} --check`);
+    return EXIT.failed;
+  }
+  if (source) console.log(`${source}: ${plural(updated.length, 'clip')} now ${[...new Set(updated.map((c) => c.status))].join('/')}`);
+  else console.log(`${clipId}: ${updated[0].status}${actions[0] === 'text' ? `, text now "${updated[0].text}"` : ''}`);
   return EXIT.ok;
 }
 
@@ -269,7 +277,11 @@ function vocabCommand(args, ctx, { voicesDir }) {
 const subcommands = {
   add: { usage: 'add <profile> <recording> [<recording> ...]', summary: 'transcribe recordings and add them to the dataset as clips', run: addCommand },
   status: { usage: 'status <profile> [--check] [--json]', summary: 'how much audio is ready to train, and which clips need a listen', run: statusCommand },
-  fix: { usage: 'fix <profile> <clipId> --text "exact words" | --checked | --exclude | --include', summary: 'correct, confirm, or exclude a clip', run: fixCommand },
+  fix: {
+    usage: 'fix <profile> <clipId> --text "exact words" | --checked | --exclude | --include   (or --source <recordingId> instead of a clip id, for every clip of one recording)',
+    summary: 'correct, confirm, or exclude a clip (or a whole recording)',
+    run: fixCommand,
+  },
   vocab: { usage: 'vocab <profile> ["Name, Other name"]', summary: 'names and terms Whisper should expect (shows them with no terms)', run: vocabCommand },
 };
 

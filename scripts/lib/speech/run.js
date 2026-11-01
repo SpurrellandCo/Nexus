@@ -50,7 +50,8 @@ function sceneRequest({ scene, profile, model, language, effective, runtime }) {
   return {
     text: scene.text,
     voice: { profile: profile.id, kind: profile.kind, take: take && { id: take.id, audioSha256: take.sha256, transcript: take.transcript }, speaker: profile.speaker, description: profile.description },
-    model: { id: model.id, repo: model.repo },
+    // revision: only trained versions have one (when they were trained), so a retrained vN never reuses old audio.
+    model: { id: model.id, repo: model.repo, ...(model.revision ? { revision: model.revision } : {}) },
     language, instruct: scene.instruct, settings: effective, runtime,
   };
 }
@@ -76,7 +77,12 @@ function planNarration(jobFile, { provider, ctx, voicesDir, outputBase }) {
   if (loaded.errors.length) throw new Error(`invalid voice profile ${loaded.file}:\n  - ${loaded.errors.join('\n  - ')}`);
   const { profile } = loaded;
   if (profile.provider !== provider.id) throw new Error(`voice profile "${profile.id}" is for provider "${profile.provider}", not "${provider.id}"`);
-  const model = provider.resolveModel(job.model || profile.model);
+  // An active trained version replaces the profile's model; say so when the job named another one.
+  const model = profile.version ? provider.versionModel(profile.version) : provider.resolveModel(job.model || profile.model);
+  const versionNotes = !profile.version ? [] : [
+    ...(job.model && job.model !== profile.model ? [`the job asks for model ${job.model}; voice "${profile.id}" speaks with its trained version ${profile.version.id} instead`] : []),
+    ...job.scenes.filter((s) => s.take).map((s) => `scene ${s.id}: take "${s.take}" is ignored; trained version ${profile.version.id} doesn't use reference takes`),
+  ];
   const language = job.language || profile.language;
   const problems = provider.checkRequest({ profile, job, model, language });
   if (problems.length) throw new Error(`this job asks for things ${model.id} can't do:\n  - ${problems.join('\n  - ')}`);
@@ -89,7 +95,7 @@ function planNarration(jobFile, { provider, ctx, voicesDir, outputBase }) {
     const entry = manifest.scenes.find((s) => s.id === scene.id);
     return { scene, request, fingerprint: sha(request), entry, reason: staleReason(entry, request, outputDir) };
   });
-  return { job, profile, model, language, outputDir, scenes, warnings: [...warnings, ...loaded.warnings], jobFile: path.resolve(jobFile) };
+  return { job, profile, model, language, outputDir, scenes, warnings: [...warnings, ...loaded.warnings, ...versionNotes], jobFile: path.resolve(jobFile) };
 }
 
 /** Joins scene WAVs (same format) with silence; returns offsets. */

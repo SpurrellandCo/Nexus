@@ -6,6 +6,7 @@
  *   models                                 model adapters, what each can do, verified/cached
  *   add-take <profile> <recording>         add a reference recording (converted copy, auto-transcribed)
  *   dataset add|status|fix|vocab|inbox|watch   collect clips of the voice for fine-tuning (dataset.js, inbox.js)
+ *   train | versions | compare | use-version   train voice versions on the dataset and switch to one (train.js)
  *   voice-check <profile>                  validate a voice profile against its model
  *   validate <job.json>                    plan a narration job without generating (dry run)
  *   generate <job.json> [--force]          generate every new or stale scene (one batch, one model load)
@@ -21,7 +22,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const core = require('../../scripts/lib/integrations');
-const { MODELS, resolveModel, checkRequest, effectiveSettings } = require('./models');
+const { MODELS, resolveModel, versionModel, checkRequest, effectiveSettings } = require('./models');
 const { loadProfile } = require('../../scripts/lib/speech/profile');
 const { scenesFromScript, CONTRACT: JOB_CONTRACT } = require('../../scripts/lib/speech/job');
 const { planNarration, generateNarration, narrationStatus } = require('../../scripts/lib/speech/run');
@@ -29,6 +30,7 @@ const { addTake } = require('./takes');
 const { datasetDir, loadDataset, datasetStats, formatDuration } = require('../../scripts/lib/speech/dataset');
 
 const DATASET_COMMANDS = { ...require('./dataset').subcommands, ...require('./inbox').subcommands };
+const VERSION_COMMANDS = require('./train').commands;
 
 const WORKER = path.join(__dirname, 'worker.py');
 const BASE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -69,7 +71,8 @@ async function generate(ctx, { model, items, logFile }) {
   const workerItems = items.map((it) => {
     const base = { id: it.id, text: it.text, out: it.out, language: it.language, settings: it.settings };
     if (it.voice.kind === 'reference-clone') return { ...base, mode: 'clone', refAudio: it.refAudio, refText: it.voice.take.transcript };
-    if (it.voice.kind === 'preset') return { ...base, mode: 'preset', speaker: it.voice.speaker, instruct: it.instruct };
+    // A trained version is a custom_voice model whose only speaker is the voice: the same call as a preset speaker.
+    if (it.voice.kind === 'preset' || it.voice.kind === 'fine-tuned') return { ...base, mode: 'preset', speaker: it.voice.speaker, instruct: it.instruct };
     return { ...base, mode: 'design', description: it.voice.description };
   });
   const run = runWorker(ctx, { op: 'generate', repo: model.repo, items: workerItems }, {
@@ -84,7 +87,8 @@ async function generate(ctx, { model, items, logFile }) {
   });
 }
 
-const speechProvider = { id: 'mlx-audio', resolveModel, checkRequest, effectiveSettings, runtimeVersion, generate };
+const speechProvider = { id: 'mlx-audio', resolveModel, versionModel, checkRequest, effectiveSettings, runtimeVersion, generate };
+const modelFor = (profile) => (profile.version ? versionModel(profile.version) : resolveModel(profile.model));
 
 async function health(ctx) {
   const { check } = ctx;
@@ -113,7 +117,8 @@ async function health(ctx) {
   if (!profiles.length) checks.push(check('voice profiles', 'warn', `none in ${voicesDir}`));
   for (const id of profiles) {
     const p = loadProfile(id, { voicesDir });
-    checks.push(p.errors.length ? check(`voice ${id}`, 'fail', p.errors.join('; ')) : check(`voice ${id}`, 'ok', `${p.profile.kind}, ${p.profile.model}, ${p.profile.takes.length} take(s)`));
+    checks.push(p.errors.length ? check(`voice ${id}`, 'fail', p.errors.join('; '))
+      : check(`voice ${id}`, 'ok', `${p.profile.kind}, ${p.profile.version ? `trained version ${p.profile.version.id}` : p.profile.model}, ${p.profile.takes.length} take(s)`));
     const dataset = datasetCheck(check, id, voicesDir);
     if (dataset) checks.push(dataset);
   }
@@ -180,14 +185,18 @@ const commands = {
       return command.run(rest, ctx, dirs(ctx));
     },
   },
+  ...Object.fromEntries(Object.entries(VERSION_COMMANDS).map(([name, c]) => [name, {
+    usage: c.usage, summary: c.summary, run: (args, ctx) => c.run(args, ctx, { ...dirs(ctx), provider: speechProvider }),
+  }])),
   'voice-check': {
     usage: 'voice-check <profile id or profile.json>', summary: 'validate a voice profile and its recordings',
     run([ref], ctx) {
       const { profile, errors, warnings, file } = loadProfile(ref, dirs(ctx));
       if (errors.length) { console.error(`${file}:\n  - ${errors.join('\n  - ')}`); return EXIT.failed; }
-      const model = resolveModel(profile.model);
+      const model = modelFor(profile);
       const problems = checkRequest({ profile, job: { settings: {}, scenes: [] }, model, language: profile.language });
-      console.log(`${profile.id}: ${profile.kind} on ${model.id}${model.verified ? '' : ' (unverified)'}, language ${profile.language}`);
+      console.log(`${profile.id}: ${profile.kind} on ${model.id}${model.verified ? '' : ' (unverified)'}, language ${profile.language}`
+        + `${profile.version ? ` (trained version ${profile.version.id}; its takes are kept for comparison)` : ''}`);
       for (const t of profile.takes) console.log(`  take ${t.id}${t.label ? ` (${t.label})` : ''}: ${t.durationSeconds.toFixed(1)} s, ${t.sampleRate} Hz, ${t.channels} ch, transcript ${t.transcript.length} chars`);
       for (const w of warnings) console.log(`  warning: ${w}`);
       for (const p of problems) console.log(`  problem: ${p}`);

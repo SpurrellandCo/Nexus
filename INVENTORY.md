@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-27 at 13:53:56.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-31 at 11:29:16.
 
 ## Agents
 
@@ -579,6 +579,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `programmatic-seo` | When the user wants to create SEO-driven pages at scale using templates and data. Also use when the user mentions "programmatic SEO," "template pages," "pages at scale," "directory pages," "location pages," "[keyword] + [city] pages," "comparison pages," "integration pages," "building many pages for SEO," "pSEO," "generate 100 pages," "data-driven pages," or "templated landing pages." Use this whenever someone wants to create many similar pages targeting different keywords or locations. For auditing existing SEO issues, see seo-audit. For content strategy planning, see content-strategy. |
 
+### quickvid
+
+| Skill | Description |
+|-------|-------------|
+| `quickvid` | Make a short product video from a folder of clips and photos, narrated in the user's own cloned voice. Use when the user wants to turn footage into a reel, short, TikTok, YouTube Short or product video — 'make a video from these clips', 'turn this footage into a reel', 'quickvid', 'cut this to my voice', 'make a short from this folder'. Orchestrates the brand, copywriting, social-content and ad-creative skills for the script, then renders deterministically with ffmpeg. For full open-ended productions with an agent driving an editor, see the video skill instead. |
+
 ### redesign-skill
 
 | Skill | Description |
@@ -734,6 +740,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `voice-take` | Add a new reference recording (a 'take') to a local voice profile used for cloned narration through the mlx-audio integration: converts a copy, transcribes it, adds it to the profile, and optionally renders a side-by-side listening test against the existing takes. Use when the user says '/voice-take <file>', 'add this recording to my voice', 'add a new take', 'here's more audio of my voice', or drops a voice memo meant to improve their narration voice. Also use when the user wants a script to read for recording a take ('give me something to read', '/voice-take' with no file), or wants to grow or check the voice training dataset ('add this to my voice dataset', 'more training audio', 'how much voice data do I have', 'check my voice clips'). |
+
+### voice-train
+
+| Skill | Description |
+|-------|-------------|
+| `voice-train` | Train a new version of the user's narration voice on their voice dataset, locally, then run a blind A/B listening test against the current voice and switch only if the user picks the new one. Use when the user says '/voice-train', 'train my voice', 'retrain my voice', 'fine-tune my voice', 'make a new voice version', or asks which voice version is in use or to switch back to an earlier one. |
 
 ### vps-deployment
 
@@ -926,7 +938,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 173
+- **Skills:** 175
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONTRACT = 'nexus.voice-profile/v1';
+const VERSION_CONTRACT = 'nexus.voice-version/v1';
 const ID = /^[a-z0-9][a-z0-9-]{0,47}$/;
 const KINDS = ['reference-clone', 'preset', 'voice-design', 'fine-tuned'];
 const SHORT_REFERENCE_SECONDS = 3;
@@ -74,7 +75,7 @@ function loadProfile(ref, { voicesDir }) {
   if (!ID.test(raw.id || '')) errors.push('id must be lowercase letters, digits, and dashes');
   if (!KINDS.includes(raw.kind)) errors.push(`kind must be one of ${KINDS.slice(0, 3).join(', ')}`);
   if (raw.kind === 'fine-tuned') {
-    errors.push('kind "fine-tuned" is not supported: Nexus has no fine-tuning path. A reference-clone profile uses your recordings and transcripts at generation time; it does not train or improve the model.');
+    errors.push('kind "fine-tuned" is not set by hand: train a version with `mlx-audio train`, then switch to it with `mlx-audio use-version` (which sets activeVersion on this reference-clone profile).');
   }
   for (const key of ['provider', 'model', 'language']) if (!text(raw[key])) errors.push(`${key} is required`);
   if (raw.modelSettings !== undefined && !isObject(raw.modelSettings)) errors.push('modelSettings must be an object');
@@ -101,13 +102,41 @@ function loadProfile(ref, { voicesDir }) {
   }
   if (raw.kind === 'preset' && !text(raw.speaker)) errors.push('a preset profile needs "speaker" (a speaker built into the model)');
   if (raw.kind === 'voice-design' && !text(raw.description)) errors.push('a voice-design profile needs "description" (the voice to create)');
+  const version = raw.activeVersion === undefined ? null : loadVersion(dir, raw, errors);
 
   const profile = errors.length ? null : {
-    id: raw.id, kind: raw.kind, provider: raw.provider, model: raw.model, language: raw.language,
+    id: raw.id, kind: version ? 'fine-tuned' : raw.kind, provider: raw.provider, model: raw.model, language: raw.language,
     takes, defaultTake: raw.defaultTake || (takes[0] && takes[0].id) || null,
-    speaker: raw.speaker || null, description: raw.description || null, modelSettings: raw.modelSettings || {},
+    speaker: version ? version.speaker : raw.speaker || null, description: raw.description || null, modelSettings: raw.modelSettings || {},
+    version,
   };
   return { profile, dir, file, errors, warnings };
 }
 
-module.exports = { CONTRACT, KINDS, readWav, loadProfile, sha256File };
+/**
+ * The trained version named by `activeVersion` (versions/<id>/version.json, contract nexus.voice-version/v1).
+ * While one is active the profile speaks with it ("fine-tuned"); its takes stay for comparison and rollback.
+ */
+function loadVersion(dir, raw, errors) {
+  const id = raw.activeVersion;
+  if (raw.kind !== 'reference-clone') { errors.push('activeVersion only applies to a reference-clone profile (its trained version)'); return null; }
+  if (typeof id !== 'string' || !ID.test(id)) { errors.push(`activeVersion ${JSON.stringify(id)} must be a version id like "v1"`); return null; }
+  const versionDir = path.join(dir, 'versions', id);
+  let meta;
+  try { meta = JSON.parse(fs.readFileSync(path.join(versionDir, 'version.json'), 'utf8')); } catch (err) {
+    errors.push(`activeVersion "${id}": cannot read ${path.join(versionDir, 'version.json')} (${err.message})`);
+    return null;
+  }
+  if (!isObject(meta)) { errors.push(`activeVersion "${id}": version.json is not a JSON object`); return null; }
+  const modelPath = path.join(versionDir, text(meta.model) ? meta.model : 'model');
+  if (meta.contract !== VERSION_CONTRACT) errors.push(`activeVersion "${id}": contract must be "${VERSION_CONTRACT}"`);
+  if (!text(meta.speaker)) errors.push(`activeVersion "${id}": version.json has no speaker`);
+  for (const f of ['config.json', 'model.safetensors']) {
+    if (!fs.existsSync(path.join(modelPath, f))) errors.push(`activeVersion "${id}": the trained model is incomplete (no ${f} in ${modelPath})`);
+  }
+  let sizeGB = null;
+  try { sizeGB = Math.round(fs.statSync(path.join(modelPath, 'model.safetensors')).size / 1e8) / 10; } catch { /* reported above */ }
+  return { id, profile: raw.id, speaker: meta.speaker, modelPath, sizeGB, chosenAt: meta.chosenAt || null, createdAt: meta.createdAt || null };
+}
+
+module.exports = { CONTRACT, VERSION_CONTRACT, KINDS, readWav, loadProfile, loadVersion, sha256File };

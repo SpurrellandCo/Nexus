@@ -50,7 +50,7 @@ test('voice profile: missing recordings, missing transcripts, non-WAV audio, and
 test('voice profile: fine-tuned is refused with an explanation; preset and voice-design need their own fields', () => {
   const voicesDir = tmpDir();
   makeVoiceProfile(voicesDir, { id: 'tuned', kind: 'fine-tuned' });
-  assert.match(loadProfile('tuned', { voicesDir }).errors.join(), /no fine-tuning path.*does not train or improve the model/);
+  assert.match(loadProfile('tuned', { voicesDir }).errors.join(), /not set by hand: train a version with `mlx-audio train`.*use-version/);
   makeVoiceProfile(voicesDir, { id: 'preset', kind: 'preset', takes: undefined });
   assert.match(loadProfile('preset', { voicesDir }).errors.join(), /needs "speaker"/);
   makeVoiceProfile(voicesDir, { id: 'design', kind: 'voice-design', takes: undefined });
