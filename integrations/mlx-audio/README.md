@@ -177,7 +177,8 @@ The usual way through is the `voice-train` skill (`/voice-train`): train, blind 
 | Command | What it does |
 |---|---|
 | `train <profile> [--epochs 3] [--lr 2e-5] [--seed 42]` | Trains the next version (`v1`, `v2`, …) from **every** ready clip (auto or checked), always starting from the base model. The default take is the reference recording. Nothing switches. |
-| `compare <profile> <version>` | Blind A/B test: three lines (or `--text "..."`) in the current voice and in the version, with seed 42 for both. `--reveal` says which was which. |
+| `compare <profile> <version>` | Blind A/B test: three lines (or `--text "..."`) in the current voice and in the version, with seed 42 for both. `--answer A,B,-` records picks typed in the conversation (one per line, `-` for can't tell), then reveals which side was which and counts how many lines each voice won. `--reveal` reveals without recording. |
+| `listen <profile> [--minutes 30]` | Serves the newest unanswered test on 127.0.0.1 (under a random token; only its clips) and opens it in the browser. You pick A, B, or can't tell per line, submit, see the reveal, and, if the new version won, click **Switch** or **Keep**. The command waits until you're done (or for `--minutes` idle) and prints the outcome. The `voice-listen` skill (`/voice-listen`) wraps it. |
 | `use-version <profile> <version\|takes>` | Narrate with a version (sets `activeVersion` in `profile.json`), or go back to cloning from the takes. Switching re-renders narration the next time it's generated. |
 | `versions <profile>` | Every version, what it was trained on, and which one is active. |
 

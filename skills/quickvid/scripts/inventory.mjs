@@ -19,6 +19,20 @@ const MAX_DEPTH = 3;
 const SILENT_DB = -50;
 /** How much of a clip's audio to sample when deciding whether it has talking. */
 const SAMPLE_SECONDS = 30;
+/**
+ * Whisper invents text on near-silent audio — a clip of handling noise came back as one Georgian character repeated,
+ * with the language guessed as Norwegian. Its own numbers give it away, so a segment only counts as speech when it
+ * clears both: openai-whisper's own defaults for "no speech here" and "this is a repetition loop".
+ */
+const MAX_NO_SPEECH_PROB = 0.6;
+const MAX_COMPRESSION_RATIO = 2.4;
+/**
+ * Whisper also betrays a hallucination by detecting the wrong language: two clips of handling noise came back as
+ * Norwegian Nynorsk, one of them as fluent-sounding English nonsense about tickets and copyright. A transcript in an
+ * unexpected language is not trusted — and because "no speech" tells the render to keep the clip's audio, the honest
+ * answer is unknown, which drops it.
+ */
+const EXPECTED_LANGUAGE = (process.argv.find((a) => a.startsWith('--language=')) ?? '--language=en').split('=')[1];
 /** Frames in a contact sheet, and the grid they are tiled into. */
 const SHEET_FRAMES = 8;
 const SHEET_GRID = '4x2';
@@ -74,22 +88,45 @@ async function meanVolume(path) {
   }
 }
 
-/** Whisper, through the transcribe-anything CLI. Returns the text, or null when it could not be read. */
+/** The segments Whisper is actually confident are speech, and their text. */
+function spoken(result) {
+  const all = result.segments ?? [];
+  const segments = all.filter(
+    (segment) => (segment.no_speech_prob ?? 1) < MAX_NO_SPEECH_PROB && (segment.compression_ratio ?? 99) < MAX_COMPRESSION_RATIO,
+  );
+  const text = segments.map((segment) => (segment.text ?? '').trim()).join(' ').trim();
+  const language = result.language ?? null;
+  return {
+    text,
+    words: text.split(/\s+/).filter(Boolean).length,
+    kept: segments.length,
+    of: all.length,
+    language,
+    trusted: language === EXPECTED_LANGUAGE,
+  };
+}
+
+/**
+ * Whisper, through the transcribe-anything CLI. Returns `{ ok: true, text }` when it ran, and `{ ok: false }` when the
+ * transcriber itself failed. The difference matters: a failure must not be read as "nothing was said", because the
+ * render keeps the audio of a clip it believes is silent, and a stray word of the original under the narration is the
+ * one outcome to avoid.
+ */
 async function transcribe(path, workDir) {
   const out = join(workDir, 'transcripts', createHash('sha256').update(path).digest('hex').slice(0, 16));
   try {
-    const existing = await readFile(join(out, 'out.txt'), 'utf8');
-    if (existing.trim()) return existing.trim(); // already done on a previous run
+    const cached = JSON.parse(await readFile(join(out, 'out.json'), 'utf8'));
+    return { ok: true, ...spoken(cached) }; // already done on a previous run
   } catch {
     // not transcribed yet
   }
   await mkdir(out, { recursive: true });
   try {
     await run('transcribe-anything', [path, '--output_dir', out, '--model', 'small'], { maxBuffer: 16 << 20 });
-    return (await readFile(join(out, 'out.txt'), 'utf8')).trim() || null;
+    return { ok: true, ...spoken(JSON.parse(await readFile(join(out, 'out.json'), 'utf8'))) };
   } catch (error) {
-    console.error(`  could not transcribe ${basename(path)}: ${String(error).split('\n')[0]}`);
-    return null;
+    console.error(`  could not transcribe ${basename(path)}: ${String(error).split('\n')[0].slice(0, 160)}`);
+    return { ok: false };
   }
 }
 
@@ -161,9 +198,20 @@ const main = async () => {
       } else if (noTranscribe) {
         item.hasSpeech = null; // not checked
       } else {
-        const text = await transcribe(path, workDir);
-        item.hasSpeech = Boolean(text && text.split(/\s+/).length >= 3);
-        if (item.hasSpeech) item.transcript = text;
+        const result = await transcribe(path, workDir);
+        if (!result.ok) {
+          // Unknown, not silent: the render drops the audio of anything it cannot vouch for.
+          item.hasSpeech = null;
+          item.speechUnknownBecause = 'the transcriber failed';
+        } else if (!result.trusted && result.words >= 3) {
+          // Words came back, but in the wrong language: almost certainly invented. Unknown, so the audio is dropped.
+          item.hasSpeech = null;
+          item.speechUnknownBecause = `the transcript came back as ${result.language ?? 'an unknown language'}, not ${EXPECTED_LANGUAGE}, so it is not trusted`;
+        } else {
+          item.hasSpeech = result.words >= 3;
+          item.speechEvidence = `${result.kept} of ${result.of} segments confident, language ${result.language ?? 'unknown'}`;
+          if (item.hasSpeech) item.transcript = result.text;
+        }
       }
     } else if (kind === 'video') {
       item.hasSpeech = false;
@@ -174,7 +222,7 @@ const main = async () => {
       item.sheet = sheet ? relative(folder, sheet) : null;
     }
     items.push(item);
-    const speech = item.hasSpeech === true ? 'talking' : item.hasSpeech === false ? 'no talking' : 'speech unchecked';
+    const speech = item.hasSpeech === true ? 'talking' : item.hasSpeech === false ? 'no talking' : 'TALKING UNKNOWN, audio will be dropped';
     console.log(`  ${rel}: ${kind}${item.seconds ? ` ${item.seconds.toFixed(1)}s` : ''}${item.width ? ` ${item.width}x${item.height}` : ''}${kind === 'video' ? `, ${speech}` : ''}`);
   }
 

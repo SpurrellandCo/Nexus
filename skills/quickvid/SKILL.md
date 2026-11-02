@@ -51,6 +51,10 @@ worth stopping: it is where the user's taste lives, and narration is the slow st
 
 Work through the phases in order. Take the folder from the user's request; if none was given, ask which folder to use.
 
+**If the folder holds a `Content` subfolder, the footage is in there.** The user's models follow
+`<models_root>/<category>/<Model Name>/` with `Content/` for the media and `upload info/` for the listing, so being
+given the model folder is normal. Use `<folder>/Content` for the footage and say which folder you settled on.
+
 ### Phase 1: Read the folder
 
 Run the inventory script, which writes `.quickvid/inventory.json` and contact sheets:
@@ -77,7 +81,13 @@ lost sound effect.
 
 ### Phase 2: Product facts, angle and voice
 
-**If the user gave a product link (`--product`), read it first.** This is the difference between a script that states
+**Look for the model's own listing first.** When `../upload info/` sits beside the footage folder, read `listing.md`,
+`measurements.json` and `description.md`. For the user's own models this beats any web page: it is their measured,
+verified data — the product's real dimensions, the part's fit, the print settings, and often a written list of tags and
+a note of what each photo shows, which phase 4 can use when picking shots. Save what matters to `.quickvid/product.md`
+and say which facts came from there. Ask for a product link only if that folder is missing or thin.
+
+**If the user gave a product link (`--product`), read it too.** This is the difference between a script that states
 the real model, size and material and one that guesses. Fetch the page and pull out only what is actually on it: the
 exact product name, the model number, dimensions, materials, capacities, and the two or three features worth saying
 out loud. Save it to `.quickvid/product.md` so a re-run does not fetch again.

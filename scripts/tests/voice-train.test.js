@@ -9,7 +9,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { tmpDir, writeConfig, cli, makeFakeMlxPython, makeVoiceProfile, writeNarrationJob, wavBytes } = require('./fixtures/integration-fixtures');
+const { spawn } = require('child_process');
+const { tmpDir, writeConfig, cli, makeFakeMlxPython, makeVoiceProfile, writeNarrationJob, wavBytes, REPO, CLI } = require('./fixtures/integration-fixtures');
 
 /** Fake training-environment python (MOCKED): answers train.py requests like the real one. */
 const FAKE_TRAIN = (node) => `#!${node}
@@ -179,6 +180,117 @@ test('[mocked] a retrained version that reuses a deleted id never reuses audio f
   s.run(['use-version', 'narrator', 'v1']);
   const status = JSON.parse(s.run(['status', jobFile, '--json']).stdout);
   assert.ok(status.scenes.every((x) => x.state !== 'fresh' && /model/.test(x.reason)), JSON.stringify(status.scenes));
+});
+
+test('[mocked] listen opens the newest unanswered test as a page; --answer records the picks, reveals, and tallies', () => {
+  const s = setup();
+  s.run(['train', 'narrator']);
+  assert.match(s.run(['listen', 'narrator', '--no-open']).stdout, /No listening test is waiting/);
+  s.run(['compare', 'narrator', 'v1']);
+  const root = path.join(s.versionDir('v1'), 'compare');
+  const runDir = path.join(root, fs.readdirSync(root)[0]);
+  const key = JSON.parse(fs.readFileSync(path.join(runDir, 'key.json'), 'utf8'));
+
+  assert.equal(s.run(['compare', 'narrator', 'v1', '--answer', 'A,B']).status, 2, 'one pick per line');
+  assert.equal(s.run(['compare', 'narrator', 'v1', '--answer', 'A,C,B']).status, 2);
+  const v = key.candidateSide;
+  const other = v === 'A' ? 'B' : 'A';
+  const r = s.run(['compare', 'narrator', 'v1', '--answer', `${v},${v},can't tell`]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /v1 won 2 of 3 lines; .* won 0; 1 can't tell/);
+  assert.match(r.stdout, /You preferred v1\. To narrate with it \(only if you approve\): mlx-audio use-version narrator v1/);
+  assert.equal(s.profile().activeVersion, undefined, 'answering never switches the voice');
+  const answer = JSON.parse(fs.readFileSync(path.join(runDir, 'answer.json'), 'utf8'));
+  assert.deepEqual([answer.picks, answer.winner, answer.versionWins, answer.unsure], [[v, v, '-'], 'version', 2, 1]);
+  assert.match(s.run(['listen', 'narrator', '--no-open']).stdout, /No listening test is waiting/, 'an answered test is no longer waiting');
+
+  const lost = s.run(['compare', 'narrator', 'v1', '--answer', `${other},${other},${v}`]);
+  assert.match(lost.stdout, /You preferred the current voice: keep it\. Nothing changed/);
+});
+
+/** Starts `listen` (a local server) and resolves its URL; `exited` resolves with the output when it ends. */
+function startListen(s, extra = []) {
+  const child = spawn(process.execPath, [CLI, 'mlx-audio', 'listen', 'narrator', '--no-open', ...extra],
+    { env: { ...process.env, NEXUS_HOME: REPO, NEXUS_LOCAL_CONFIG: s.config } });
+  let out = '';
+  child.stdout.on('data', (d) => { out += d; });
+  child.stderr.on('data', (d) => { out += d; });
+  const exited = new Promise((resolve) => child.on('close', (code) => resolve({ code, out })));
+  const url = new Promise((resolve, reject) => {
+    const poll = setInterval(() => {
+      const m = /Open: (http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{32}\/)/.exec(out);
+      if (m) { clearInterval(poll); resolve(m[1]); }
+    }, 20);
+    child.on('close', () => { clearInterval(poll); reject(new Error(`listen ended before serving:\n${out}`)); });
+  });
+  return { child, url, exited };
+}
+
+const postJson = (url, body, type = 'application/json') => fetch(url, { method: 'POST', headers: { 'Content-Type': type }, body: JSON.stringify(body) });
+
+test('[mocked] listen serves the test on 127.0.0.1; picks and the switch happen on the page', { timeout: 30000 }, async () => {
+  const s = setup();
+  s.run(['train', 'narrator']);
+  s.run(['compare', 'narrator', 'v1']);
+  const { child, url, exited } = startListen(s);
+  try {
+    const base = await url;
+    const page = await (await fetch(base)).text();
+    assert.equal((page.match(/<audio /g) || []).length, 6);
+    assert.equal((page.match(/type="radio"/g) || []).length, 9, 'A, B, can\'t tell for each of 3 lines');
+    // The script names the reply field (candidateSide); the answer itself only arrives after submitting.
+    assert.doesNotMatch(page, /cloned from your takes|candidateSide: ['"][AB]/, 'the page never says which side is which before submitting');
+
+    const clip = await fetch(`${base}A-1.wav`);
+    assert.equal(clip.status, 200);
+    assert.equal(clip.headers.get('content-type'), 'audio/wav');
+    const range = await fetch(`${base}B-2.wav`, { headers: { Range: 'bytes=0-43' } });
+    assert.equal(range.status, 206, 'byte ranges for Safari');
+    assert.equal((await range.arrayBuffer()).byteLength, 44);
+    assert.equal((await fetch(base.replace(/[0-9a-f]{32}/, '0'.repeat(32)))).status, 404, 'wrong token');
+    assert.equal((await fetch(`${base}key.json`)).status, 404, 'only the clips are served');
+    assert.equal((await postJson(`${base}answer`, { picks: ['A', 'A', 'A'] }, 'text/plain')).status, 415, 'JSON only');
+    assert.equal((await postJson(`${base}decision`, { switch: true })).status, 409, 'no switch before an answer');
+    assert.equal((await postJson(`${base}answer`, { picks: ['A', 'B'] })).status, 400, 'one pick per line');
+
+    const { candidateSide: v } = JSON.parse(fs.readFileSync(path.join(s.versionDir('v1'), 'compare', fs.readdirSync(path.join(s.versionDir('v1'), 'compare'))[0], 'key.json'), 'utf8'));
+    const answer = await (await postJson(`${base}answer`, { picks: [v, v, '-'] })).json();
+    assert.deepEqual([answer.winner, answer.versionWins, answer.unsure, answer.candidateSide], ['version', 2, 1, v]);
+    assert.equal((await postJson(`${base}answer`, { picks: [v, v, v] })).status, 409, 'answered once');
+    assert.equal(s.profile().activeVersion, undefined, 'answering alone never switches');
+
+    const decision = await (await postJson(`${base}decision`, { switch: true })).json();
+    assert.equal(decision.switched, true);
+    const { code, out } = await exited;
+    assert.equal(code, 0, out);
+    assert.match(out, /v1 won 2 of 3 lines/);
+    assert.match(out, /Switched on the page: "narrator" now narrates with trained version v1/);
+    assert.equal(s.profile().activeVersion, 'v1');
+    assert.match(s.run(['listen', 'narrator', '--no-open']).stdout, /No listening test is waiting/);
+  } finally {
+    child.kill();
+  }
+});
+
+test('[mocked] listen ends by itself when the current voice wins, and changes nothing', { timeout: 30000 }, async () => {
+  const s = setup();
+  s.run(['train', 'narrator']);
+  s.run(['compare', 'narrator', 'v1']);
+  const { child, url, exited } = startListen(s);
+  try {
+    const base = await url;
+    const keyDir = path.join(s.versionDir('v1'), 'compare');
+    const { candidateSide: v } = JSON.parse(fs.readFileSync(path.join(keyDir, fs.readdirSync(keyDir)[0], 'key.json'), 'utf8'));
+    const other = v === 'A' ? 'B' : 'A';
+    const answer = await (await postJson(`${base}answer`, { picks: [other, other, '-'] })).json();
+    assert.equal(answer.winner, 'current');
+    const { code, out } = await exited;
+    assert.equal(code, 0, out);
+    assert.match(out, /You preferred the current voice: keep it\. Nothing changed/);
+    assert.equal(s.profile().activeVersion, undefined);
+  } finally {
+    child.kill();
+  }
 });
 
 test('[mocked] reveal uses the latest finished listening test', () => {

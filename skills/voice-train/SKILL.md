@@ -32,15 +32,11 @@ If it fails, report the error and the log path it prints. Usual causes:
 
 ## 3. Blind listening test
 
-1. Run `mlx-audio compare <profile> <new version>`. It renders three lines in the current voice and in the new version, labelled A and B at random.
-2. Don't look up or guess which side is which: don't read `key.json` or anything in the test's `logs/` folder, and don't reveal anything before the user answers.
-3. Give the user the A and B file paths for each line. Ask which sounds more like them on each line, or overall. "Can't tell" is a valid answer.
-4. Run `mlx-audio compare <profile> <new version> --reveal` and tell the user which was which.
+Run `mlx-audio compare <profile> <new version>`. It renders three lines in the current voice and in the new version, labelled A and B at random, plus a listening page. Don't look up or guess which side is which.
 
-## 4. Switch only if the user picks the new version
+## 4. Listen and decide
 
-- **The new version won (it was preferred on most lines):** ask the user to confirm the switch, then run `mlx-audio use-version <profile> <new version>`. Narration made with the old voice re-renders the next time it's generated.
-- **The current voice won, or they couldn't tell:** keep the current voice. The new version stays on disk. More (and more varied) recordings usually help; `/voice-inbox` adds them.
+Follow the steps in `$NEXUS_HOME/skills/voice-listen/SKILL.md`: open the page, collect the user's pick for each line, reveal, and switch only if the new version won and the user approves. If the user would rather listen later, tell them to run `/voice-listen` when they're ready; the test waits until it's answered.
 
 ## Versions and switching back
 

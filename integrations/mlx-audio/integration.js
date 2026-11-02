@@ -30,7 +30,7 @@ const { addTake } = require('./takes');
 const { datasetDir, loadDataset, datasetStats, formatDuration } = require('../../scripts/lib/speech/dataset');
 
 const DATASET_COMMANDS = { ...require('./dataset').subcommands, ...require('./inbox').subcommands };
-const VERSION_COMMANDS = require('./train').commands;
+const VERSION_COMMANDS = { ...require('./train').commands, ...require('./listen').commands };
 
 const WORKER = path.join(__dirname, 'worker.py');
 const BASE_TIMEOUT_MS = 10 * 60 * 1000;

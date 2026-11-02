@@ -6,7 +6,8 @@
  *   train <profile> [--epochs 3] [--lr 2e-5] [--seed 42]   a new version from every ready clip, always starting from the base model
  *   versions <profile>                                       versions, which one is active, what each was trained on
  *   compare <profile> <version> [--text "..."]               blind A/B: the same lines in the current voice and the version
- *   compare <profile> <version> --reveal                     which of A and B was the version
+ *   compare <profile> <version> --answer A,B,-               record the user's picks, then reveal and tally (--reveal: reveal only)
+ *   (listening in the browser, with picks and the switch on the page: listen.js)
  *   use-version <profile> <version|takes>                    narrate with a version, or go back to cloning from the takes
  *
  * Versions live in <voicesDir>/<profile>/versions/<vN>/: version.json and model/ (about 4 GB, a custom_voice
@@ -203,13 +204,63 @@ function compareItem(side, label, i, text, runDir, provider) {
   };
 }
 
-/** Reveals the latest finished listening test (one interrupted before its key was written is skipped). */
-function reveal(compareRoot) {
+/** The newest finished listening test of one version (one interrupted before its key was written is skipped). */
+function latestFinished(compareRoot) {
   const runs = fs.existsSync(compareRoot) ? fs.readdirSync(compareRoot).sort().reverse() : [];
-  const latest = runs.map((r) => path.join(compareRoot, r, 'key.json')).find((f) => fs.existsSync(f));
-  if (!latest) { console.error('no listening test to reveal yet; run compare first'); return EXIT.failed; }
-  const key = JSON.parse(fs.readFileSync(latest, 'utf8'));
+  return runs.map((r) => path.join(compareRoot, r)).find((dir) => fs.existsSync(path.join(dir, 'key.json'))) || null;
+}
+
+const readKey = (runDir) => JSON.parse(fs.readFileSync(path.join(runDir, 'key.json'), 'utf8'));
+/** Which side held the version; tests rendered before candidateSide was recorded are worked out from the labels. */
+const candidateSide = (key) => key.candidateSide || (key.A === `trained version ${key.candidate}` ? 'A' : 'B');
+
+function reveal(compareRoot) {
+  const runDir = latestFinished(compareRoot);
+  if (!runDir) { console.error('no listening test to reveal yet; run compare first'); return EXIT.failed; }
+  const key = readKey(runDir);
   console.log(`A was ${key.A}. B was ${key.B}.`);
+  return EXIT.ok;
+}
+
+const PICKS = ['A', 'B', '-'];
+
+/** Records one pick per line (A, B, or - for can't tell) in answer.json; returns the result with both labels, or { error }. */
+function recordAnswer(runDir, picks) {
+  const key = readKey(runDir);
+  if (!Array.isArray(picks) || picks.length !== key.lines.length || !picks.every((p) => PICKS.includes(p))) {
+    return { error: `give one pick per line (${key.lines.length}): A, B, or - for can't tell` };
+  }
+  const side = candidateSide(key);
+  const versionWins = picks.filter((p) => p === side).length;
+  const unsure = picks.filter((p) => p === '-').length;
+  const currentWins = picks.length - versionWins - unsure;
+  const winner = versionWins > currentWins ? 'version' : currentWins > versionWins ? 'current' : 'tie';
+  const answer = { answeredAt: new Date().toISOString(), picks, candidate: key.candidate, candidateSide: side, versionWins, currentWins, unsure, winner };
+  fs.writeFileSync(path.join(runDir, 'answer.json'), `${JSON.stringify(answer, null, 2)}\n`);
+  return { ...answer, A: key.A, B: key.B };
+}
+
+/** The reveal, the tally, and what to do next, as three lines of text. */
+function summarizeAnswer(r, ref) {
+  const current = r.candidateSide === 'A' ? r.B : r.A;
+  return [
+    `A was ${r.A}. B was ${r.B}.`,
+    `${r.candidate} won ${r.versionWins} of ${r.picks.length} lines; ${current} won ${r.currentWins}${r.unsure ? `; ${r.unsure} can't tell` : ''}.`,
+    r.winner === 'version'
+      ? `You preferred ${r.candidate}. To narrate with it (only if you approve): mlx-audio use-version ${ref} ${r.candidate}`
+      : `${r.winner === 'tie' ? 'A tie' : 'You preferred the current voice'}: keep it. Nothing changed; ${r.candidate} stays on disk.`,
+  ];
+}
+
+/** `compare --answer`: the picks typed in the conversation instead of on the listening page. */
+function answerTest(compareRoot, raw, ref) {
+  const runDir = latestFinished(compareRoot);
+  if (!runDir) { console.error('no listening test to answer yet; run compare first'); return EXIT.failed; }
+  const picks = String(raw).replace(/can['’]?t\s+tell/gi, '-').split(/[\s,]+/).filter(Boolean)
+    .map((p) => (/^(-|\?|can['’]?t|unsure|same)$/i.test(p) ? '-' : p.toUpperCase()));
+  const r = recordAnswer(runDir, picks);
+  if (r.error) { console.error(`${r.error}; for example --answer A,B,-`); return EXIT.usage; }
+  for (const line of summarizeAnswer(r, ref)) console.log(line);
   return EXIT.ok;
 }
 
@@ -220,6 +271,7 @@ async function compareCommand(args, ctx, { voicesDir, provider }) {
   const voice = openVoice(ref, voicesDir);
   if (voice.error) { console.error(voice.error); return EXIT.failed; }
   const compareRoot = path.join(versionsDir(voice.dir), versionId, 'compare');
+  if (flags.answer !== undefined) return answerTest(compareRoot, flags.answer, ref);
   if (flags.reveal) return reveal(compareRoot);
 
   const errors = [];
@@ -245,51 +297,62 @@ async function compareCommand(args, ctx, { voicesDir, provider }) {
     const failed = results.filter((x) => !x.ok);
     if (failed.length) { console.error(`could not render ${label}: ${failed.map((f) => `${f.id}: ${f.error}`).join('; ')}`); return EXIT.failed; }
   }
-  fs.writeFileSync(path.join(runDir, 'key.json'), `${JSON.stringify({ A: sides.A.label, B: sides.B.label, candidate: versionId, lines }, null, 2)}\n`);
+  fs.writeFileSync(path.join(runDir, 'key.json'), `${JSON.stringify({ A: sides.A.label, B: sides.B.label, candidate: versionId, candidateSide: candidateIsA ? 'A' : 'B', lines }, null, 2)}\n`);
   console.log(`Blind listening test: each line in two voices, A and B (which is which is hidden). Seed ${COMPARE_SEED} for both.`);
-  lines.forEach((text, i) => {
-    console.log(`  ${i + 1}. "${text}"`);
-    console.log(`     A: ${path.join(runDir, `A-${i + 1}.wav`)}`);
-    console.log(`     B: ${path.join(runDir, `B-${i + 1}.wav`)}`);
-  });
-  console.log(`Pick the one that sounds more like you, then reveal: mlx-audio compare ${ref} ${versionId} --reveal`);
+  lines.forEach((text, i) => console.log(`  ${i + 1}. "${text}"`));
+  console.log(`Listen and pick in the browser: mlx-audio listen ${ref}   (or answer here: mlx-audio compare ${ref} ${versionId} --answer A,B,-)`);
   return EXIT.ok;
 }
 
-function useVersionCommand(args, ctx, { voicesDir }) {
-  const [ref, target] = args;
-  if (!ID.test(ref || '') || !(target === 'takes' || VERSION_ID.test(target || ''))) return usage('use-version');
+/**
+ * Points the profile at a trained version (activeVersion) or back at its takes. Undone if the profile
+ * would then be invalid. Returns { previous } (the version it used before, or null for takes) or { error }.
+ */
+function switchVersion(voicesDir, ref, target) {
   const file = path.join(voicesDir, ref, 'profile.json');
   let original;
-  try { original = fs.readFileSync(file, 'utf8'); } catch (err) { console.error(`cannot read voice profile ${file}: ${err.message}`); return EXIT.failed; }
+  try { original = fs.readFileSync(file, 'utf8'); } catch (err) { return { error: `cannot read voice profile ${file}: ${err.message}` }; }
   let raw;
-  try { raw = JSON.parse(original); } catch (err) { console.error(`voice profile ${file} is not valid JSON: ${err.message}`); return EXIT.failed; }
+  try { raw = JSON.parse(original); } catch (err) { return { error: `voice profile ${file} is not valid JSON: ${err.message}` }; }
   const { activeVersion, ...rest } = raw;
   const next = target === 'takes' ? rest : { ...rest, activeVersion: target };
   fs.writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`);
   const check = loadProfile(ref, { voicesDir });
   if (check.errors.length) {
     fs.writeFileSync(file, original);
-    console.error(`can't switch, change undone:\n  - ${check.errors.join('\n  - ')}`);
-    return EXIT.failed;
+    return { error: `can't switch, change undone:\n  - ${check.errors.join('\n  - ')}` };
   }
   if (target !== 'takes') {
     const metaFile = path.join(path.dirname(file), 'versions', target, 'version.json');
     const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
     if (!meta.chosenAt) fs.writeFileSync(metaFile, `${JSON.stringify({ ...meta, chosenAt: new Date().toISOString() }, null, 2)}\n`);
   }
-  const was = activeVersion ? `version ${activeVersion}` : 'its takes';
+  return { previous: activeVersion || null };
+}
+
+function useVersionCommand(args, ctx, { voicesDir }) {
+  const [ref, target] = args;
+  if (!ID.test(ref || '') || !(target === 'takes' || VERSION_ID.test(target || ''))) return usage('use-version');
+  const r = switchVersion(voicesDir, ref, target);
+  if (r.error) { console.error(r.error); return EXIT.failed; }
+  const was = r.previous ? `version ${r.previous}` : 'its takes';
   const now = target === 'takes' ? 'its takes (reference cloning)' : `trained version ${target}`;
   console.log(`"${ref}" now narrates with ${now} (was ${was}). Narration made with the old voice re-renders the next time it's generated.`);
-  if (target !== 'takes') console.log(`Switch back any time: mlx-audio use-version ${ref} ${activeVersion || 'takes'}`);
+  if (target !== 'takes') console.log(`Switch back any time: mlx-audio use-version ${ref} ${r.previous || 'takes'}`);
   return EXIT.ok;
 }
 
 const commands = {
   train: { usage: 'train <profile> [--epochs 3] [--lr 2e-5] [--seed 42]', summary: 'train a new voice version from every ready dataset clip (on this Mac)', run: trainCommand },
   versions: { usage: 'versions <profile>', summary: 'trained versions, and which one narration uses', run: versionsCommand },
-  compare: { usage: 'compare <profile> <version> [--text "..."] [--reveal]', summary: 'blind A/B listening test: current voice vs a trained version', run: compareCommand },
+  compare: {
+    usage: 'compare <profile> <version> [--text "..."] | --answer A,B,- | --reveal',
+    summary: 'blind A/B listening test: current voice vs a trained version; --answer records the picks and reveals',
+    run: compareCommand,
+  },
   'use-version': { usage: 'use-version <profile> <version|takes>', summary: 'narrate with a trained version, or go back to the takes', run: useVersionCommand },
 };
 
-module.exports = { commands, nextVersionId, listVersions, trainSettings };
+module.exports = {
+  commands, nextVersionId, listVersions, versionsDir, trainSettings, readKey, recordAnswer, summarizeAnswer, switchVersion,
+};

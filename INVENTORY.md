@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-10-31 at 11:29:16.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-01 at 10:43:23.
 
 ## Agents
 
@@ -735,6 +735,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `voice-inbox` | Process the voice dataset's drop folder (Voice Inbox) on demand: adds every recording or video waiting there to the voice training dataset, files each one under Added or Needs attention, and reports what was added and the new total. Use when the user says '/voice-inbox', 'process my voice inbox', 'add the recordings I dropped in', 'I put some audio in the voice inbox', or 'sync my voice recordings'. |
 
+### voice-listen
+
+| Skill | Description |
+|-------|-------------|
+| `voice-listen` | Open the user's waiting blind voice listening test (a trained voice version vs their current narration voice) as a page in the browser, where the user picks A or B for each line, sees which was which, and approves or declines switching to the new version. Use when the user says '/voice-listen', 'let me listen to the new voice', 'open the listening test', 'compare the voices', or 'approve the new voice'. The voice-train skill ends with these steps. |
+
 ### voice-take
 
 | Skill | Description |
@@ -938,7 +944,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 175
+- **Skills:** 176
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
