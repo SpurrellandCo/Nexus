@@ -20,12 +20,14 @@ const fs = require('fs');
 const path = require('path');
 const core = require('../../scripts/lib/integrations');
 const ds = require('../../scripts/lib/speech/dataset');
-const { loadProfile, loadVersion, VERSION_CONTRACT } = require('../../scripts/lib/speech/profile');
+const { loadProfile, loadVersion, readWav, VERSION_CONTRACT } = require('../../scripts/lib/speech/profile');
 
 const TRAIN = path.join(__dirname, 'train.py');
 const BASE_MODEL = 'Qwen3-TTS-12Hz-1.7B-Base';
 const TOKENIZER = 'Qwen3-TTS-Tokenizer-12Hz';
-const DEFAULTS = { epochs: 3, lr: 2e-5, batchSize: 2, gradAccum: 4, seed: 42 };
+// One clip per step, 8 steps per update: the same 8 clips per update as the official script's 2 × 4,
+// with half the peak memory (long clips in pairs ran a 36 GB Mac out of memory).
+const DEFAULTS = { epochs: 3, lr: 2e-5, batchSize: 1, gradAccum: 8, seed: 42 };
 const LIMITS = { epochs: [1, 50], lr: [1e-7, 1e-3] };
 const TRAIN_BASE_MS = 20 * 60 * 1000;
 const TRAIN_MS_PER_CLIP_EPOCH = 3000;
@@ -128,7 +130,11 @@ function trainCommand(args, ctx, { voicesDir }) {
   const take = profile.takes.find((t) => t.id === profile.defaultTake);
   if (take.sampleRate !== 24000) { console.error(`the default take "${take.id}" is ${take.sampleRate} Hz; training needs a 24 kHz reference (re-add it with add-take)`); return EXIT.failed; }
   const datasetRoot = ds.datasetDir(voicesDir, profile.id);
-  const clips = ds.loadDataset(datasetRoot, profile.id).clips.filter((c) => c.status === 'auto' || c.status === 'checked');
+  const excludedSources = flags['exclude-source'] ? String(flags['exclude-source']).split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const dataset = ds.loadDataset(datasetRoot, profile.id);
+  const unknown = excludedSources.filter((s) => !dataset.sources.some((x) => x.id === s));
+  if (unknown.length) { console.error(`no recording ${unknown.map((s) => `"${s}"`).join(', ')} in the ${profile.id} dataset (source ids are in dataset.json)`); return EXIT.usage; }
+  const clips = dataset.clips.filter((c) => (c.status === 'auto' || c.status === 'checked') && !excludedSources.includes(c.source));
   if (!clips.length) { console.error(`the ${profile.id} dataset has no ready clips; add recordings first (mlx-audio dataset add, or the drop folder)`); return EXIT.failed; }
   const seconds = Math.round(clips.reduce((sum, c) => sum + c.durationSeconds, 0) * 10) / 10;
 
@@ -160,7 +166,7 @@ function trainCommand(args, ctx, { voicesDir }) {
   const meanLossByEpoch = ev.filter((e) => e.event === 'epoch').map((e) => e.meanLoss);
   const version = {
     contract: VERSION_CONTRACT, id, profile: profile.id, createdAt: new Date().toISOString(), base: `Qwen/${BASE_MODEL}`, speaker: profile.id, model: 'model',
-    trainedOn: { clips: clips.length, seconds, sources: [...new Set(clips.map((c) => c.source))], referenceTake: take.id },
+    trainedOn: { clips: clips.length, seconds, sources: [...new Set(clips.map((c) => c.source))], excludedSources, referenceTake: take.id },
     settings,
     result: { device: done.device, steps: done.steps, trainSeconds: done.trainSeconds, saveSeconds: done.saveSeconds, peakGpuMemoryGB: done.peakGpuMemoryGB, meanLossByEpoch },
   };
@@ -213,6 +219,20 @@ function latestFinished(compareRoot) {
 const readKey = (runDir) => JSON.parse(fs.readFileSync(path.join(runDir, 'key.json'), 'utf8'));
 /** Which side held the version; tests rendered before candidateSide was recorded are worked out from the labels. */
 const candidateSide = (key) => key.candidateSide || (key.A === `trained version ${key.candidate}` ? 'A' : 'B');
+
+const SECONDS_PER_WORD = 0.4;
+const RUNAWAY_FACTOR = 3;
+const RUNAWAY_MIN_SECONDS = 15;
+
+/** The first rendered line far longer than its words need (a voice that never stopped), or null. */
+function runawayClip(items, lines) {
+  for (const [i, item] of items.entries()) {
+    const expected = Math.round(lines[i].split(/\s+/).filter(Boolean).length * SECONDS_PER_WORD);
+    const seconds = readWav(item.out).durationSeconds;
+    if (seconds > Math.max(RUNAWAY_MIN_SECONDS, expected * RUNAWAY_FACTOR)) return { line: i + 1, seconds: Math.round(seconds), expected };
+  }
+  return null;
+}
 
 function reveal(compareRoot) {
   const runDir = latestFinished(compareRoot);
@@ -296,6 +316,14 @@ async function compareCommand(args, ctx, { voicesDir, provider }) {
     const results = await provider.generate(ctx, { model: side.model, items, logFile: path.join(runDir, 'logs', `${label}.log`) });
     const failed = results.filter((x) => !x.ok);
     if (failed.length) { console.error(`could not render ${label}: ${failed.map((f) => `${f.id}: ${f.error}`).join('; ')}`); return EXIT.failed; }
+    const runaway = runawayClip(items, lines);
+    if (runaway) {
+      // A voice that never stops (it runs to the token limit, minutes of near-silence) isn't worth anyone's listening time.
+      console.error(`${side.label} is broken: it produced ${runaway.seconds} s of audio for line ${runaway.line} `
+        + `("${lines[runaway.line - 1]}"), where about ${runaway.expected} s is normal; it never stopped. No listening test was made.`
+        + `${side === trained ? ` Don't use ${versionId}; train again (see the README's "Training a version").` : ''}`);
+      return EXIT.failed;
+    }
   }
   fs.writeFileSync(path.join(runDir, 'key.json'), `${JSON.stringify({ A: sides.A.label, B: sides.B.label, candidate: versionId, candidateSide: candidateIsA ? 'A' : 'B', lines }, null, 2)}\n`);
   console.log(`Blind listening test: each line in two voices, A and B (which is which is hidden). Seed ${COMPARE_SEED} for both.`);
@@ -343,7 +371,11 @@ function useVersionCommand(args, ctx, { voicesDir }) {
 }
 
 const commands = {
-  train: { usage: 'train <profile> [--epochs 3] [--lr 2e-5] [--seed 42]', summary: 'train a new voice version from every ready dataset clip (on this Mac)', run: trainCommand },
+  train: {
+    usage: 'train <profile> [--epochs 3] [--lr 2e-5] [--seed 42] [--exclude-source <recording id,...>]',
+    summary: 'train a new voice version from every ready dataset clip (on this Mac), optionally leaving recordings out',
+    run: trainCommand,
+  },
   versions: { usage: 'versions <profile>', summary: 'trained versions, and which one narration uses', run: versionsCommand },
   compare: {
     usage: 'compare <profile> <version> [--text "..."] | --answer A,B,- | --reveal',

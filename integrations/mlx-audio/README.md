@@ -152,6 +152,7 @@ Prefix `node ~/.nexus/scripts/nexus-integrations.js mlx-audio dataset`:
 | `inbox [--profile id]` | Processes the drop folder once (what the watcher runs). |
 | `status <profile> [--check]` | Ready and to-check totals, and how far to 10, 30 and 60 minutes. `--check` lists the clips to listen to, with their WAV paths. |
 | `fix <profile> <clip> --text "exact words"` | Corrects a clip's transcript and marks it checked. Also `--checked` (it's right), `--exclude` (never train on it), `--include`. |
+| `remove <profile> --source <recordingId>` | Deletes one recording from the dataset: its entry, clips, and audio copy. The original file is kept, so `add` brings it back. To keep it on record but out of training, use `fix --source … --exclude` instead. |
 | `vocab <profile> "Name, Other name"` | Names Whisper should expect (products, places, people). Applies to recordings added afterwards. |
 | `watch on\|off\|status` | The drop-folder watcher (macOS). |
 

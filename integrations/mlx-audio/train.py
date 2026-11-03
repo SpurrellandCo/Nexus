@@ -150,6 +150,10 @@ def train(req):
                     accelerator.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 optimizer.zero_grad()
+            if device == "mps":
+                # Every batch has a different length, so MPS's caching allocator keeps reserving new blocks;
+                # without handing them back it fills unified memory, swaps, and fails mid-run.
+                torch.mps.empty_cache()
             done += 1
             losses.append(loss.item())
             if done % PROGRESS_EVERY == 0:

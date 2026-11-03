@@ -168,12 +168,16 @@ This is the slow phase. Report progress and do not regenerate scenes that are al
 ### Phase 6: Render
 
 ```
-node scripts/render.mjs <folder> --name <name> [--captions] [--music <file>] [--platform reel|tiktok|youtube]
+node scripts/render.mjs <folder> --name <name> [--no-captions] [--music <file>] [--platform reel|tiktok|youtube]
 ```
 
-The script cuts each shot to the length of its narration line, drops the audio of any clip containing speech, adds
-captions as rendered images, mixes music under the voice, and writes the result to `Final/`. Report the output path
-and the finished duration.
+The script cuts each shot to the length of its narration line, drops the audio of any clip containing speech, burns
+in the captions, mixes music under the voice, and writes the result to `Final/`. Report the output path and the
+finished duration.
+
+Captions are on unless `--no-captions` is passed. They are written as a `.srt` beside the video and, when an ffmpeg
+build with the text filters is on the machine, drawn into the picture as well: short bursts broken where the sentence
+breaks, each fading up as it lands. Without such a build the sidecar is still written and the script says so.
 
 If the render fails, read its error and fix the *script* or the plan — never work around it by running ffmpeg by hand.
 

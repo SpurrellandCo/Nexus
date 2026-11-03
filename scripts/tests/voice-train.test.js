@@ -82,7 +82,7 @@ test('[mocked training] train makes v1 from the ready clips only, starting from 
   assert.match(req.refAudio, /takes[/\\]calm\.wav$/, 'the default take is the reference');
   assert.equal(req.speaker, 'narrator');
   assert.match(req.baseModel, /Qwen3-TTS-12Hz-1\.7B-Base$/);
-  assert.deepEqual([req.epochs, req.lr, req.batchSize, req.gradAccum, req.seed], [3, 2e-5, 2, 4, 42]);
+  assert.deepEqual([req.epochs, req.lr, req.batchSize, req.gradAccum, req.seed], [3, 2e-5, 1, 8, 42], 'one clip per step, 8 per update');
   assert.equal(req.outDir, path.join(s.versionDir('v1'), 'model'));
 
   const v = JSON.parse(fs.readFileSync(path.join(s.versionDir('v1'), 'version.json'), 'utf8'));
@@ -303,6 +303,35 @@ test('[mocked] reveal uses the latest finished listening test', () => {
   assert.match(shown.stdout, /^A was .*\. B was .*\.$/m);
 });
 
+test('[mocked] compare refuses to offer a test when a version never stops talking', () => {
+  const s = setup();
+  s.run(['train', 'narrator']);
+  const r = s.run(['compare', 'narrator', 'v1'], { FAKE_MLX_MODE: 'runaway' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /trained version v1 is broken: it produced 60 s of audio for line 1 .* it never stopped\. No listening test was made\. Don't use v1/);
+  const root = path.join(s.versionDir('v1'), 'compare');
+  assert.ok(fs.readdirSync(root).every((run) => !fs.existsSync(path.join(root, run, 'key.json'))), 'nothing for listen to pick up');
+  assert.match(s.run(['listen', 'narrator', '--no-open']).stdout, /No listening test is waiting/);
+});
+
+test('[mocked training] --exclude-source leaves a recording out of one training run only', () => {
+  const s = setup();
+  const r = s.run(['train', 'narrator', '--exclude-source', 'rec-a'], { FAKE_TRAIN_LOG: s.trainLog });
+  assert.equal(r.status, 1, 'rec-a holds every ready clip in this fixture');
+  assert.equal(s.run(['train', 'narrator', '--exclude-source', 'nope']).status, 2, 'unknown recordings are refused');
+  fs.writeFileSync(path.join(s.voice.dir, 'dataset', 'clips', 'rec-c-001.wav'), wavBytes(96000));
+  const dsFile = path.join(s.voice.dir, 'dataset', 'dataset.json');
+  const ds = JSON.parse(fs.readFileSync(dsFile, 'utf8'));
+  fs.writeFileSync(dsFile, JSON.stringify({ ...ds, sources: [...ds.sources, { id: 'rec-c', name: 'c.m4a' }],
+    clips: [...ds.clips, { id: 'rec-c-001', source: 'rec-c', start: 0, end: 4, durationSeconds: 4, audio: 'clips/rec-c-001.wav', text: 'Clip c.', status: 'auto', lowConfidence: [] }] }));
+  const ok = s.run(['train', 'narrator', '--exclude-source', 'rec-a'], { FAKE_TRAIN_LOG: s.trainLog });
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.deepEqual(JSON.parse(fs.readFileSync(s.trainLog, 'utf8')).request.clips.map((c) => path.basename(c.audio)), ['rec-c-001.wav']);
+  const v = JSON.parse(fs.readFileSync(path.join(s.versionDir('v1'), 'version.json'), 'utf8'));
+  assert.deepEqual([v.trainedOn.sources, v.trainedOn.excludedSources], [['rec-c'], ['rec-a']]);
+  assert.equal(JSON.parse(fs.readFileSync(dsFile, 'utf8')).clips[0].status, 'auto', 'the dataset itself is unchanged');
+});
+
 test('[mocked] versions lists what each version was trained on and which one is active', () => {
   const s = setup();
   assert.match(s.run(['versions', 'narrator']).stdout, /No trained versions yet/);
@@ -311,6 +340,26 @@ test('[mocked] versions lists what each version was trained on and which one is 
   const out = s.run(['versions', 'narrator']).stdout;
   assert.match(out, /uses: trained version v1/);
   assert.match(out, /v1 \(active\) .* 2 clips, 8 s, 3 epochs, final loss 13, chosen /);
+});
+
+test('dataset remove deletes one recording\'s entry, clips, and audio copy, and nothing else', () => {
+  const s = setup();
+  const dir = path.join(s.voice.dir, 'dataset');
+  fs.mkdirSync(path.join(dir, 'sources'), { recursive: true });
+  const dsFile = path.join(dir, 'dataset.json');
+  const ds = JSON.parse(fs.readFileSync(dsFile, 'utf8'));
+  fs.writeFileSync(path.join(dir, 'sources', 'rec-b.flac'), 'x');
+  fs.writeFileSync(dsFile, JSON.stringify({ ...ds, sources: ds.sources.map((x) => ({ ...x, audio: `sources/${x.id}.flac` })) }));
+  const r = s.run(['dataset', 'remove', 'narrator', '--source', 'rec-b']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Removed "b\.m4a" from the dataset: 2 clips/);
+  const after = JSON.parse(fs.readFileSync(dsFile, 'utf8'));
+  assert.deepEqual(after.sources.map((x) => x.id), ['rec-a']);
+  assert.deepEqual(after.clips.map((c) => c.id), ['rec-a-001', 'rec-a-002']);
+  for (const f of ['clips/rec-b-001.wav', 'clips/rec-b-002.wav', 'sources/rec-b.flac']) assert.equal(fs.existsSync(path.join(dir, f)), false, f);
+  assert.ok(fs.existsSync(path.join(dir, 'clips', 'rec-a-001.wav')), 'other recordings untouched');
+  assert.equal(s.run(['dataset', 'remove', 'narrator', '--source', 'rec-b']).status, 1, 'already gone');
+  assert.equal(s.run(['dataset', 'remove', 'narrator']).status, 2);
 });
 
 test('dataset fix --source excludes and restores every clip of one recording', () => {

@@ -199,7 +199,9 @@ if (req.items) {
   emit({ event: 'loaded', seconds: 0.1 });
   for (const it of req.items) {
     if (mode === 'scenefail:' + it.id) { emit({ event: 'scene', id: it.id, ok: false, error: 'RuntimeError: the model returned no audio' }); continue; }
-    const samples = 2400 * it.text.split(/\\s+/).length; // 0.1 s per word
+    // 'runaway': a trained version (its repo is a versions/ folder) that never stops talking (60 s per line).
+    const runaway = mode === 'runaway' && req.repo.includes('versions');
+    const samples = runaway ? 24000 * 60 : 2400 * it.text.split(/\\s+/).length; // 0.1 s per word
     if (mode !== 'missingok') { fs.mkdirSync(path.dirname(it.out), { recursive: true }); fs.writeFileSync(it.out, wav(samples)); }
     emit({ event: 'scene', id: it.id, ok: true, samples, sampleRate: 24000 });
   }

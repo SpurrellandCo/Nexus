@@ -274,6 +274,39 @@ function vocabCommand(args, ctx, { voicesDir }) {
   return EXIT.ok;
 }
 
+/**
+ * Removes one recording from the dataset for good: its entry, its clips, and the dataset's audio copies.
+ * The user's original file is never touched, so `add` brings it back. Use `fix --source … --exclude` to
+ * keep it on record but out of training instead.
+ */
+function removeCommand(args, ctx, { voicesDir }) {
+  const { flags, positional } = core.parseFlags(args);
+  const ref = positional[0];
+  const source = flags.source === undefined ? null : String(flags.source);
+  if (!ref || !source) { console.error(`usage: mlx-audio dataset ${subcommands.remove.usage}`); return EXIT.usage; }
+  const profile = openProfile(ref, voicesDir);
+  if (profile.error) { console.error(profile.error); return EXIT.failed; }
+  let removed = null;
+  ds.updateDataset(profile.dir, profile.id, (dataset) => {
+    const entry = dataset.sources.find((s) => s.id === source);
+    if (!entry) return null;
+    removed = { entry, clips: dataset.clips.filter((c) => c.source === source) };
+    return { ...dataset, sources: dataset.sources.filter((s) => s.id !== source), clips: dataset.clips.filter((c) => c.source !== source) };
+  });
+  if (!removed) { console.error(`no recording "${source}" in the ${profile.id} dataset; see the source ids in dataset.json`); return EXIT.failed; }
+  // Files go only after the manifest stops pointing at them, and only from inside the dataset folder.
+  const root = path.resolve(profile.dir);
+  for (const rel of [removed.entry.audio, ...removed.clips.map((c) => c.audio)]) {
+    const file = path.resolve(root, rel);
+    if (file.startsWith(root + path.sep)) fs.rmSync(file, { force: true });
+  }
+  const seconds = removed.clips.reduce((sum, c) => sum + c.durationSeconds, 0);
+  console.log(`Removed "${removed.entry.name}" from the dataset: ${plural(removed.clips.length, 'clip')} (${ds.formatDuration(seconds)}) and its audio copy. `
+    + 'The original recording was not touched; `dataset add` brings it back.');
+  console.log(progressLine(ds.loadDataset(profile.dir, profile.id)));
+  return EXIT.ok;
+}
+
 const subcommands = {
   add: { usage: 'add <profile> <recording> [<recording> ...]', summary: 'transcribe recordings and add them to the dataset as clips', run: addCommand },
   status: { usage: 'status <profile> [--check] [--json]', summary: 'how much audio is ready to train, and which clips need a listen', run: statusCommand },
@@ -282,6 +315,7 @@ const subcommands = {
     summary: 'correct, confirm, or exclude a clip (or a whole recording)',
     run: fixCommand,
   },
+  remove: { usage: 'remove <profile> --source <recordingId>', summary: 'delete one recording from the dataset (its clips and audio copy; the original file is kept)', run: removeCommand },
   vocab: { usage: 'vocab <profile> ["Name, Other name"]', summary: 'names and terms Whisper should expect (shows them with no terms)', run: vocabCommand },
 };
 
