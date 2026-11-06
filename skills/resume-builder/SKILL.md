@@ -126,6 +126,8 @@ Specify where to enter:
 
 When entering mid-flow, ask the user for outputs from any skipped phases that are needed as inputs.
 
+**Updating a resume that already exists** (new job, tailoring to a posting, or a freshness pass)? Use the `resume-update` skill instead. It reruns only the phases the change needs and saves a new version beside the old one.
+
 ---
 
 ## Tips for Best Results

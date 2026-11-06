@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-01 at 10:43:23.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-05 at 10:02:16.
 
 ## Agents
 
@@ -603,6 +603,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `Resume Builder` | Build a complete, polished resume end-to-end by orchestrating specialized skills for research, branding, copywriting, design, LinkedIn, and QA. Use when creating a new resume from scratch, overhauling an existing one, targeting a specific role or industry, or preparing a full job-search package including LinkedIn and cover letter. |
 
+### resume-update
+
+| Skill | Description |
+|-------|-------------|
+| `resume-update` | Update an existing resume instead of rebuilding it: add a new job, promotion, project, certification or achievement; retarget it to a specific job posting or a new role; or give a stale resume a freshness pass. Reruns only the resume-builder phases the change needs, shows the changes for approval, and saves a new version beside the old one. Use when the user says '/resume-update', 'update my resume', 'add my new job to my resume', 'tailor my resume to this posting', 'refresh my resume', or pastes a job description alongside an existing resume. |
+
 ### reverse-engineer-anything
 
 | Skill | Description |
@@ -944,7 +950,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 176
+- **Skills:** 177
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
