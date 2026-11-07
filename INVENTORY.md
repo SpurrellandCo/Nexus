@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-05 at 10:02:16.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-06 at 12:25:59.
 
 ## Agents
 
@@ -374,6 +374,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `lead-magnets` | When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence. |
+
+### makerworld-contest
+
+| Skill | Description |
+|-------|-------------|
+| `makerworld-contest` | Turn a MakerWorld contest link into finished contest entries. Researches the contest (theme, rules, judging, deadline, prizes) and its current entries, proposes three model concepts with the reasoning for why each could win, and lets the user pick one or more. For each pick it copies the user's project template folder, builds the model in Autodesk Fusion through the Fusion MCP server, exports the STL, makes a Bambu Studio 3MF, renders three product photos and three lifestyle photos in Blender, and offers to hand off to makerworld-publish. Use when the user shares a MakerWorld contest link or asks what to make to win a MakerWorld contest. |
 
 ### makerworld-publish
 
@@ -950,7 +956,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 177
+- **Skills:** 178
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

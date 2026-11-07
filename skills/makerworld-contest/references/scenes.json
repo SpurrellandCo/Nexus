@@ -1,0 +1,58 @@
+{
+  "_about": "Scene presets for scripts/render_photos.py. Every asset is CC0 from Poly Haven (polyhaven.com), downloaded once by scripts/fetch_assets.py. 'hdri' lights the scene and shows (blurred) behind the model; 'surface' is the tabletop texture. Add a scene by picking an indoor HDRI and a texture id from polyhaven.com and giving it a name here.",
+  "studio": {
+    "kind": "product",
+    "hdri": "brown_photostudio_02",
+    "hdri_strength": 0.35,
+    "backdrop": "#e9e7e4",
+    "use_for": "product shots: seamless sweep, soft key light, fill and rim"
+  },
+  "desk": {
+    "kind": "lifestyle",
+    "hdri": "kiara_interior",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 0,
+    "surface": "oak_veneer_01",
+    "use_for": "desk accessories, organizers, office and gaming gear"
+  },
+  "living": {
+    "kind": "lifestyle",
+    "hdri": "wooden_lounge",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 90,
+    "surface": "wood_table_001",
+    "use_for": "home decor, planters, figurines, gifts"
+  },
+  "counter": {
+    "kind": "lifestyle",
+    "hdri": "lebombo",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 200,
+    "surface": "marble_01",
+    "use_for": "kitchen and bathroom items, holders, dispensers"
+  },
+  "cafe": {
+    "kind": "lifestyle",
+    "hdri": "comfy_cafe",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 0,
+    "surface": "wood_table_worn",
+    "use_for": "cups, coasters, table games, seasonal pieces"
+  },
+  "workshop": {
+    "kind": "lifestyle",
+    "hdri": "artist_workshop",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 0,
+    "surface": "plywood",
+    "use_for": "tools, tool holders, functional and mechanical parts"
+  },
+  "loft": {
+    "kind": "lifestyle",
+    "hdri": "photo_studio_loft_hall",
+    "hdri_strength": 1.0,
+    "hdri_rotation": 0,
+    "surface": "concrete_floor_02",
+    "use_for": "modern or minimal pieces, lamps, geometric designs"
+  }
+}

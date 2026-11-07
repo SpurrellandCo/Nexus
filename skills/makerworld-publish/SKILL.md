@@ -69,7 +69,7 @@ What the skill looks for in the model folder (subfolder names other than the con
 
 - If the path doesn't exist (for example a network drive isn't mounted), say so and stop.
 - Find every `.3mf` in the folder tree. If there is more than one, list them with modified date and size and ask which one to publish. Note the chosen file's modified time and size.
-- Find the content folder (matching `content_folder`, any capitalisation). If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further.
+- Find the content folder (matching `content_folder`, any capitalisation). If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further. Images named `<model name> product N.jpg` or `<model name> lifestyle N.jpg` are renders made by the makerworld-contest skill: don't count them as real photos, but offer them as extra images after the real ones.
 
 ## 2. Measure the model
 
