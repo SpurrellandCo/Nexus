@@ -1,0 +1,19 @@
+{
+  "model": {
+    "template_folder": "<project template folder to copy for each new model>",
+    "folders": {
+      "fusion": "Fusion",
+      "stl": "STL",
+      "bambu": "Bambu",
+      "blender": "Blender"
+    },
+    "bambu": {
+      "machine": "<Bambu Studio printer preset, for example Bambu Lab P1S 0.4 nozzle>",
+      "process": "0.20mm Standard @BBL X1C",
+      "filament": "<filament preset, for example Bambu PLA Basic @BBL P1S 0.4 nozzle>",
+      "plate": "Textured PEI Plate"
+    },
+    "ams": null,
+    "blender": "<path to the Blender executable>"
+  }
+}

@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-06 at 12:25:59.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-07 at 10:51:18.
 
 ## Agents
 
@@ -375,17 +375,23 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `lead-magnets` | When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence. |
 
-### makerworld-contest
+### makerworld-idea
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-contest` | Turn a MakerWorld contest link into finished contest entries. Researches the contest (theme, rules, judging, deadline, prizes) and its current entries, proposes three model concepts with the reasoning for why each could win, and lets the user pick one or more. For each pick it copies the user's project template folder, builds the model in Autodesk Fusion through the Fusion MCP server, exports the STL, makes a Bambu Studio 3MF, renders three product photos and three lifestyle photos in Blender, and offers to hand off to makerworld-publish. Use when the user shares a MakerWorld contest link or asks what to make to win a MakerWorld contest. |
+| `makerworld-idea` | Turn a 3D-print idea into an approved, buildable brief for MakerWorld, three ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, or shares a MakerWorld contest link. |
+
+### makerworld-model
+
+| Skill | Description |
+|-------|-------------|
+| `makerworld-model` | Build a 3D-printable model from an approved MakerWorld brief. Picks up a brief from makerworld-idea (handed off, given as a path, or chosen from the ideas backlog), asks only what the brief leaves open, copies the user's project template folder, designs around any Maker's Supply parts using their published dimensions, builds the model parametrically in Autodesk Fusion through the Fusion MCP server, exports and checks the STL, makes a Bambu Studio 3MF, renders three product and three lifestyle photos in Blender, and offers to hand off to makerworld-publish. Use when the user wants to build, model or design an idea for MakerWorld, or says "build it" after makerworld-idea. |
 
 ### makerworld-publish
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-publish` | Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD). Always starts by asking for the folder path and a quick description of what the model is (both required), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld. |
+| `makerworld-publish` | Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD, and the brief if makerworld-model built it). Always starts by asking for the folder path and a quick description of what the model is (both required; a brief.md in the folder supplies the description, parts list and contest), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld. |
 
 ### marketing-ideas
 
@@ -956,7 +962,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 178
+- **Skills:** 179
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

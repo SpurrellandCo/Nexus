@@ -36,7 +36,7 @@ This is MakerWorld's global site (`makerworld.com/en`) as of October 2026. If th
 | Visibility | Public |
 | Description | A CKEditor 5 editor; see "Rich-text editors" below. |
 | Join the Exclusive Model Program | Turning the toggle on opens "Check Terms before Joining". Click **Agree & Join** only with the user's approval. A second dialog, "Change Your License", then asks to switch to the MakerWorld Exclusive License: click **Confirm**. Then pick **Exclusive Model** (permanent, larger bonus) or **14-Day Exclusive Launch Model**, and check that the License section now reads "MakerWorld Exclusive License". |
-| Add Bill of Materials | A toggle for Maker's Supply items. Use it when the model needs hardware. |
+| Add Bill of Materials | A toggle for Maker's Supply items (Kits and Parts, Filaments, Materials). Use it when the model needs hardware, and add the items from `listing.md`, searching by the store code (for example AB012) where there is one. Check each item's quantity on the page. The item picker hadn't been mapped step by step as of November 2026: read it as it appears, don't guess, and add what you learn to this row. |
 
 The buttons along the bottom are **Previous**, **Save to draft** and **Add Print Profile**. Save to draft before moving on.
 

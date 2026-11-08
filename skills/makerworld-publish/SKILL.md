@@ -1,6 +1,6 @@
 ---
 name: makerworld-publish
-description: Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD). Always starts by asking for the folder path and a quick description of what the model is (both required), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld.
+description: Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD, and the brief if makerworld-model built it). Always starts by asking for the folder path and a quick description of what the model is (both required; a brief.md in the folder supplies the description, parts list and contest), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld.
 ---
 
 # MakerWorld publish
@@ -9,9 +9,9 @@ Turns one model's asset folder into a MakerWorld draft that is ready to publish.
 
 ## Settings (private)
 
-The user's settings live in `~/.nexus-local/makerworld.json` on their own machine, never in this skill (the skill is shared publicly). Read the file first:
+The user's settings live in `~/.nexus-local/makerworld.json` on their own machine, never in this skill (the skill is shared publicly). The file is shared with the makerworld-idea and makerworld-model skills: this skill owns the top-level fields below and never changes their `idea` and `model` sections. Read the file first:
 
-- **Missing:** run "First-time setup" below, then carry on with step 1.
+- **Missing, or has no top-level publish fields:** run "First-time setup" below, then carry on with step 1.
 - **Present, but a value still looks like a template placeholder (`<...>`):** ask only about those fields (the matching questions from setup), save, then carry on.
 - **Present and complete:** go straight to step 1.
 
@@ -21,7 +21,7 @@ Fields:
 - `content_folder`: name of the subfolder holding the real photos and videos in each model folder (default `photos`)
 - `upload_folder`: name of the folder this skill creates inside each model folder for everything it generates (default `makerworld upload`). See "Upload info folder" below.
 - `printer`: the user's printer and nozzle, for the print-settings text
-- `exclusive`: `"Exclusive Model"`, `"14-Day Exclusive Launch Model"` or `null` (don't join)
+- `exclusive`: `"Exclusive Model"` (the default), `"14-Day Exclusive Launch Model"` or `null` (don't join)
 - `license_if_not_exclusive`: the license option to pick when not exclusive, worded as on MakerWorld's form
 - `amazon`: `{tag, disclosure}` for Amazon Associates links (the tag to check links against, and the disclosure line), or `null` if the user doesn't use them
 - `affiliate_links`: saved links, each `{label, url, resolves_to, use_for}`; may be empty
@@ -38,12 +38,12 @@ Run this once, when the settings file doesn't exist. Tell the user it's a one-ti
    2. In each model folder, what's the subfolder with your real print photos and videos called? [photos]
    3. What should the folder this skill creates for its generated files be called? [makerworld upload]
    4. Which printer and nozzle do you print with? (for example "Bambu Lab A1, 0.4 mm nozzle")
-   5. Join MakerWorld's Exclusive Model Program by default: **Exclusive Model** (permanent, larger bonus), **14-Day Exclusive Launch Model**, or **no**? (You still approve it for each model.)
+   5. Join MakerWorld's Exclusive Model Program by default: **Exclusive Model** (permanent, larger bonus), **14-Day Exclusive Launch Model**, or **no**? [Exclusive Model] (You still approve it for each model.)
    6. If not exclusive, which license should models use? Offer MakerWorld's options as worded on the form (see the License row in `references/form-guide.md`). [the SDFL-C option]
    7. Do you use Amazon Associates links? If yes, what's your tracking tag, and what disclosure line should end each description? [As an Amazon Associate I earn from qualifying purchases.]
    8. Any affiliate links you want saved now? (optional; you can add them while publishing)
 3. **Check any links** from question 8 the same way as step 4 (where it really goes, and whether the tag matches), and fill in `resolves_to`.
-4. **Save the settings.** Start from `references/settings-template.json`, fill in the answers, and use `null` for a skipped `models_root`, `amazon` or `exclusive`, and `[]` for no links. Create the `~/.nexus-local/` folder if it doesn't exist. Show the user what was saved and tell them they can change any of it later by asking or by editing the file.
+4. **Save the settings.** Start from `references/settings-template.json`, fill in the answers, and use `null` for a skipped `models_root` or `amazon`, and `[]` for no links. `exclusive` is `"Exclusive Model"` unless the user picks the 14-day option or says no (then `null`). Create the `~/.nexus-local/` folder if it doesn't exist. If the file already exists with other sections, merge into it rather than replacing it. Show the user what was saved and tell them they can change any of it later by asking or by editing the file.
 
 ## 1. Ask for the asset folder and a quick description (always first)
 
@@ -52,7 +52,7 @@ Once settings are in place, and before doing anything else, ask both of these in
 1. **"What's the file path where all the assets for this model live?"**
 2. **"In a sentence or two, what is it? What's it for, and what does it fit or hold?"**
 
-Both are required, so don't go on until you have them. If the user's request already describes the model clearly, quote it back and ask them to confirm or add to it rather than asking again. If the description is too thin to write a listing from (for example just "an insert"), ask one follow-up question.
+Both are required, so don't go on until you have them. If the user's request already describes the model clearly, quote it back and ask them to confirm or add to it rather than asking again. If the model folder has a `brief.md` (written by makerworld-idea and kept up to date by makerworld-model), read it, quote its "What it is" back as the description, and ask the user to confirm it. Its parts list, contest section and listing draft feed steps 4 and 5. If the description is too thin to write a listing from (for example just "an insert"), ask one follow-up question.
 
 The user's description is the starting point for the name, intro line, category and tags, and for working out what the measured openings hold in step 2. Never contradict it. If the measurements seem to disagree with it, ask.
 
@@ -69,7 +69,7 @@ What the skill looks for in the model folder (subfolder names other than the con
 
 - If the path doesn't exist (for example a network drive isn't mounted), say so and stop.
 - Find every `.3mf` in the folder tree. If there is more than one, list them with modified date and size and ask which one to publish. Note the chosen file's modified time and size.
-- Find the content folder (matching `content_folder`, any capitalisation). If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further. Images named `<model name> product N.jpg` or `<model name> lifestyle N.jpg` are renders made by the makerworld-contest skill: don't count them as real photos, but offer them as extra images after the real ones.
+- Find the content folder (matching `content_folder`, any capitalisation). If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further. Images named `<model name> product N.jpg` or `<model name> lifestyle N.jpg` are renders made by the makerworld-model skill: don't count them as real photos, but offer them as extra images after the real ones.
 
 ## 2. Measure the model
 
@@ -104,9 +104,11 @@ The centres are fractions of the hero's width and height (0.5,0.5 is the middle)
 - Before using any link, check where it actually goes by following its redirects with a normal GET (Amazon's `link.amazon` short links return 404 to HEAD requests, so don't use `curl -I`). For an Amazon link, `curl -sL -o /dev/null -w '%{url_effective}' "<url>" | grep -oE '/dp/[A-Z0-9]+|[?&]tag=[^&]+'` should print the product ID and `tag=<amazon.tag>`. Confirm the product matches what it's labelled as and, for Amazon, that the tag is the user's. Record each check in `<upload folder>/links.md`: the label, the short link, the product it opens, and whether the tag matched. If a link goes to a different product than the user said, tell them; don't add it under the wrong label.
 - Offer to save new links to the settings file, with `resolves_to` filled in.
 - Put each link beside what it's for (the case under Fit, filament under Print settings) and mark it "(affiliate link)". If any Amazon link is used, end the description with `amazon.disclosure`.
-- **BOM:** if the model needs hardware (magnets, screws, heat-set inserts, bearings, springs), suggest adding a Bill of Materials from MakerWorld's Maker's Supply. It earns commission and makes the parts easy to get. Things Maker's Supply doesn't sell stay as affiliate links. Skip the BOM for print-only models.
+- **BOM (parts list):** if the model needs hardware (magnets, screws, heat-set inserts, bearings, springs, LED or other kits), add a Bill of Materials from MakerWorld's Maker's Supply, plus the filament from the Bambu Store. Parts-list purchases earn the creator cash commission once MakerWorld has switched it on for them, and MakerWorld recommends a parts list on every model with hardware anyway (see the makerworld-idea skill's `references/inspiration-guide.md` for the access rules). If there's a `brief.md`, take the items, codes and quantities from its parts list; otherwise work them out from the model and ask. Record the list in `listing.md`. Things Maker's Supply doesn't sell stay as affiliate links. Skip the BOM for print-only models.
 
 ## 5. Draft the listing and get approval
+
+If there's a `brief.md`, start from its listing draft (working name, pitch, category, description and tags), and check it against the measurements and the finished model. The brief was written before the model existed, so where the two disagree, the model wins: say what changed. For a contest entry, note the contest so it can be entered from the upload form (or from the contest page after publishing, if the form doesn't offer it), and check the listing against the contest's rules in the brief (photos, renders, exclusivity, licence).
 
 Write `<upload folder>/listing.md` containing:
 
@@ -115,7 +117,9 @@ Write `<upload folder>/listing.md` containing:
 - **Tags:** 10 to 20
 - **Description:** a one-line intro built from the user's own description, then what it holds or does, then fit and size, then print settings, then the affiliate links and the disclosure
 - **Print profile:** a name of up to 60 characters (for example "0.2mm layer, 2 walls, 15% infill") and a short profile description
-- **Exclusive and license:** from settings
+- **Exclusive and license:** from settings, which means Exclusive Model by default. Only change it for this model if the user asks, or if a contest's rules in `brief.md` don't allow exclusive entries (say so if that happens).
+- **Parts list (BOM):** each Maker's Supply or Bambu Store item with its code and quantity, or "none"
+- **Contest:** the contest to enter, if any
 - **Printers to untick**
 - **Covers and photo order**
 
@@ -137,7 +141,7 @@ This needs a browser-automation tool attached to the user's own signed-in browse
 
 Report the draft link, what was filled in, anything you changed or couldn't do, and what's left (tick the guidelines box, then Publish).
 
-Before finishing, make sure the upload info folder matches what actually went onto MakerWorld. If anything changed on the page (wording, links, the 3MF, unticked printers), update `listing.md` and the HTML files. Once the user has published, save the model's MakerWorld link in `<upload folder>/published.txt`.
+Before finishing, make sure the upload info folder matches what actually went onto MakerWorld. If anything changed on the page (wording, links, the 3MF, unticked printers), update `listing.md` and the HTML files. Once the user has published, save the model's MakerWorld link in `<upload folder>/published.txt`, and if there's a `brief.md`, set its **Status: published** and add the link.
 
 ## Upload info folder
 
