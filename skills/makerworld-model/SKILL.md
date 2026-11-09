@@ -69,7 +69,10 @@ Design the openings from the part's real size:
 - **Screws:** a clearance hole of nominal plus 0.3 to 0.4 mm (M3 is 3.3 to 3.4 mm), a pilot hole for self-tapping screws, and a counterbore for heads that sit flush.
 - **Kits** (LED, clock, levitation and the like): follow the kit's design guide if the page has one. Leave room for wires and switches, and access to batteries or USB.
 
-For outside parts (the phone, the headphones, the shelf), use the dimensions from the brief.
+For outside products (the phone, the headphones, the shelf), use the dimensions in the brief and their sources. If the brief has none for something the design must fit, look them up as makerworld-idea does (the manufacturer's dimension drawings first, then their tech specs). Then:
+
+- **Build a reference body** of the product in Fusion from those dimensions: the overall shape, corner radius, camera bump, and button and port positions. Keep it as its own component, save it in `<folders.fusion>/parts/`, and never export it as a printed part. Design the model around it and check clearances against it.
+- **Print a fit test before the full print** for anything tight (a phone pocket, a case lip, a camera cutout): a thin slice of just that section, a few minutes and a few grams. Add it as its own STL (`<Model Name> - fit test.stl`), and tell the user to try it on the real product and report back. Published sizes are nominal, and prints shrink and swell a little.
 
 ## 4. Build the model in Fusion
 

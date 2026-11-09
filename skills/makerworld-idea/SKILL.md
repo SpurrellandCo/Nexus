@@ -50,15 +50,17 @@ The aim is a brief clear enough to model from. Interview the user, but don't int
 1. Play the idea back in one sentence.
 2. Ask the questions that matter **for this idea**, in one message, at most six. Skip anything the user has already said. Choose from:
    - What does it do, and who would download it?
-   - What exactly does it fit or hold? Brand and model, and measurements if they have them (or a spec-sheet link). For anything that fits a real object, the fit is the single most important thing to get right.
-   - Hardware: screws, magnets, inserts, bearings, LEDs, electronics? If yes, offer the matching Maker's Supply parts (step 5 of this route).
+   - What exactly does it fit or hold? Brand and model are enough. For anything that fits a real object, the fit is the single most important thing to get right, so the user doesn't have to supply measurements (see "Look up the dimensions" below).
+   - Hardware: screws, magnets, inserts, bearings, LEDs, electronics? If yes, offer the matching Maker's Supply parts (step 6 of this route).
    - Size limits: where it lives (desk, wall, pegboard such as Skadis, gridfinity), the largest size, which printer's plate it must fit.
    - Look: colours, single or multi-colour (check `model.ams`), style references or photos.
    - Anything it must not be: no supports, no glue, print-in-place, no visible screws.
-3. Follow up only on gaps or contradictions. Two rounds is usually enough. Anything still unknown becomes an open question in the brief, not another round.
-4. **Market check (offer it, don't force it):** "Want me to check what's already on MakerWorld for this?" If yes, search as in `references/inspiration-guide.md` ("Searching MakerWorld"). Report the result count, the 3 to 5 closest models with their counts, and what they do badly. Then suggest one or two twists that would set this one apart. The user decides whether to take them.
-5. **Parts:** for each piece of hardware, find the Maker's Supply part on the Bambu Store (search it by name or code) and note its code and size. If Maker's Supply doesn't sell something, leave it as an outside part (it may become an affiliate link in makerworld-publish).
-6. **Fusion check:** makerworld-model builds in Autodesk Fusion, which is parametric CAD. It's excellent for functional, mechanical, geometric and lettered designs and poor at organic sculpting (faces, animals, figurines). If the idea needs sculpting, say so and suggest a geometric take on it.
+3. **Look up the dimensions** of any commercial product it fits (a phone, headphones, a tool, a console) instead of asking the user for them. Search the web for the manufacturer's own dimension drawings first, then their tech-specs page. Apple, for example, publishes the *Accessory Design Guidelines* with exact drawings for every iPhone. Collect what the design needs: the overall size, corner radius, the camera bump's position and size, and the buttons, ports and speakers. Record each number in the brief's "Fit and key dimensions" table with its source link. If only retail reviews or unofficial sites give a number, mark it "unofficial, to measure". If nothing reliable turns up, mark it "to measure" and ask the user.
+   - If the user wants the product itself as the model (a replica of a branded phone, console or similar), say plainly that publishing it risks a takedown for copying someone else's product and branding. Offer an accessory for it instead. A replica is still fine as a fit reference that never gets published.
+4. Follow up only on gaps or contradictions. Two rounds is usually enough. Anything still unknown becomes an open question in the brief, not another round.
+5. **Market check (offer it, don't force it):** "Want me to check what's already on MakerWorld for this?" If yes, search as in `references/inspiration-guide.md` ("Searching MakerWorld"). Report the result count, the 3 to 5 closest models with their counts, and what they do badly. Then suggest one or two twists that would set this one apart. The user decides whether to take them.
+6. **Parts:** for each piece of hardware, find the Maker's Supply part on the Bambu Store (search it by name or code) and note its code and size. If Maker's Supply doesn't sell something, leave it as an outside part (it may become an affiliate link in makerworld-publish).
+7. **Fusion check:** makerworld-model builds in Autodesk Fusion, which is parametric CAD. It's excellent for functional, mechanical, geometric and lettered designs and poor at organic sculpting (faces, animals, figurines). If the idea needs sculpting, say so and suggest a geometric take on it.
 
 Then go to step 2 (write the brief), with one concept: the refined idea.
 
