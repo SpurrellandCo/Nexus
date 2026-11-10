@@ -7,10 +7,10 @@ description: Turn a 3D-print idea into an approved, buildable brief for MakerWor
 
 Idea in, approved brief out. This skill never models anything. It ends at a brief that makerworld-model can build without asking the same questions again.
 
-The three MakerWorld skills form a pipeline, and each one ends by offering the next:
+The four MakerWorld skills form a pipeline, and each one ends by offering the next:
 
 ```
-makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish
+makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  makerworld-reel
 ```
 
 ## 0. Settings and checks

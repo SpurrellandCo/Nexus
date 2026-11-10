@@ -8,7 +8,7 @@ description: Build a 3D-printable model from an approved MakerWorld brief. Picks
 Brief in, finished model folder out: the Fusion design, STL, 3MF and rendered photos in place, laid out like the user's project template. The user prints it and adds real photos. This skill never publishes.
 
 ```
-makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish
+makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  makerworld-reel
 ```
 
 ## 0. Settings and checks
@@ -131,6 +131,8 @@ Look at all six images before showing them. Re-render with adjustments if:
 - it's lying on its side: use `--rotate`, or better, fix the export orientation.
 
 Tell the user these are renders. MakerWorld counts only real photos of a printed model toward the required photos, and some contests restrict renders altogether. The renders go after the real photos in a listing.
+
+**Multi-part models: an assembly animation.** When the model prints as several parts that fit together (tiles, a lid and box, a kit), render a short clip of them sliding together on a lifestyle tabletop with `scripts/assemble_anim.py` (instructions in its header), saved as `<content folder>/<Model Name> assembly animation.mp4`. It goes in the listing's video slot and gives makerworld-reel its "how it fits together" shot. Test at low quality first, and check that nothing hangs off the table.
 
 ## 7. Update the brief, wrap up and offer the hand-off
 

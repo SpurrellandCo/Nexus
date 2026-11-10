@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-07 at 10:51:18.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-09 at 16:13:28.
 
 ## Agents
 
@@ -393,6 +393,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `makerworld-publish` | Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD, and the brief if makerworld-model built it). Always starts by asking for the folder path and a quick description of what the model is (both required; a brief.md in the folder supplies the description, parts list and contest), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld. |
 
+### makerworld-reel
+
+| Skill | Description |
+|-------|-------------|
+| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Use after makerworld-publish, or when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models. |
+
 ### marketing-ideas
 
 | Skill | Description |
@@ -711,6 +717,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `design-taste-frontend` | Senior UI/UX Engineer. Architect digital interfaces overriding default LLM biases. Enforces metric-based rules, strict component architecture, CSS hardware acceleration, and balanced design engineering. |
 
+### tech-tips
+
+| Skill | Description |
+|-------|-------------|
+| `tech-tips` | Make short vertical tech-tip videos (TikTok first, plus Instagram Reels and YouTube Shorts) for the user's tech-tips channel, from idea to posting kit. Finds ranked video ideas from new launches, updates and trending how-to searches; researches one tip from official sources only; writes a hook / numbered steps / CTA script with a recording sheet for the user's own voice-over; drives and screen-records software walkthroughs step by step (web apps in the browser, desktop apps by computer use) with every click logged for auto-zoom; gives a shot list for hardware the user films; then edits with the quickvid tools and writes titles, captions, tags and thumbnails. Use when the user wants a tech tip video, a how-to short, ideas for their tech channel, a walkthrough of an app or setting, or a video about a new device, keyboard, networking gear or software update. |
+
 ### three-js-webgl
 
 | Skill | Description |
@@ -962,7 +974,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 179
+- **Skills:** 181
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

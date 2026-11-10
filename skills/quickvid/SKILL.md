@@ -38,6 +38,7 @@ clips, photos and audio are only ever read.
 |---|---|---|
 | 1. Read the folder | Inventory, durations, speech detection, transcripts, contact sheets | `scripts/inventory.mjs` |
 | 2. Product facts, angle and voice | The real specifications, and what the video is for | the product link, `brand` skill |
+| 2b. Research | What the top videos on this topic open with, their length, the phrases people search | `references/research.md` |
 | 3. Script | The words to be spoken | `copywriting`, `social-content`, `ad-creative`, `copy-editing` |
 | 4. Shot plan | Which clip and which moment per line | One tool-free model call |
 | 5. Narration | The script spoken in the user's voice | `mlx-audio` through the Nexus CLI |
@@ -110,6 +111,15 @@ Then, if the user has a brand kit or the request mentions one, invoke the `brand
 With no brand to speak of, skip that and take the tone from the user's request. With `--fast`, skip the brand skill
 but still read the product link if one was given — the facts are worth more than the tone.
 
+### Phase 2b: Research (on by default)
+
+Read `references/research.md` and follow it: search suggestions, the top short videos for the keyword on each platform
+the video is going to, and the user's own best videos when a profile is known. It writes `.quickvid/research.md`.
+Skip it only when the user says so (`--no-research`) or when `.quickvid/research.md` already exists for this video.
+
+Take the "So, for this video" section into phases 3 and 7: it sets the hook pattern, the target length, the caption's
+lead phrase and the hashtags. It never adds a product fact.
+
 ### Phase 3: Script
 
 Pick the skill that fits what the video is for:
@@ -122,8 +132,9 @@ Give it the brief:
 
 > "Write the spoken narration for a [DURATION] second [PLATFORM] video about [PRODUCT]. Here is what the footage
 > shows: [INVENTORY SUMMARY]. Here are the product's real specifications, which are the only ones you may state:
-> [PRODUCT FACTS]. Brand brief: [PHASE 2]. Write [N] short paragraphs, one per shot, plain spoken English, no stage
-> directions. Open with a hook in the first six words. State no number or material that is not in the facts above."
+> [PRODUCT FACTS]. Brand brief: [PHASE 2]. What's working for this topic right now: [RESEARCH, 'So, for this video'].
+> Write [N] short paragraphs, one per shot, plain spoken English, no stage directions. Open with a hook in the first
+> six words, in our own words. State no number or material that is not in the facts above."
 
 Add this line **only if** phase 1 found clips with talking in them; leave it out entirely otherwise:
 
@@ -212,15 +223,48 @@ such as a YouTube description, never in an Instagram or TikTok caption, and neve
 - `--product <url>` — the page for the product being shown, or that the printed part fits. Strongly worth giving: it
   is what stops the script inventing sizes and model names.
 - `--fast` — skip the brand skill and write the script in one call. The product link is still read.
+- `--no-research` — skip phase 2b.
 - `--platform reel|tiktok|youtube` — sets aspect, length and caption placement.
 - `--voice <profile>` / `--take <id>` — a different cloned voice or delivery.
 - `--no-captions`, `--music <file>`.
+- `--narration <dir>` (render) — use recordings other than mlx-audio's, such as the user's own voice prepared by
+  `prep_voice.py`.
+
+## Motion tools (Pillow; no drawtext or Remotion needed)
+
+Run with `uv run --no-project --with pillow python scripts/<tool>.py`; each one documents itself in its header.
+They share one look through `scripts/motion_style.py`.
+
+- `prep_voice.py` — trims the user's own recordings (`01`, `02`, ... in the footage folder) into
+  `.quickvid/narration/` and writes `.quickvid/timing.json`: each line's start in the reel and its spoken phrases.
+- `overlays.py` — narration overlays (hook title, step badges, headlines, chips, payoff words) from
+  `.quickvid/overlays.json`, timed to phrases, composited over a finished render as the next version.
+- `photo_motion.py` — an animated photo (push in, pull out, pan) for a line with no video.
+- `endcard.py` — the call-to-action end card (headline, typed search bar, pulsing button).
+- `thumbnail.py` — a YouTube thumbnail (1280x720) and a vertical cover (1080x1920) from a photo and the hook.
+
+Screen walkthroughs (macOS), used by the tech-tips skill:
+
+- `record_screen.py` — records one step of a walkthrough (optionally cropped to an app window) with ffmpeg, without
+  the real cursor, and logs every click: real clicks through a listen-only event tap, clicks inside a web page through
+  `references/click-listener.js`, and "about to click here" marks. Run `record` with
+  `uv run --no-project --with pyobjc-framework-Quartz python`, in the background; `stop` ends it.
+- `screen_zoom.py` — turns that step into a 1080x1920 clip that follows the action: cuts the waiting between
+  actions, glides to each click at a readable size, follows what a click changes, draws a clean pointer with a click
+  ripple, and with `--fit` matches the clip to its narration line exactly.
+
+Plan shots may also carry `focusX`, `focusY` (0 to 1) and `zoom` (1 or more) to choose which part of a wide source
+stays in the vertical frame.
+
+`references/short-format.md` is the shared format and build for channel skills that use the user's own voice
+(makerworld-reel, tech-tips): the default hook / steps / CTA format, how the user's own request overrides it, and the
+steps from script to posting kit. A new channel skill should point there and add only what's specific to it.
 
 ## What this skill does not do
 
-- **Motion graphics beyond captions, titles and simple overlays.** Animated typography and graphics need Remotion,
-  which is a separate decision: it has a licence that requires a company licence in some cases, so ask the user before
-  reaching for it.
+- **Remotion-style animation.** Captions, titles, the motion tools above and custom Pillow explainers are fine.
+  Anything needing Remotion is a separate decision: it has a licence that requires a company licence in some cases,
+  so ask the user before reaching for it.
 - **Open-ended creative editing.** If the user wants a model to study the footage and invent a structure, that is the
   `video` skill and the OpenMontage integration, not this one.
 - **Anything to the user's own files except read them.** Sources are never modified, moved or deleted.

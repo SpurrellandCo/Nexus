@@ -281,9 +281,24 @@ async function nextDelivery(finalDir, stem, ext) {
   return fail('Final/ already holds a thousand versions of this video');
 }
 
-/** The filter chain for one shot: fill the shape, 30fps, and HLG converted when the source is HDR. */
-function shotFilters(item) {
-  const chain = [`scale=${width}:${height}:force_original_aspect_ratio=increase`, `crop=${width}:${height}`, `fps=${FPS}`, 'setsar=1'];
+/**
+ * The filter chain for one shot: fill the shape, 30fps, and HLG converted when the source is HDR.
+ * A plan shot may steer the crop: `focusX`/`focusY` (0..1, default 0.5) pick which part of a wide or tall source stays
+ * in frame, and `zoom` (>= 1) crops tighter still, for screen recordings whose detail is too small at full width.
+ */
+function shotFilters(item, shot = {}) {
+  const clamp01 = (v, d) => (Number.isFinite(Number(v)) ? Math.min(1, Math.max(0, Number(v))) : d);
+  const fx = clamp01(shot.focusX, 0.5);
+  const fy = clamp01(shot.focusY, 0.5);
+  const zoom = Number(shot.zoom) >= 1 ? Number(shot.zoom) : 1;
+  const sw = Math.round(width * zoom);
+  const sh = Math.round(height * zoom);
+  const chain = [
+    `scale=${sw}:${sh}:force_original_aspect_ratio=increase`,
+    `crop=${width}:${height}:(iw-${width})*${fx}:(ih-${height})*${fy}`,
+    `fps=${FPS}`,
+    'setsar=1',
+  ];
   if (HDR_TRANSFERS.has(item?.colorTransfer)) {
     // No zscale or libplacebo in this ffmpeg build, so the colours are matrixed and then tagged.
     chain.push('colorspace=iall=bt2020:all=bt709');
@@ -364,7 +379,7 @@ const main = async () => {
       // takes its stream layout from the first segment, so a single segment with no audio at all silences the
       // whole joined picture — and then the mix has no `[0:a]` to find.
       if (!keepsSound) ffmpeg.push('-f', 'lavfi', '-t', String(span), '-i', 'anullsrc=r=48000:cl=stereo');
-      ffmpeg.push('-vf', shotFilters(item), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p');
+      ffmpeg.push('-vf', shotFilters(item, shot),'-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p');
       ffmpeg.push('-map', '0:v:0', '-map', keepsSound ? '0:a:0' : '1:a:0');
       ffmpeg.push('-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-ac', '2', '-shortest');
       ffmpeg.push(out);
