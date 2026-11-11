@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-09 at 16:13:28.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-10 at 14:04:37.
 
 ## Agents
 
@@ -379,7 +379,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-idea` | Turn a 3D-print idea into an approved, buildable brief for MakerWorld, three ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, or shares a MakerWorld contest link. |
+| `makerworld-idea` | Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to makerworld-reel's tutorial mode instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models. |
 
 ### makerworld-model
 
@@ -397,7 +397,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Use after makerworld-publish, or when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models. |
+| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Also has a tutorial mode for how-to and explainer videos (Bambu Studio settings, printer how-tos, a model's customiser) from a tutorial folder made by makerworld-idea: claims from the tutorial's official sources, a motion graphic per setting, a short Bambu Studio screen recording, and an optional filmed proof print. Use after makerworld-publish, when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models, or after makerworld-idea hands off a tutorial. |
 
 ### marketing-ideas
 

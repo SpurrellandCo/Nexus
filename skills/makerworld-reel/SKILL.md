@@ -1,6 +1,6 @@
 ---
 name: makerworld-reel
-description: Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Use after makerworld-publish, or when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models.
+description: Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Also has a tutorial mode for how-to and explainer videos (Bambu Studio settings, printer how-tos, a model's customiser) from a tutorial folder made by makerworld-idea: claims from the tutorial's official sources, a motion graphic per setting, a short Bambu Studio screen recording, and an optional filmed proof print. Use after makerworld-publish, when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models, or after makerworld-idea hands off a tutorial.
 ---
 
 # MakerWorld reel
@@ -10,6 +10,9 @@ Model folder in, finished reel and posting kit out. Fourth step of the MakerWorl
 ```
 makerworld-idea → makerworld-model → makerworld-publish → makerworld-reel
 ```
+
+Tutorials come straight from makerworld-idea (route D) and use **tutorial mode** (section 4) instead of sections 1
+to 3.
 
 The build is shared with every short-video channel: read
 `$NEXUS_HOME/skills/quickvid/references/short-format.md` and follow its steps 1 to 8. This file only adds what is
@@ -25,6 +28,7 @@ The shared settings file `~/.nexus-local/makerworld.json` (never in this skill) 
 - `reel.platforms`: [`["instagram", "tiktok", "youtube"]`]
 - `reel.profiles`: links to the user's own channel on each platform, for research (e.g. `{"tiktok": "https://www.tiktok.com/@..."}`)
 - `reel.format`: standing changes to the default format, only if the user asks for one every time
+- `reel.handle`: the channel handle shown on a tutorial's follow card (e.g. `@handle`; tutorial mode only)
 
 Ask only for what's missing, in one message, and save it. Checks: `node`, `ffmpeg`, `ffprobe`, `uv`, and Blender at
 `model.blender` (only needed for an assembly animation).
@@ -66,6 +70,50 @@ user says so. Claims still come only from the listing.
     `makerworld.json`, checked as makerworld-publish checks them, with the disclosure.
   - Claims match the listing exactly; don't contradict the model's own page.
 - **Before posting** (hand-off): the MakerWorld link in each bio, and a pinned comment with the search phrase.
+
+## 4. Tutorial mode
+
+For a tutorial folder from makerworld-idea (`<models_root>/<idea.tutorials_folder>/<Tutorial Name>/`). Follow the
+shared guide's steps 1 to 8 as above, with these differences.
+
+**Material and claims.** Read `brief.md` (the approved plan) and `sources.md`. Claims come **only** from
+`sources.md`, plus the linked model's listing for anything about that model. If the script needs a fact that isn't
+there, add it from an official source first (the Bambu Lab Wiki, Bambu Studio's tooltips or source code, as in
+`$NEXUS_HOME/skills/makerworld-idea/references/tutorial-guide.md`), or drop the line. `<Content>` is the tutorial's
+footage folder. Run the research step for the way people search the topic ("bambu studio support settings").
+
+**Visuals, by line:**
+
+- **A setting or idea:** a custom motion graphic (shared guide, step 4), one per setting. Draw a simple side-on
+  cross-section (the model, the support, the plate), label the setting with its exact Bambu Studio name, and animate
+  the value changing while the drawing changes with it: the gap opening, interface layers stacking, the pattern
+  rotating. Draw the effect the source describes, nothing more. Reuse one colour set and layout across a series so
+  the parts match. Once a series reaches its second video, move the shared drawing into a script in the tutorial
+  series' first folder and import it, rather than copying it a third time.
+- **Where the setting lives:** one short Bambu Studio screen recording (tab, section, Advanced mode switch, the
+  field), captured as `$NEXUS_HOME/skills/tech-tips/references/capture.md` describes for a desktop app, then
+  auto-zoomed with `screen_zoom.py`. Record on the Prepare tab with one of the user's own models loaded. Keep the
+  Device tab (printer camera and details) and any account menu off screen. Note the Bambu Studio version in
+  `sources.md`.
+- **A hands-on step:** a shot list for the user to film, as in tech-tips' hardware capture.
+- **A proof print** (if the brief has one): the user prints the test at both values and films the result (peeling
+  the support, the surface close up). Use it as the hook shot when it's strong.
+
+**Hook:** the problem or question from the brief, over the proof shot or the first motion graphic.
+
+**End card:** if the brief links a model, the usual "FIND IT ON / MAKERWORLD" card with its name. Otherwise
+`--top "FOLLOW FOR" --title "MORE BAMBU TIPS" --search "<reel.handle>" --button "FOLLOW"`, and for a series part
+before the last, `--title "PART <N+1> NEXT"`. Plain text only: never Bambu Lab's logo, and nothing that suggests the
+video is official.
+
+**Render name:** `<slug>-tutorial`.
+
+**Posting copy:** lead with the search phrase and the setting names exactly as Bambu Studio words them. The YouTube
+description links the wiki pages from `sources.md`, then the linked model and any matching affiliate links (as
+above). For a series, number the titles ("Support settings explained 1/3").
+
+**Before posting** (hand-off): a pinned comment with the wiki link or the next part, and update the brief's
+**Status** to `made`.
 
 ## Tool-specific notes
 

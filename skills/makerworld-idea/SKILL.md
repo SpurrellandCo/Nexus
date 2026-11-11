@@ -1,6 +1,6 @@
 ---
 name: makerworld-idea
-description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, three ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, or shares a MakerWorld contest link.
+description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to makerworld-reel's tutorial mode instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models.
 ---
 
 # MakerWorld idea
@@ -13,6 +13,8 @@ The four MakerWorld skills form a pipeline, and each one ends by offering the ne
 makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  makerworld-reel
 ```
 
+Tutorials (route D) skip the middle: `makerworld-idea ──tutorial brief──▶ makerworld-reel (tutorial mode)`.
+
 ## 0. Settings and checks
 
 All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.json`, kept on the user's machine and never in this skill (the skill is shared publicly). This skill uses:
@@ -21,12 +23,14 @@ All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.
 - `idea.ideas_folder`: the backlog folder inside `models_root` [`_Ideas`].
 - `idea.commission_access`: whether MakerWorld's parts-list commission is switched on for the user (`true`, `false`, or `null` if not known).
 - `model.ams`: whether the user can print multi-colour.
+- `idea.tutorials_folder`: the folder inside `models_root` that holds one folder per tutorial video [`_Tutorials`] (route D only).
+- `printer`: the user's printer and nozzle, so tutorial research reads the right wiki section (route D only).
 
 If the file or any of these is missing, ask only for what's missing, in one message, and save it. Start from `references/settings-template.json` for the `idea` section, and leave the other sections to their own skills. For `commission_access`, explain the access rules in one line (see `references/inspiration-guide.md`) and ask whether it's on. If they don't know, save `null`.
 
 Checks:
 
-- **Browser:** reading MakerWorld needs a browser-automation tool attached to the user's signed-in browser. MakerWorld blocks most plain fetches, and the Creator Center pages need a sign-in. Without one, the own-idea route still works (skip the market check), and for the others ask the user to paste the page text.
+- **Browser:** reading MakerWorld needs a browser-automation tool attached to the user's signed-in browser. MakerWorld blocks most plain fetches, and the Creator Center pages need a sign-in. Without one, the own-idea route still works (skip the market check), and for the others ask the user to paste the page text. The Bambu Lab Wiki (route D) blocks plain fetches too, so read it the same way.
 - **Backlog folder:** `<models_root>/<idea.ideas_folder>`. If `models_root` is on a network drive that isn't mounted, carry on and save briefs in the session's scratch space, then tell the user where they are and that they should be moved once the drive is back.
 
 ## 1. Pick the way in
@@ -38,6 +42,7 @@ Read the user's request:
 | describes something they want to make | **A. Own idea** |
 | asks for ideas, inspiration, what's trending, or what to make, with no specific idea | **B. Inspiration** |
 | shares a contest link, or asks about contests | **C. Contest** |
+| wants a tutorial, explainer or how-to video, asks what a setting does, or shares a screenshot of Bambu Studio settings | **D. Tutorial** |
 
 Mixed requests are fine. "I want to make X, is there demand?" is route A plus the market check. "Ideas for the accessibility contest" is route C. If it's unclear, ask which they mean in one line.
 
@@ -102,6 +107,18 @@ Read `references/inspiration-guide.md` first. It describes each page and how to 
 4. **Propose exactly three concepts,** each different in kind (for example one functional, one decorative, one clever mechanism), in the same format as route B. Instead of "why now", give **why it could win**: theme fit, the gap against the entries, and why its cover would stand out. Respect the contest rules and `model.ams`.
 5. Ask which to approve and wait for the answer, as in route B.
 
+## D. Tutorial
+
+A short how-to or explainer video for the user's MakerWorld channel, not a model. Read `references/tutorial-guide.md` first: it lists the kinds of tutorial, the only sources allowed, how to find demand, and how to split a big topic.
+
+1. **Topic.** If the user named one (a setting, a task, a problem, or a screenshot of a settings panel), play it back in one line and go to step 2. If they asked for tutorial ideas, gather demand as the guide describes, then propose 3 to 5 scored ideas, each with its kind, a working hook, and what filming or printing it needs. Ask which to take forward and wait.
+2. **Research from official sources only:** the Bambu Lab Wiki (the section for `printer`), Bambu Studio's tooltips, and its source code for exact wording and units. Write every fact, word for word where it's a definition, into a `sources.md` with its link or the app version. Anything no official source explains is left out or becomes a proof print.
+3. **Shape it.** One idea per video. If the topic has more than about four settings or steps, split it into a series grouped by what the viewer is trying to fix, and show the grouping before planning each part.
+4. **Plan each video** as the guide's "Planning each video" describes: hook, one line per setting or step with its source, the visual per line, the "find it in Bambu Studio" shot, what the user films or prints (offer a proof print when a setting's effect is physical), any linked model or Maker's Supply part, and the rough length.
+5. **Show the plan** (or the series of plans) with scores out of 5 for demand, visual payoff, fits the length, ties and effort. Ask which to approve, and wait.
+
+Then go to step 2 (write the brief), using the tutorial template.
+
 ## 2. Write the brief
 
 For each approved concept, fill in `references/brief-template.md` and save it as `<models_root>/<idea.ideas_folder>/<Idea Name>.md`, with **Status: approved**. Name it the way the user's model folders are named (plain words, title case, no dates), because makerworld-model uses that name for the model folder. Never overwrite an existing brief: if the name is taken, ask.
@@ -113,12 +130,16 @@ For each approved concept, fill in `references/brief-template.md` and save it as
 
 Ideas the user liked but didn't approve can be saved with **Status: idea** if they want them kept for later.
 
+**Tutorials (route D)** get a folder each instead of a single file: `<models_root>/<idea.tutorials_folder>/<Tutorial Name>/` holding `brief.md` (from `references/tutorial-brief-template.md`), `sources.md`, and an empty footage folder named like the model folders' (`content_folder` in the settings). A series gets one folder per part, named so the parts sort in order ("Support Settings 1 - Z Distance and Interface"). Never overwrite an existing tutorial folder.
+
 ## 3. Hand off
 
 Show a short summary for each brief: name, one-line pitch, parts list, open questions, deadline if any, and where the brief is saved. Then ask: **"Build <name> now with makerworld-model?"**
 
 - **Yes:** follow the makerworld-model skill with that brief. For several approved briefs, ask which to build first.
 - **No:** stop. The brief waits in the backlog, and makerworld-model can pick it up later.
+
+For a tutorial, show the plan summary, what the user needs to film or print, and the folder, then ask: **"Make <name> now with makerworld-reel?"** and follow its tutorial mode. If the tutorial needs a model that doesn't exist yet (a test piece for a proof print, say), offer makerworld-model first.
 
 ## Tool-specific notes
 
