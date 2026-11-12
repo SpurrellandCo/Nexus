@@ -1,6 +1,6 @@
 # <Idea Name>
 
-- **Status:** idea | approved | building | built | published
+- **Status:** idea | approved | building | built | published | shelved
 - **Source:** own idea | inspiration (<search terms>, data as of <date>) | contest (<link>)
 - **Created:** <YYYY-MM-DD>
 - **Model folder:** <path, once makerworld-model has created it>

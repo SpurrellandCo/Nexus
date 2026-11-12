@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-10 at 14:04:37.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-11 at 13:51:25.
 
 ## Agents
 
@@ -375,6 +375,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `lead-magnets` | When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence. |
 
+### makerworld-backlog
+
+| Skill | Description |
+|-------|-------------|
+| `makerworld-backlog` | List every piece of MakerWorld work that's started but not finished, across the whole pipeline - promo reels and tutorial videos made but not posted, listings drafted but not published, models built but not listed, models still being built, tutorials in progress, recent listings with no reel yet, saved and approved ideas, and recently changed model folders with no pipeline records. Reads the records the other MakerWorld skills leave in each model folder, so there's no separate list to keep in sync. When the user says something is done (posted, published, dropped), records it so it leaves the list. Use when the user asks what's in their MakerWorld backlog, what they haven't finished, published or posted yet, what to work on next, or says "/makerworld-backlog". |
+
 ### makerworld-idea
 
 | Skill | Description |
@@ -397,7 +403,7 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Writes a hook / steps / CTA script from the model's own listing, the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Also has a tutorial mode for how-to and explainer videos (Bambu Studio settings, printer how-tos, a model's customiser) from a tutorial folder made by makerworld-idea: claims from the tutorial's official sources, a motion graphic per setting, a short Bambu Studio screen recording, and an optional filmed proof print. Use after makerworld-publish, when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models, or after makerworld-idea hands off a tutorial. |
+| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Checks which formats and sounds are trending on TikTok, Instagram and YouTube Shorts that week and builds the script on one that fits the model (or on a proven 3D-printing format when none does), writing it from the model's own listing; the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Also has a tutorial mode for how-to and explainer videos (Bambu Studio settings, printer how-tos, a model's customiser) from a tutorial folder made by makerworld-idea: claims from the tutorial's official sources, a motion graphic per setting, a short Bambu Studio screen recording, and an optional filmed proof print. Use after makerworld-publish, when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models, or after makerworld-idea hands off a tutorial. |
 
 ### marketing-ideas
 
@@ -974,7 +980,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 181
+- **Skills:** 182
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

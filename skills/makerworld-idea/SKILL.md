@@ -15,6 +15,9 @@ makerworld-idea  ──brief──▶  makerworld-model  ──model folder─�
 
 Tutorials (route D) skip the middle: `makerworld-idea ──tutorial brief──▶ makerworld-reel (tutorial mode)`.
 
+makerworld-backlog lists anything left unfinished at any step: ideas not built, models not published, videos not
+posted.
+
 ## 0. Settings and checks
 
 All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.json`, kept on the user's machine and never in this skill (the skill is shared publicly). This skill uses:

@@ -108,6 +108,8 @@ uv run --no-project python scripts/make_3mf.py "<model>/<folders.bambu>/<Model N
 
 It merges Bambu Studio's system presets, lets Bambu Studio orient and arrange the parts, and saves an unsliced project 3MF. Add `--no-orient` if the model must print exactly as designed (for example print-in-place). If it reports that a process preset isn't made for the printer, pick one it lists. Tell the user to open the 3MF in Bambu Studio, check it, slice it and save it. That saved 3MF is what makerworld-publish uploads.
 
+- **Assembled, multi-colour:** add `--assembled` (with `--no-orient`) to get ONE object with one part per STL, each kept at its exported position, on filament 1, 2, and so on. Repeat `--filament` for a preset per slot and add `--colour "#hex1,#hex2"` to colour the slots.
+
 ## 6. Render the photos
 
 Fetch the scene assets once (free CC0 HDRIs and surface textures from Poly Haven, cached on this machine), then render:
@@ -122,7 +124,7 @@ uv run --no-project python scripts/fetch_assets.py
 
 - **Scenes:** pick lifestyle scenes from `references/scenes.json` that suit where the model would live (its `use_for` notes). Give one scene for all three shots, or one per shot.
 - **Colour and finish:** use the colours from the brief, one per STL in order. Finish is `matte`, `basic`, `silk` or `petg`.
-- **Multi-part models** are lined up side by side. For an assembled look, export an assembled STL from Fusion just for the renders.
+- **Multi-part models** are lined up side by side. Add `--assembled` to keep the STLs where they were exported, relative to each other (parts of one model that fit together, one colour per STL).
 - **Speed:** six images take a few minutes on a GPU. For a quick look first, add `--samples 48 --size 1200x900`, then run the full version.
 
 Look at all six images before showing them. Re-render with adjustments if:

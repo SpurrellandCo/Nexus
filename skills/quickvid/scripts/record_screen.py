@@ -21,7 +21,8 @@ top left of the main display. --region crops the recording to an app window, whi
 zoom inside the app.
 
 Events come from three places, all stored in the sidecar in recording pixels and seconds into the clip:
-  os       - real mouse clicks (the user's own, or computer use), caught by the event tap while recording.
+  os       - real mouse clicks (the user's own, or computer use), caught by the event tap while recording, plus a
+             "release" event where a left-button drag ends (a slider or handle dragged more than a few points).
   browser  - clicks and typing inside a web page, from the listener in references/click-listener.js. Clicks that a
              browser extension dispatches inside the page never reach the OS, so this is the only way to see them.
              Pass the listener's JSON with add-clicks (entries: {t: epoch ms, x, y: screen points, kind}).
@@ -45,6 +46,7 @@ from pathlib import Path
 
 DEDUPE_SECONDS = 0.25  # an OS click and a browser click this close together are the same click
 DEDUPE_PIXELS = 40
+DRAG_POINTS = 6        # a left button released this far (screen points) from where it went down ended a drag
 START_TIMEOUT = 15
 STOP_TIMEOUT = 20
 
@@ -100,17 +102,22 @@ def ffmpeg_command(screen, fps, crop, video):
            "-i", f"Capture screen {screen}:none"]
     if crop:
         cmd += ["-vf", crop]
-    return cmd + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p",
+    # zerolatency: without it x264 holds about 1.5 s of frames before writing any, so the start time worked out from
+    # the first progress report lands late and every logged click comes out early against the video (measured
+    # 2026-11-11: clicks 1.5-1.7 s ahead of what they did on screen, so the zoom kept the moment before each result).
+    return cmd + ["-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-crf", "16", "-pix_fmt", "yuv420p",
                   "-movflags", "+faststart", "-progress", "pipe:1", "-stats_period", "0.1", str(video)]
 
 
 class ClickTap:
-    """A listen-only tap on mouse-down events. It never changes or blocks an event."""
+    """A listen-only tap on mouse-down events, plus the release that ends a drag (a slider, a handle), so the zoom can
+    follow the drag and keep its result. It never changes or blocks an event."""
 
     def __init__(self):
         import Quartz
-        self.Q, self.clicks = Quartz, []
-        mask = Quartz.CGEventMaskBit(Quartz.kCGEventLeftMouseDown) | Quartz.CGEventMaskBit(Quartz.kCGEventRightMouseDown)
+        self.Q, self.clicks, self.down = Quartz, [], None
+        mask = (Quartz.CGEventMaskBit(Quartz.kCGEventLeftMouseDown) | Quartz.CGEventMaskBit(Quartz.kCGEventRightMouseDown)
+                | Quartz.CGEventMaskBit(Quartz.kCGEventLeftMouseUp))
         self.tap = Quartz.CGEventTapCreate(Quartz.kCGSessionEventTap, Quartz.kCGHeadInsertEventTap,
                                            Quartz.kCGEventTapOptionListenOnly, mask, self.on_event, None)
         if self.tap is None:
@@ -126,6 +133,12 @@ class ClickTap:
             Q.CGEventTapEnable(self.tap, True)
             return event
         loc = Q.CGEventGetLocation(event)
+        if etype == Q.kCGEventLeftMouseUp:
+            if self.down and abs(loc.x - self.down[0]) + abs(loc.y - self.down[1]) > DRAG_POINTS:
+                self.clicks.append({"t": time.time(), "x": loc.x, "y": loc.y, "kind": "release"})
+            self.down = None
+            return event
+        self.down = (loc.x, loc.y) if etype == Q.kCGEventLeftMouseDown else None
         self.clicks.append({"t": time.time(), "x": loc.x, "y": loc.y, "kind": "click"})
         return event
 
@@ -240,7 +253,11 @@ def stop(folder, clip):
     stop_file.write_text("stop")
     deadline = time.time() + STOP_TIMEOUT
     while time.time() < deadline:
-        meta = json.loads(side.read_text())
+        try:
+            meta = json.loads(side.read_text())
+        except json.JSONDecodeError:  # caught the recorder mid-rewrite of the sidecar; read again
+            time.sleep(0.1)
+            continue
         if not meta.get("recording"):
             print(f"stopped: {video.name}, {meta['durationSeconds']}s, {len(meta['events'])} events")
             return

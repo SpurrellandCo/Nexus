@@ -13,8 +13,10 @@ Reads <folder>/.quickvid/capture/<clip>.mp4 and its sidecar from record_screen.p
            readable size (--magnify: output pixels per screen point) and holds still while the next action is already
            comfortably in frame, so the picture moves only when it has to. When a click changes the screen somewhere
            out of frame (a new page, a panel opening on the other side), it moves to show that change.
-  cursor   Draws a clean pointer gliding between clicks, and an accent ripple on each click. The recording has no
-           cursor of its own (record_screen.py leaves it out), so this is the only pointer in the video.
+  cursor   Draws a clean pointer gliding between clicks, and an accent ripple on each click. A "release" event (the end
+           of a drag, logged by record_screen.py) moves the pointer from the press to the release with the button held,
+           with no ripple. The recording has no cursor of its own (record_screen.py leaves it out), so this is the only
+           pointer in the video.
   fit      --fit <seconds> makes the clip exactly that long, to match its narration line: faster when it runs long,
            holding the final frame when it runs short. Pass the line's length plus the 0.4 s gap that follows it. The
            length is always exact, because render.mjs would otherwise cut the end, which is where the result is; past
@@ -303,6 +305,12 @@ def cursor_at(clicks, t):
     prev = (clicks[0]["x"] + 160, clicks[0]["y"] + 110)
     prev_t = -1.0
     for c in clicks:
+        if c["kind"] == "release":  # the end of a drag: the pointer travels here with the button still held
+            if t < c["te"]:
+                k = ms.ease((t - prev_t) / max(1e-6, c["te"] - prev_t))
+                return prev[0] + (c["x"] - prev[0]) * k, prev[1] + (c["y"] - prev[1]) * k, True
+            prev, prev_t = (c["x"], c["y"]), c["te"]
+            continue
         arrive = c["te"] - 0.08
         if t < arrive:
             start = max(prev_t, arrive - GLIDE)
@@ -358,7 +366,8 @@ def draw_pointer_layer(frame, cam, clicks, t, accent):
     k = OUT_W / cam[2]
     ox, oy = cam[0] - cam[2] / 2, cam[1] - cam[2] * ASPECT / 2
     for c in clicks:
-        draw_ripple(d, (c["x"] - ox) * k, (c["y"] - oy) * k, t - c["te"], accent)
+        if c["kind"] == "click":
+            draw_ripple(d, (c["x"] - ox) * k, (c["y"] - oy) * k, t - c["te"], accent)
     pos = cursor_at(clicks, t)
     if pos:
         draw_pointer(d, (pos[0] - ox) * k, (pos[1] - oy) * k, pos[2])
@@ -430,7 +439,7 @@ def main():
         cam.manual(meta["camera"], tmap)
     else:
         cam.auto(events, tmap, reactions(events, changed, boxes, fps, hi))
-    clicks = [{**e, "te": tmap.to_out(e["t"])} for e in events if e["kind"] == "click"]
+    clicks = [{**e, "te": tmap.to_out(e["t"])} for e in events if e["kind"] in ("click", "release")]
 
     out.parent.mkdir(parents=True, exist_ok=True)
     count = render(source, meta, cam, tmap, clicks, ms.hex_rgb(a.accent), out, not a.no_cursor)

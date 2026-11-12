@@ -6,10 +6,14 @@
       [--color "#d94f2b"[,"#222222"]] [--finish matte|basic|silk|petg] \
       [--layer 0.2] [--rotate 0,0,0] [--samples 256] [--size 2400x1800] \
       [--exposure 0] [--assets DIR] [--blend-dir "<Blender folder>"] [--shots shots.json]
+      [--assembled]
 
 Writes "<name> product 1-3.jpg" and "<name> lifestyle 1-3.jpg" to --out.
 STLs are taken as millimetres, Z up, in print orientation (that drives the
 layer lines). Assets come from scripts/fetch_assets.py (run it first).
+By default the parts are lined up side by side along X; --assembled keeps them where
+the STLs were exported, relative to each other (parts of one model that fit together),
+with one colour per STL as usual.
 """
 
 from __future__ import annotations
@@ -56,6 +60,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--assets", type=Path, default=DEFAULT_ASSETS)
     ap.add_argument("--blend-dir", type=Path, default=None)
     ap.add_argument("--shots", type=Path, default=None, help="JSON {product:[[az,el,lens,margin,f]..], lifestyle:[..]}")
+    ap.add_argument("--assembled", action="store_true",
+                    help="keep the STLs' positions relative to each other instead of lining the parts up along X")
     return ap.parse_args(argv)
 
 
@@ -185,24 +191,37 @@ def import_part(path: Path, rotate: tuple[float, float, float]):
     return obj
 
 
-def place_parts(objs) -> tuple[Vector, float]:
-    """Line parts up along X, sit them on Z=0, centre the group. Returns (centre, radius)."""
-    def bounds(o):
-        pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
-        return Vector([min(p[i] for p in pts) for i in range(3)]), Vector([max(p[i] for p in pts) for i in range(3)])
+def world_bounds(o) -> tuple[Vector, Vector]:
+    pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
+    return Vector([min(p[i] for p in pts) for i in range(3)]), Vector([max(p[i] for p in pts) for i in range(3)])
 
-    sizes = [bounds(o)[1] - bounds(o)[0] for o in objs]
-    gap = 0.15 * max(max(s) for s in sizes)
-    x = 0.0
-    for o, size in zip(objs, sizes):
-        lo, _ = bounds(o)
-        o.location += Vector((x - lo.x, -lo.y - size.y / 2, -lo.z))
+
+def place_parts(objs, assembled: bool = False) -> tuple[Vector, float]:
+    """Sit the parts on Z=0 and centre the group. Returns (centre, radius).
+
+    Default: line the parts up along X. assembled: keep them where the STLs put them, relative to each other,
+    and move the group as a whole."""
+    bounds = world_bounds
+    if assembled:
+        lo = Vector([min(bounds(o)[0][i] for o in objs) for i in range(3)])
+        hi = Vector([max(bounds(o)[1][i] for o in objs) for i in range(3)])
+        shift = Vector((-(lo.x + hi.x) / 2, -(lo.y + hi.y) / 2, -lo.z))
+        for o in objs:
+            o.location += shift
         bpy.context.view_layer.update()
-        x += size.x + gap
-    shift = Vector((-(x - gap) / 2, 0, 0))
-    for o in objs:
-        o.location += shift
-    bpy.context.view_layer.update()
+    else:
+        sizes = [bounds(o)[1] - bounds(o)[0] for o in objs]
+        gap = 0.15 * max(max(s) for s in sizes)
+        x = 0.0
+        for o, size in zip(objs, sizes):
+            lo, _ = bounds(o)
+            o.location += Vector((x - lo.x, -lo.y - size.y / 2, -lo.z))
+            bpy.context.view_layer.update()
+            x += size.x + gap
+        shift = Vector((-(x - gap) / 2, 0, 0))
+        for o in objs:
+            o.location += shift
+        bpy.context.view_layer.update()
 
     lo = Vector([min(bounds(o)[0][i] for o in objs) for i in range(3)])
     hi = Vector([max(bounds(o)[1][i] for o in objs) for i in range(3)])
@@ -382,7 +401,7 @@ def main() -> int:
         obj = import_part(stl, rotate)
         obj.data.materials.append(print_material(colors[min(i, len(colors) - 1)], args.finish, args.layer))
         objs.append(obj)
-    centre, radius = place_parts(objs)
+    centre, radius = place_parts(objs, args.assembled)
 
     cam = bpy.data.objects.new("camera", bpy.data.cameras.new("camera"))
     scene.collection.objects.link(cam)

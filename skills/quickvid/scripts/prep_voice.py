@@ -50,12 +50,22 @@ def video_name(folder):
     return folder.parent.name if folder.name.lower() == "content" else folder.name
 
 
+LINE_NAME = re.compile(r"(\d{1,2})(?:[ _-].*)?")
+
+
+def line_number(path):
+    """The script line a recording is for: "01", or "01" followed by a space, dash or underscore and anything
+    ("01 2" from Voice Memos' second take, "01 - take 3"). None for any other name."""
+    m = LINE_NAME.fullmatch(path.stem)
+    return int(m.group(1)) if m else None
+
+
 def named_links(sources, folder, tmp):
     """Links named after the video and line, pointing at the user's original recordings."""
     video = video_name(folder)
     links = []
     for src in sources:
-        link = Path(tmp) / f"{video} - line {int(src.stem):02d}{src.suffix.lower()}"
+        link = Path(tmp) / f"{video} - line {line_number(src):02d}{src.suffix.lower()}"
         link.symlink_to(src.resolve())
         links.append(link)
     return links
@@ -132,16 +142,24 @@ def main():
     gap = arg("--gap", 0.4)
     hold = arg("--hold-last", 0.0)
     min_pause = arg("--min-pause", 0.2)
-    sources = sorted(p for p in folder.iterdir()
-                     if p.suffix.lower() in AUDIO and re.fullmatch(r"\d{1,2}", p.stem))
+    sources = sorted((p for p in folder.iterdir()
+                      if p.suffix.lower() in AUDIO and not p.name.startswith(".") and line_number(p) is not None),
+                     key=lambda p: (line_number(p), p.name))
     if not sources:
         sys.exit(f"prep_voice: no recordings named 01, 02, ... in {folder}")
+    seen = {}
+    for p in sources:
+        seen.setdefault(line_number(p), []).append(p.name)
+    clashes = {n: names for n, names in seen.items() if len(names) > 1}
+    if clashes:
+        sys.exit("prep_voice: more than one recording for a line; keep one each: "
+                 + "; ".join(f"line {n:02d}: {', '.join(names)}" for n, names in sorted(clashes.items())))
     out_dir = folder / ".quickvid" / "narration"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     lines, reel = [], 0.0
     for i, src in enumerate(sources):
-        n = int(src.stem)
+        n = line_number(src)
         out = out_dir / f"{n:02d}.wav"
         trim = ("silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.15,areverse,"
                 "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.25,areverse,aresample=48000")

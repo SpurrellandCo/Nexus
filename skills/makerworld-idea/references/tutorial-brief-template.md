@@ -1,6 +1,6 @@
 # <Tutorial Name>
 
-- **Status:** idea | approved | scripted | made | posted
+- **Status:** idea | approved | scripted | made | posted | shelved
 - **Kind:** settings explainer | how-to | troubleshooting | model how-to
 - **Series:** <series name, part N of M> | none
 - **Printer and app:** <printer from the settings>; Bambu Studio <version>

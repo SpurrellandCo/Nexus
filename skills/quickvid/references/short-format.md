@@ -36,8 +36,11 @@ before any voice is recorded or generated; nothing in `Final/` is overwritten; t
 ## 1. Script and visual plan (stop for approval)
 
 Write `<Content>/.quickvid/script.md`, one paragraph per line, from the channel's sources and the research's
-"So, for this video" section. Beside each line decide what it shows, choosing whatever fits the line best, not
-whatever is easiest:
+"So, for this video" section. When that section names a **format** (a trend from research step 3b, or a niche
+format the channel skill lists), build the script and shots on its structure, in your own words, and say so in the
+one-line difference from the default. Which format wins: the user's request for this video, then the channel's saved
+`format`, then the research's pick, then the default. Beside each line decide what it shows, choosing whatever fits
+the line best, not whatever is easiest:
 
 | The line... | Visual |
 |---|---|
@@ -48,7 +51,9 @@ whatever is easiest:
 | is the call to action | the **end card**: `endcard.py` |
 
 Show the user a table: line number, the words, what's on screen, and the source behind any claim. Offer two or three
-alternative hooks. Wait for approval: this is where their taste matters, and it's the expensive thing to redo.
+alternative hooks. When the script follows a trending format, name the trend, its stage (rising or peaked) and
+where it was seen, and offer the default-format version as the alternative. Wait for approval: this is where their
+taste matters, and it's the expensive thing to redo.
 
 ## 2. Recording sheet
 
@@ -101,6 +106,11 @@ node QV/scripts/render.mjs "<Content>" --name=<slug> --platform=reel --narration
 Sample one frame per line into a contact sheet and look at it: subject in frame, nothing important cropped, the right
 shot on the right line. Fix the plan and render again; it versions itself (`-V2`, `-V3`).
 
+**Character track (only when the channel's settings name one):** the channel's own director script renders a
+transparent PNG sequence timed to `timing.json`. Lay it over the render with
+`uv run --no-project python QV/scripts/character_track.py <render> <frames dir> <next version>.mp4`, and then do step 6
+on that version. The channel skill says when the character appears.
+
 ## 6. Narration overlays
 
 Write `.quickvid/overlays.json` (format and kinds in the header of `overlays.py`) and composite:
@@ -138,6 +148,11 @@ ready to paste, with character counts beside anything limited. Lead with the res
   the CTA; 3-5 hashtags.
 - **YouTube Shorts:** a title of 100 characters or fewer, keyword first; a description with the hook line and what it
   does, then the channel skill's links; 3-5 tags plus `#Shorts`.
+
+**Sound:** when the research names a trending sound, put it at the top of each platform's section: its name, how to
+add it while posting (under the original audio, turned well down so the voice stays clear), and for a business account
+whether it's approved for business use. Never mix it into the video file (research step 3b says why). Otherwise write
+"original audio only".
 
 Every claim must be in the sources. Links go only where they're clickable (the YouTube description), never in
 Instagram or TikTok captions. Show the user the copy: it goes out under their name.
