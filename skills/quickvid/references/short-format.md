@@ -160,4 +160,5 @@ Instagram or TikTok captions. Show the user the copy: it goes out under their na
 ## 8. Hand off
 
 Report the final video's path and length, the thumbnails, `publish.md`, and anything the channel skill lists to do
-before posting. Earlier versions stay in `Final/`.
+before posting. Earlier versions stay in `Final/` until the video is posted; a channel skill may clear them out then
+(makerworld-reel does).

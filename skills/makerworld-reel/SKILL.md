@@ -13,7 +13,7 @@ makerworld-idea → makerworld-model → makerworld-publish → makerworld-reel
 
 Tutorials come straight from makerworld-idea (route D) and use **tutorial mode** (section 4) instead of sections 1
 to 3. Either way, once the video is posted, record where (section 5), so makerworld-backlog stops listing it as
-unposted.
+unposted, and clear out the draft versions so only the posted video is left.
 
 The build is shared with every short-video channel: read
 `$NEXUS_HOME/skills/quickvid/references/short-format.md` and follow its steps 1 to 8. This file only adds what is
@@ -98,7 +98,7 @@ posting in the research's "So, for this video".
 - **Before posting** (hand-off): the MakerWorld link in each bio, a pinned comment with the search phrase, and the
   trending sound to add in each app (from `publish.md`). Trends move weekly: if the research is more than 7 days old
   when the user posts, check the sound and format are still rising (research step 3b) before they post.
-- **After posting:** record the posts and the format used (section 5).
+- **After posting:** record the posts and the format used, then clear out the old versions (section 5).
 
 ## 4. Tutorial mode
 
@@ -146,7 +146,8 @@ above). For a series, number the titles ("Support settings explained 1/3").
 **Before posting** (hand-off): a pinned comment with the wiki link or the next part, and update the brief's
 **Status** to `made`.
 
-**After posting:** record the posts (section 5) and set the brief's **Status** to `posted`.
+**After posting:** record the posts and clear out the old versions (section 5), and set the brief's **Status** to
+`posted`.
 
 ## 5. Recording posts
 
@@ -166,6 +167,22 @@ Write one line for each platform in `reel.platforms`. Any value counts as done, 
 user chose to leave out, and a video skipped on every platform counts as not used. If the file already exists
 (posting a day apart, say), add the new lines; don't replace the file. The `Reel:` line ties the record to one video:
 a newer render under another name shows as unposted until it's posted and the `Reel:` line and links are updated.
+
+**Then clear out the old versions.** Every render, character pass, overlay pass and thumbnail is saved as a new
+version (`-V2`, `-V3`...), so `Final/` fills up with drafts. As soon as `posted.txt` names the video and at least one
+platform has a post, run this from this skill's folder:
+
+```
+node scripts/clean_versions.mjs "<Content>/Final"
+```
+
+It keeps the posted video (the `Reel:` line), its captions, and the newest cover and thumbnails. It deletes every other
+version of that reel in `Final/`, and the scratch that quickvid rebuilds when needed in `.quickvid/` (`cuts/`,
+`sheets/` and the `character*/` frame folders). Other videos, the footage and the `.quickvid` records (script, research,
+plan, overlays, timing, narration, posting copy) stay, so the reel can still be re-rendered. The script removes nothing
+before a post is recorded, or for a video skipped on every platform, and stops if the `Reel:` file isn't there. This is
+the standing rule for every posted video, so it needs no extra confirmation: tell the user what was removed and how
+much space it freed. Run it again whenever the `Reel:` line moves to a newer render (it's safe to repeat).
 
 ## Tool-specific notes
 

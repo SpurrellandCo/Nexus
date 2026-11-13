@@ -72,7 +72,9 @@ user which file you'll write and what goes in it, and never overwrite a record w
 - **A video was posted:** ask for each platform's post link, or "skipped" for a platform they're leaving out, and write
   `posted.txt` in the reel's `Final/` folder in the format in makerworld-reel's "Recording posts" section
   (`$NEXUS_HOME/skills/makerworld-reel/SKILL.md`). If the file exists, add the missing platforms to it. For a tutorial,
-  also set its brief's **Status** to `posted`.
+  also set its brief's **Status** to `posted`. Then clear out that reel's old versions, as that section describes:
+  `node $NEXUS_HOME/skills/makerworld-reel/scripts/clean_versions.mjs "<Final folder>"`, and tell the user what it
+  removed.
 - **A model was published:** ask for its MakerWorld link and write `<model>/<upload_folder>/published.txt` the way
   makerworld-publish does (the link, then `Model ID: <id>` and `Published: <YYYY-MM-DD>`), creating the upload folder
   for an older model that doesn't have one. If there's a `brief.md`, set its **Status** to `published`.
@@ -81,6 +83,7 @@ user which file you'll write and what goes in it, and never overwrite a record w
 - **Dropping something:** set its brief's **Status** to `shelved`. For a folder with no brief, add its path (relative
   to `models_root`) to `backlog.ignore` in the settings file, merging into the file without touching other sections.
   Don't write a brief into an older folder just to hide it, because makerworld-publish would read it later. Never
-  delete, move or rename the user's folders or videos; if the user wants files gone, confirm exactly what first.
+  delete, move or rename the user's folders or videos, apart from the old render versions that cleanup script removes
+  after a post; if the user wants anything else gone, confirm exactly what first.
 
 Run the scan again afterwards to confirm the item left the list.

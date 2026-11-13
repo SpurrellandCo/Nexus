@@ -1,12 +1,13 @@
 """Animated photo for a line with no video: a slow push-in, pull-out or pan, filling the vertical frame.
 
 Usage:
-  python photo_motion.py --photo IMG.jpg --out clip.mp4 --duration 4.2 [--move in|out|left|right|up|down]
+  python photo_motion.py --photo IMG.jpg --out clip.mp4 --duration 4.2 [--move in|out|left|right|up|down|none]
       [--focus 0.5,0.5] [--darken 0.0-0.6]
 
 Use it when a line needs the product but there is no clip of it: the result goes into plan.json like any other
 clip, and overlays.py can put text on top. --darken helps text read over a busy photo. --focus picks the point
-the move centres on (fractions of width, height).
+the move centres on (fractions of width, height). --move none holds the whole image still, uncropped
+(for a finished card that a character or overlay is timed against).
 """
 import argparse
 import sys
@@ -26,7 +27,7 @@ def main():
     p.add_argument("--photo", required=True)
     p.add_argument("--out", required=True)
     p.add_argument("--duration", type=float, required=True)
-    p.add_argument("--move", default="in", choices=["in", "out", "left", "right", "up", "down"])
+    p.add_argument("--move", default="in", choices=["in", "out", "left", "right", "up", "down", "none"])
     p.add_argument("--focus", default="0.5,0.5")
     p.add_argument("--darken", type=float, default=0.0)
     a = p.parse_args()
@@ -42,7 +43,9 @@ def main():
     proc = ms.video_writer(a.out)
     for n in range(frames):
         t = ms.ease(n / max(1, frames - 1))
-        if a.move == "in":
+        if a.move == "none":
+            z = 1.0                                 # the whole image, held still (a branded card, say)
+        elif a.move == "in":
             z = 1.0 - (1.0 - 1 / ROOM) * t          # crop shrinks: push in
         elif a.move == "out":
             z = 1 / ROOM + (1.0 - 1 / ROOM) * t     # crop grows: pull out
