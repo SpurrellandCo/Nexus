@@ -151,8 +151,9 @@ above). For a series, number the titles ("Support settings explained 1/3").
 
 ## 5. Recording posts
 
-The hand-off ends by asking the user to share each post's link once it's up. If they post later, makerworld-backlog
-lists the video as unposted until they do. Record the links in `posted.txt` next to the video, in `<Content>/Final/`:
+The hand-off ends by asking the user to say when it's posted. Links are welcome but optional: "it's posted" is
+enough, so never hold the record back waiting for links. Until then, makerworld-backlog lists the video as unposted.
+Record the post in `posted.txt` next to the video, in `<Content>/Final/`:
 
 ```
 Reel: <file name of the video that was posted>
@@ -163,8 +164,9 @@ youtube: skipped
 ```
 
 The `format:` line lets later research see which formats this audience responds to (`references/trend-formats.md`).
-Write one line for each platform in `reel.platforms`. Any value counts as done, so `skipped` marks a platform the
-user chose to leave out, and a video skipped on every platform counts as not used. If the file already exists
+Write one line for each platform in `reel.platforms`. Any value counts as done: a link if the user gave one,
+`posted, no link (<YYYY-MM-DD>)` if they didn't, and `skipped` for a platform they chose to leave out. A video skipped
+on every platform counts as not used. If the file already exists
 (posting a day apart, say), add the new lines; don't replace the file. The `Reel:` line ties the record to one video:
 a newer render under another name shows as unposted until it's posted and the `Reel:` line and links are updated.
 

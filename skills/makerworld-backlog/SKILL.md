@@ -69,9 +69,11 @@ Relay the list as the script prints it, grouped and with each item's next step. 
 The scan never writes. When the user says something on the list is done, record it so it leaves the list. Tell the
 user which file you'll write and what goes in it, and never overwrite a record without showing it first.
 
-- **A video was posted:** ask for each platform's post link, or "skipped" for a platform they're leaving out, and write
-  `posted.txt` in the reel's `Final/` folder in the format in makerworld-reel's "Recording posts" section
-  (`$NEXUS_HOME/skills/makerworld-reel/SKILL.md`). If the file exists, add the missing platforms to it. For a tutorial,
+- **A video was posted:** the user saying so is enough to take it off the list. Don't ask for post links. Record any
+  links they give, write `posted, no link (<YYYY-MM-DD>)` for every other platform in `reel.platforms` (or `skipped`
+  for one they say they left out), and write `posted.txt` in the reel's `Final/` folder in the format in
+  makerworld-reel's "Recording posts" section (`$NEXUS_HOME/skills/makerworld-reel/SKILL.md`). If the file exists,
+  fill in the platforms it's missing the same way. For a tutorial,
   also set its brief's **Status** to `posted`. Then clear out that reel's old versions, as that section describes:
   `node $NEXUS_HOME/skills/makerworld-reel/scripts/clean_versions.mjs "<Final folder>"`, and tell the user what it
   removed.

@@ -314,7 +314,7 @@ function reelItem(cfg, r, kind) {
     name: rel(cfg, r.dir),
     time: r.reel.time,
     detail: `${path.basename(r.reel.file)} rendered {date}, ${where}${noRecord}`,
-    next: 'post it, then give me the links to record',
+    next: 'post it, then say so (links optional)',
   };
 }
 
