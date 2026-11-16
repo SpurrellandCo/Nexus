@@ -4,6 +4,7 @@
 import path from 'node:path';
 import { normalizeRel } from './config.mjs';
 import { createIo } from './fs-io.mjs';
+import { matchRecordLine } from './posted.mjs';
 
 const MIN_REAL_PHOTOS = 3;
 const MAX_WALK_ENTRIES = 5000;
@@ -122,12 +123,10 @@ function readPosted(ctx, file, platforms) {
   const values = new Map();
   let reel = null;
   for (const line of text.split(/\r?\n/)) {
-    // "Reel: <file>", "instagram: <link>", "- **youtube shorts:** skipped"
-    const m = line.match(/^[\s>*-]*\**\s*([A-Za-z][A-Za-z -]*?)\s*\**\s*:\s*\**\s*(\S.*)$/);
+    const m = matchRecordLine(line); // the one posted.txt grammar (D-002)
     if (!m) continue;
-    const name = m[1].trim().toLowerCase();
-    if (name === 'reel') reel = m[2].trim();
-    else if (platforms.includes(name)) values.set(name, m[2].trim().toLowerCase());
+    if (m.key === 'reel') reel = m.value;
+    else if (platforms.includes(m.key)) values.set(m.key, m.value.toLowerCase());
   }
   const missing = platforms.filter((p) => !values.has(p));
   const notUsed = missing.length === 0 && [...values.values()].every((v) => v.startsWith('skipped'));
