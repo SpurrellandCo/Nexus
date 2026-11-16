@@ -7,12 +7,12 @@ import { createIo } from './fs-io.mjs';
 import { matchRecordLine } from './posted.mjs';
 
 const MIN_REAL_PHOTOS = 3;
-const MAX_WALK_ENTRIES = 5000;
+export const MAX_WALK_ENTRIES = 5000;
 const DISCOVERY_DEPTH = 2;
 const CHANGE_DEPTH = 2; // reading folders over a network share is the slow part, so stay shallow
 const IMAGE_EXT = /\.(jpe?g|png|heic|webp)$/i;
 const RENDER_NAME = /\b(product|lifestyle) \d+\.\w+$/i;
-const SKIP_FOLDER = /^(\.|_|z\.)/; // hidden, pipeline (_Ideas, _Tutorials) and template folders, at any level
+export const SKIP_FOLDER = /^(\.|_|z\.)/; // hidden, pipeline (_Ideas, _Tutorials) and template folders, at any level
 
 /** Backlog groups, in display order. */
 export const GROUPS = Object.freeze([
@@ -39,14 +39,14 @@ export const GROUPS = Object.freeze([
 // ---------- small helpers ----------
 
 /** @param {import('node:fs').Dirent[]} entries */
-const visible = (entries) => entries.filter((e) => !e.name.startsWith('.'));
+export const visible = (entries) => entries.filter((e) => !e.name.startsWith('.'));
 
 /**
  * @param {import('node:fs').Dirent[]} entries
  * @param {string} dir
  * @param {string} name
  */
-function childCI(entries, dir, name) {
+export function childCI(entries, dir, name) {
   const want = name.toLowerCase();
   const hit = entries.find((e) => e.isDirectory() && e.name.toLowerCase() === want);
   return hit ? path.join(dir, hit.name) : null;
@@ -60,7 +60,7 @@ function childCI(entries, dir, name) {
  * @param {Set<string>} skip
  * @param {{ left: number }} budget
  */
-function walk(ctx, dir, depth, onFile, skip, budget) {
+export function walk(ctx, dir, depth, onFile, skip, budget) {
   for (const e of visible(ctx.io.listDir(dir))) {
     budget.left -= 1;
     if (budget.left <= 0) return;
@@ -107,7 +107,7 @@ export function dateIn(text, label) {
  * @param {string | null} text
  * @param {RegExp} [pattern]
  */
-function firstUrl(text, pattern = /https?:\/\/\S+/) {
+export function firstUrl(text, pattern = /https?:\/\/\S+/) {
   const m = text?.match(pattern);
   return m ? m[0].replace(/[)\]>.,]+$/, '') : null;
 }
@@ -160,7 +160,7 @@ function findReel(ctx, contentDir) {
  * @param {string | null} contentDir
  * @param {string} modelName
  */
-function countRealPhotos(ctx, contentDir, modelName) {
+export function countRealPhotos(ctx, contentDir, modelName) {
   if (!contentDir) return 0;
   const madePrefix = `${modelName.trim().toLowerCase()} `;
   let count = 0;
@@ -218,13 +218,13 @@ function probe(ctx, dir) {
  * @param {ScanConfig} cfg
  * @param {string} p
  */
-const rel = (cfg, p) => path.relative(cfg.root, p) || path.basename(p);
+export const rel = (cfg, p) => path.relative(cfg.root, p) || path.basename(p);
 
 /**
  * @param {ScanConfig} cfg
  * @param {string} dir
  */
-const isIgnored = (cfg, dir) => cfg.ignore.has(normalizeRel(rel(cfg, dir)));
+export const isIgnored = (cfg, dir) => cfg.ignore.has(normalizeRel(rel(cfg, dir)));
 
 /**
  * Returns { items, untracked }. A folder with no records anywhere below it is one untracked unit. Inside an

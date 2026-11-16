@@ -43,7 +43,7 @@ export function dueState(slot, now) {
  * No line means owed, or n/a when the video is dated before the account's start date. A `scheduled`
  * value whose date can't be read counts as owed and carries a warning.
  * @param {Array<{ key: string, value: string }>} platformLines raw lines from posted.txt (any key)
- * @param {string} videoDate `YYYY-MM-DD`, the local date of the video file
+ * @param {string | null} videoDate `YYYY-MM-DD`, the local date of the video file (null when unknown: no cut-off)
  * @param {ScanAccount[]} accounts
  * @param {number} now ms
  * @returns {AccountStatus[]}
@@ -54,7 +54,7 @@ export function deriveStatuses(platformLines, videoDate, accounts, now) {
     const accountKey = account.key;
     const value = last.get(accountKey);
     if (value === undefined) {
-      const beforeStart = Boolean(account.startDate) && videoDate < /** @type {string} */ (account.startDate);
+      const beforeStart = Boolean(account.startDate && videoDate) && /** @type {string} */ (videoDate) < /** @type {string} */ (account.startDate);
       return { accountKey, status: beforeStart ? 'n/a' : 'owed' };
     }
     if (isSkipped(value)) return { accountKey, status: 'skipped' };
