@@ -3,20 +3,23 @@
 //
 // Usage: node clean_versions.mjs "<Content>/Final" [--dry-run]
 //
-// Reads Final/posted.txt. Its "Reel:" line names the posted video. Once any platform line holds something other than
-// "skipped", that video is the final version and the rest of its render history goes:
+// Reads Final/posted.txt with the shared posted.txt grammar (content-backlog/scripts/lib/posted.mjs). Its "Reel:" line
+// names the posted video. Once any platform's last line records a post (anything but "skipped" or "scheduled ..."),
+// that video is the final version and the rest of its render history goes:
 //   - Final/: the reel's other renders and captions (<base>.mp4, <base>-V<n>.mp4, and their .srt files), and the older
 //     versions of each thumbnail (<base>-cover-V<n>.jpg, <base>-thumbnail-youtube-V<n>.jpg; the highest version stays)
 //   - .quickvid/ next to Final/: scratch the scripts rebuild on demand (cuts/, sheets/, and character*/ frame folders)
 // Everything else stays: posted.txt, any other video, the user's footage, and the .quickvid records (script, research,
 // plan, overlays, timing, narration, publish copy), so the reel can still be re-rendered later.
-// Removes nothing when posted.txt is missing, names no video, or every platform is "skipped" (a reel that wasn't used).
+// Removes nothing when posted.txt is missing, names no video, or no platform has a post yet (only "skipped" or
+// "scheduled ...": a reel that wasn't used, or one that hasn't gone out yet).
+// If the shared grammar can't be loaded, the script stops at import time, before it reads or removes anything.
 import { existsSync } from 'node:fs';
 import { lstat, readFile, readdir, rm } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { NOT_PLATFORMS, isPost, parsePosted as parseRecord } from '../../content-backlog/scripts/lib/posted.mjs';
 
 const USAGE = 'usage: node clean_versions.mjs "<Content>/Final" [--dry-run]';
-const NOT_PLATFORMS = new Set(['reel', 'format', 'note']);
 const SCRATCH_DIRS = [/^cuts$/, /^sheets$/, /^character/];
 const VERSION_SUFFIX = /-V(\d+)$/;
 
@@ -32,17 +35,19 @@ function stop(message) {
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** The same line format content-backlog reads: "Reel: <file>", "instagram: <link>", "- **youtube:** skipped". */
-function parsePosted(text) {
-  const fields = text
-    .split(/\r?\n/)
-    .map((line) => line.match(/^[\s>*-]*\**\s*([A-Za-z][A-Za-z -]*?)\s*\**\s*:\s*\**\s*(\S.*)$/))
-    .filter(Boolean)
-    .map((m) => ({ key: m[1].trim().toLowerCase(), value: m[2].trim().replace(/^[`*]+|[`*]+$/g, '') }));
-  const reel = fields.find((f) => f.key === 'reel')?.value || null;
-  const posted = fields
-    .filter((f) => !NOT_PLATFORMS.has(f.key) && !f.value.toLowerCase().startsWith('skipped'))
-    .map((f) => f.key);
+/** A value without markdown code or bold marks around it ("`x.mp4`" -> "x.mp4"). */
+const unmark = (value) => value.replace(/^[`*]+|[`*]+$/g, '');
+
+/**
+ * The posted video and the platforms with a post. The last line for a platform wins, and "scheduled ..." is not a post.
+ * @param {string} text
+ */
+function readPostedFile(text) {
+  const record = parseRecord(text);
+  const reel = record.reel ? unmark(record.reel) || null : null;
+  const posted = [...record.byKey.values()]
+    .filter((line) => !NOT_PLATFORMS.has(line.key) && isPost(unmark(line.value)))
+    .map((line) => line.key);
   return { reel, posted };
 }
 
@@ -111,9 +116,9 @@ async function main() {
   const postedFile = join(finalDir, 'posted.txt');
   if (!existsSync(postedFile)) stop('no posted.txt yet; versions are only cleaned up once the video is posted.');
 
-  const { reel, posted } = parsePosted(await readFile(postedFile, 'utf8'));
+  const { reel, posted } = readPostedFile(await readFile(postedFile, 'utf8'));
   if (!reel) stop('posted.txt has no "Reel:" line, so it is unclear which video was posted.');
-  if (posted.length === 0) stop('no platform has a post yet (only "skipped"), so there is no final version to keep.');
+  if (posted.length === 0) stop('no platform has a post yet (only "skipped" or "scheduled"), so there is no final version to keep.');
 
   const names = (await readdir(finalDir, { withFileTypes: true })).filter((e) => e.isFile()).map((e) => e.name);
   if (!names.includes(reel)) fail(`posted.txt names "${reel}", which isn't in ${finalDir}. Fix its Reel: line first.`);
