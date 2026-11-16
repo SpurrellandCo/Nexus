@@ -4,7 +4,9 @@
 import path from 'node:path';
 import { normalizeRel } from './config.mjs';
 import { createIo } from './fs-io.mjs';
-import { matchRecordLine } from './posted.mjs';
+import { readScheduledTxt } from './listings.mjs';
+import { isScheduledValue, isSkipped, matchRecordLine, parseScheduledValue } from './posted.mjs';
+import { readPublishMd } from './publish-md.mjs';
 
 const MIN_REAL_PHOTOS = 3;
 export const MAX_WALK_ENTRIES = 5000;
@@ -120,17 +122,45 @@ export function firstUrl(text, pattern = /https?:\/\/\S+/) {
 function readPosted(ctx, file, platforms) {
   const text = ctx.io.readText(file);
   if (text === null) return null;
+  /** @type {Map<string, string>} */
   const values = new Map();
   let reel = null;
   for (const line of text.split(/\r?\n/)) {
     const m = matchRecordLine(line); // the one posted.txt grammar (D-002)
     if (!m) continue;
     if (m.key === 'reel') reel = m.value;
-    else if (platforms.includes(m.key)) values.set(m.key, m.value.toLowerCase());
+    else if (platforms.includes(m.key)) values.set(m.key, m.value);
   }
-  const missing = platforms.filter((p) => !values.has(p));
-  const notUsed = missing.length === 0 && [...values.values()].every((v) => v.startsWith('skipped'));
-  return { reel, done: [...values.keys()], missing, notUsed };
+  // A `scheduled` line is not a post (FR 8): it is listed as scheduled. One whose date can't be read is
+  // still to post.
+  /** @type {string[]} */
+  const done = [];
+  /** @type {Array<{ key: string, date: string, time: string | null }>} */
+  const scheduled = [];
+  for (const [key, value] of values) {
+    if (!isScheduledValue(value)) done.push(key);
+    else {
+      const when = parseScheduledValue(value);
+      if (when) scheduled.push({ key, ...when });
+    }
+  }
+  const missing = platforms.filter((p) => !done.includes(p) && !scheduled.some((s) => s.key === p));
+  const notUsed = missing.length === 0 && scheduled.length === 0 && done.every((k) => isSkipped(/** @type {string} */ (values.get(k))));
+  return { reel, done, scheduled, missing, notUsed };
+}
+
+/**
+ * "2026-11-18 18:30 (instagram, tiktok)", one group per date and time.
+ * @param {Array<{ key: string, date: string, time: string | null }>} scheduled
+ */
+function scheduleText(scheduled) {
+  /** @type {Map<string, string[]>} */
+  const slots = new Map();
+  for (const s of scheduled) {
+    const when = s.time ? `${s.date} ${s.time}` : s.date;
+    slots.set(when, [...(slots.get(when) ?? []), s.key]);
+  }
+  return [...slots.entries()].map(([when, keys]) => `${when} (${keys.join(', ')})`).join(', ');
 }
 
 /**
@@ -147,11 +177,14 @@ function findReel(ctx, contentDir) {
     .map((e) => ({ file: path.join(finalDir, e.name), time: io.mtime(path.join(finalDir, e.name)) }))
     .sort((a, b) => b.time - a.time);
   if (videos.length === 0) return null;
-  const newest = videos[0];
+  // The final video is the one publish.md's Video: line names, when that file is here (FR 6); otherwise,
+  // for folders made before that line existed, the newest render as before.
+  const publish = readPublishMd(io, contentDir);
+  const chosen = (publish.videoName && videos.find((v) => path.basename(v.file) === publish.videoName)) || videos[0];
   const posted = readPosted(ctx, path.join(finalDir, 'posted.txt'), cfg.platforms);
   // posted.txt names the video it's about; a newer render under another name is a new, unposted video
-  const applies = posted && (!posted.reel || posted.reel === path.basename(newest.file));
-  return { ...newest, posted: applies ? posted : null, notUsed: Boolean(applies && posted.notUsed) };
+  const applies = posted && (!posted.reel || posted.reel === path.basename(chosen.file));
+  return { ...chosen, posted: applies ? posted : null, notUsed: Boolean(applies && posted.notUsed) };
 }
 
 /**
@@ -192,6 +225,8 @@ function probe(ctx, dir) {
   const published = uploadDir ? io.readText(path.join(uploadDir, 'published.txt')) : null;
   const listingPath = uploadDir ? path.join(uploadDir, 'listing.md') : null;
   const listing = listingPath ? io.readText(listingPath) : null;
+  // scheduled.txt is ignored once published.txt exists (published wins).
+  const scheduled = uploadDir && published === null ? readScheduledTxt(io.readText(path.join(uploadDir, 'scheduled.txt'))) : null;
   const record = {
     dir,
     contentDir,
@@ -209,6 +244,7 @@ function probe(ctx, dir) {
       draftUrl: firstUrl(listing, /https?:\/\/makerworld\.com\/\S*drafts\/\d+\S*/),
       isUpdate: io.exists(path.join(/** @type {string} */ (uploadDir), 'update.md')),
     },
+    scheduled,
     reel,
   };
   return { entries, record };
@@ -265,9 +301,13 @@ function discover(ctx, dir, depth) {
  */
 function reelItem(cfg, r, kind) {
   const p = r.reel.posted;
-  const where = p
-    ? `posted to ${p.done.join(', ') || 'nothing yet'}; still to post: ${p.missing.join(', ')}`
-    : 'not posted anywhere yet';
+  const where = !p ? 'not posted anywhere yet'
+    : p.scheduled.length === 0 ? `posted to ${p.done.join(', ') || 'nothing yet'}; still to post: ${p.missing.join(', ')}`
+      : [
+        `posted to ${p.done.join(', ') || 'nothing yet'}`,
+        `scheduled for ${scheduleText(p.scheduled)}`,
+        ...(p.missing.length ? [`still to post: ${p.missing.join(', ')}`] : []),
+      ].join('; ');
   const noRecord = kind === 'model' && !r.published && !r.listing ? ' · no MakerWorld record in this folder' : '';
   return {
     group: 'notPosted',
@@ -290,7 +330,7 @@ function classifyModel(ctx, r, now) {
   const base = { kind: 'model', name: rel(cfg, r.dir) };
   if (r.status === 'shelved') return { ...base, group: 'shelved', time: r.briefChanged, detail: 'shelved {date}' };
   const reel = r.reel && !r.reel.notUsed ? r.reel : null; // a reel skipped on every platform doesn't count
-  const reelUnposted = reel && (!reel.posted || reel.posted.missing.length > 0);
+  const reelUnposted = reel && (!reel.posted || reel.posted.missing.length > 0 || reel.posted.scheduled.length > 0);
   if (reelUnposted) return reelItem(cfg, r, 'model');
 
   const isPublished = Boolean(r.published) || r.status === 'published';
@@ -302,19 +342,21 @@ function classifyModel(ctx, r, now) {
     const group = now - time <= cfg.windowMs ? 'noReel' : 'done';
     return { ...base, group, time, detail: `published {date}${link}${stale}`, next: group === 'noReel' ? '/reel' : undefined };
   }
+  // A drafted listing's planned date, from upload info/scheduled.txt (Content Board FR 8).
+  const planned = r.scheduled ? ` · scheduled for ${r.scheduled.time ? `${r.scheduled.date} ${r.scheduled.time}` : r.scheduled.date}` : '';
   if (r.listing) {
     const draft = r.listing.draftUrl ? ` · draft: ${r.listing.draftUrl}` : '';
     const update = r.listing.isUpdate ? ' · an update to an existing listing' : '';
     return {
       ...base, group: 'draft', time: r.listing.time,
-      detail: `listing written {date}${update}${draft}`,
+      detail: `listing written {date}${update}${draft}${planned}`,
       next: 'finish it on MakerWorld (/makerworld-publish), or give me the link if it is already live',
     };
   }
   if (r.uploadDir && !r.hasBrief && !r.reel) {
     return {
       ...base, group: 'draft', time: io.mtime(r.uploadDir),
-      detail: 'publishing started {date}, no listing written yet',
+      detail: `publishing started {date}, no listing written yet${planned}`,
       next: '/makerworld-publish to finish the listing, or give me the link if it is already live',
     };
   }
@@ -380,7 +422,7 @@ function scanTutorials(ctx) {
     const status = statusOf(brief) || 'idea';
     const reel = findReel(ctx, childCI(entries, tdir, cfg.contentFolder));
     const name = rel(cfg, tdir);
-    const fullyPosted = reel?.posted && reel.posted.missing.length === 0;
+    const fullyPosted = reel?.posted && reel.posted.missing.length === 0 && reel.posted.scheduled.length === 0;
     if (status === 'shelved') items.push({ kind: 'tutorial', group: 'shelved', name, time: io.mtime(briefPath), detail: 'shelved {date}' });
     else if (fullyPosted || (status === 'posted' && !reel)) items.push({ kind: 'tutorial', group: 'done', name, time: reel?.time || io.mtime(briefPath), detail: 'posted' });
     else if (reel) items.push(reelItem(cfg, { dir: tdir, reel }, 'tutorial'));

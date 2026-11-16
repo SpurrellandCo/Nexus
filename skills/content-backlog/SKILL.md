@@ -38,9 +38,10 @@ brand with a MakerWorld account (or the `makerworld.json` brand).
 | `<root>/_Ideas/<Idea>.md`, Status `idea` or `approved` (tech-tip ideas are named `YYYY-MM-DD <Idea>.md`) | makerworld-idea, reel | an idea, not made yet |
 | `<model>/brief.md`, Status `building` or `built` | makerworld-model | being built, or built and not listed |
 | `<model>/<upload_folder>/listing.md` with no `published.txt` | makerworld-publish | listing drafted, not published |
+| `<model>/<upload_folder>/scheduled.txt` (`makerworld: scheduled <YYYY-MM-DD>[T<HH:MM>]`) | Content Board | the drafted listing's planned publish date |
 | `<model>/<upload_folder>/published.txt` | makerworld-publish | published |
-| `<folder>/<content_folder>/Final/*.mp4` | reel (through quickvid) | a video was made |
-| `<content_folder>/Final/posted.txt` | reel, or step 3 here | where the video was posted |
+| `<folder>/<content_folder>/Final/*.mp4` | reel (through quickvid) | a video was made: the one `publish.md`'s `Video:` line names when that file exists, else the newest |
+| `<content_folder>/Final/posted.txt` | reel, step 3 here, or Content Board | where the video was posted, or is scheduled to be |
 | `<root>/_Tutorials/<Tutorial>/brief.md`, plus its `Final/` | makerworld-idea, reel | a tutorial and how far it got |
 | A folder with none of these | nothing (older folders) | listed only if changed in the last `--days` |
 
@@ -51,6 +52,12 @@ list in `accounts.json`, plus `backlog.ignore` in `makerworld.json` for the Make
 on every platform in its `posted.txt` counts as not used, so its model shows as having no reel yet. Real photos are
 counted as images in the content folder that aren't named after the model, since the pipeline's renders and
 generated images always are.
+
+A `scheduled <YYYY-MM-DD>[ <HH:MM>]` line in `posted.txt` is a planned post, not a post: the video stays on the list
+with "scheduled for <date> (<platforms>)". Anything else starting with `scheduled` that can't be read as a date
+counts as not posted. The one exception is `scheduled, no link (<YYYY-MM-DD>)`, an older way of recording a post
+scheduled in the platform's own app: that counts as posted on that date. A drafted listing with a `scheduled.txt`
+shows its planned date too.
 
 ## 1. Scan
 

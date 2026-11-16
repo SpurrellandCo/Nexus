@@ -7,6 +7,7 @@
 //   <platform>: posted, no link (<YYYY-MM-DD>)
 //   <platform>: skipped
 //   <platform>: scheduled <YYYY-MM-DD>[T|t| <HH:MM>]      24-hour local time, no zone
+//   <platform>: scheduled, no link (<YYYY-MM-DD>)          older records: scheduled in the platform's app, a post
 //
 // Markdown decoration is tolerated ("- **youtube shorts:** skipped"). Values keep their original case.
 
@@ -81,12 +82,25 @@ export function parseScheduledValue(value) {
 /** @param {string} value */
 export const isSkipped = (value) => /^skipped\b/i.test(value.trim());
 
-/** @param {string} value */
-export const isScheduledValue = (value) => /^scheduled\b/i.test(value.trim());
+/**
+ * A legacy form found on the content share, `scheduled, no link (<YYYY-MM-DD>)`: the post was scheduled in
+ * the platform's own app on that date, so it is a post (Content Board D-023). Content Board's own plans are
+ * `scheduled <date>` with no comma.
+ * @param {string} value
+ */
+export const isPlatformScheduled = (value) => /^scheduled\s*,/i.test(value.trim());
+
+/**
+ * A Content Board plan, `scheduled <date>[ time]`, or anything else starting with the word `scheduled`
+ * (except the platform-scheduled form above). Never a post.
+ * @param {string} value
+ */
+export const isScheduledValue = (value) => /^scheduled\b/i.test(value.trim()) && !isPlatformScheduled(value);
 
 /**
  * Whether a platform value records a post. False for `skipped` and for anything starting with the word
- * `scheduled`, even when its date can't be read, so cleanup never treats "scheduled soon" as a post.
+ * `scheduled` (except `scheduled, no link (<date>)`, a post scheduled in the platform's own app), even when
+ * its date can't be read, so cleanup never treats "scheduled soon" as a post.
  * @param {string} value
  */
 export function isPost(value) {

@@ -5,9 +5,11 @@ import { Buffer } from 'node:buffer';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { cardId } from './card-id.mjs';
+import { resolveDependency } from './dependency.mjs';
 import { localDate } from './dates.mjs';
 import { createIo } from './fs-io.mjs';
 import { headingOf, ideaDateFromName, ideaTitle } from './layouts.mjs';
+import { listingDateOf, readScheduledTxt } from './listings.mjs';
 import { NOT_PLATFORMS, parsePosted } from './posted.mjs';
 import { readPublishMd } from './publish-md.mjs';
 import { SKIP_FOLDER, childCI, dateIn, firstUrl, isIgnored, statusOf, visible } from './scan.mjs';
@@ -141,10 +143,10 @@ function videoCard(ctx, type, dir, facts, ignored) {
     folder,
     ignored,
     video,
-    files: { brief: brief.status, publishMd: publish.exists, scriptMd: facts.scriptMd, listingMd: false, publishedTxt: false, uploadStarted: false },
+    files: { brief: brief.status, publishMd: publish.exists, scriptMd: facts.scriptMd, listingMd: false, publishedTxt: false, uploadStarted: false, scheduledTxt: false },
     record: { reel: record.reel, platformLines: record.platformLines, belongsTo, ref: record.ref },
-    listingDate: { date: null, source: null },
-    dependency: { listingCardId: null, mentionsMakerWorld: publish.mentionsMakerWorld },
+    listingDate: { date: null, time: null, source: null },
+    dependency: { listingCardId: null, mentionsMakerWorld: publish.mentionsMakerWorld, notBefore: null, blocked: false },
     created: dateIn(brief.text, 'Created') ? localDate(dateIn(brief.text, 'Created')) : null,
     lastChanged: Math.max(brief.mtimeMs, publish.mtimeMs, record.ref?.mtimeMs ?? 0, video?.mtimeMs ?? 0),
     warnings,
@@ -167,6 +169,10 @@ function listingCard(ctx, dir, facts, ignored) {
   const listing = listingFile ? io.readText(listingFile) : null;
   const published = publishedFile ? io.readText(publishedFile) : null;
   const publishedMs = published !== null ? dateIn(published, 'Published') || io.mtime(/** @type {string} */ (publishedFile)) : 0;
+  const publishedDate = publishedMs ? localDate(publishedMs) : null;
+  // scheduled.txt is ignored once published.txt exists (published wins, FR 8).
+  const scheduledFile = up ? path.join(up, 'scheduled.txt') : null;
+  const scheduled = scheduledFile && published === null ? readScheduledTxt(io.readText(scheduledFile)) : null;
   const folder = relPosix(cfg, dir);
   return {
     id: cardId(cfg.brandId, 'listing', folder),
@@ -177,18 +183,20 @@ function listingCard(ctx, dir, facts, ignored) {
     folder,
     ignored,
     video: null,
-    files: { brief: brief.status, publishMd: false, scriptMd: false, listingMd: listing !== null, publishedTxt: published !== null, uploadStarted: Boolean(up) },
+    files: { brief: brief.status, publishMd: false, scriptMd: false, listingMd: listing !== null, publishedTxt: published !== null, uploadStarted: Boolean(up), scheduledTxt: scheduled !== null },
     record: { reel: null, platformLines: [], belongsTo: null, ref: null },
     listing: {
       draftUrl: firstUrl(listing, /https?:\/\/makerworld\.com\/\S*drafts\/\d+\S*/),
       publishedUrl: firstUrl(published, /https?:\/\/makerworld\.com\/\S*models\/\d+\S*/),
-      publishedDate: publishedMs ? localDate(publishedMs) : null,
+      publishedDate,
+      scheduled,
       isUpdate: up ? io.exists(path.join(up, 'update.md')) : false,
     },
-    listingDate: { date: null, source: null },
-    dependency: { listingCardId: null, mentionsMakerWorld: false },
+    listingDate: listingDateOf({ publishedDate, scheduled }),
+    dependency: { listingCardId: null, mentionsMakerWorld: false, notBefore: null, blocked: false },
     created: dateIn(brief.text, 'Created') ? localDate(dateIn(brief.text, 'Created')) : null,
-    lastChanged: Math.max(brief.mtimeMs, listingFile ? io.mtime(listingFile) : 0, publishedFile ? io.mtime(publishedFile) : 0, up ? io.mtime(up) : 0),
+    lastChanged: Math.max(brief.mtimeMs, listingFile ? io.mtime(listingFile) : 0, publishedFile ? io.mtime(publishedFile) : 0,
+      scheduledFile && scheduled ? io.mtime(scheduledFile) : 0, up ? io.mtime(up) : 0),
     warnings: [],
   };
 }
@@ -217,10 +225,10 @@ function ideaCards(ctx) {
         folder,
         ignored: false,
         video: null,
-        files: { brief: statusOf(text) || 'idea', publishMd: false, scriptMd: false, listingMd: false, publishedTxt: false, uploadStarted: false },
+        files: { brief: statusOf(text) || 'idea', publishMd: false, scriptMd: false, listingMd: false, publishedTxt: false, uploadStarted: false, scheduledTxt: false },
         record: { reel: null, platformLines: [], belongsTo: null, ref: null },
-        listingDate: { date: null, source: null },
-        dependency: { listingCardId: null, mentionsMakerWorld: false },
+        listingDate: { date: null, time: null, source: null },
+        dependency: { listingCardId: null, mentionsMakerWorld: false, notBefore: null, blocked: false },
         created: createdMs ? localDate(createdMs) : ideaDateFromName(e.name),
         lastChanged: io.mtime(file),
         warnings: [],
@@ -297,8 +305,10 @@ function finish(ctx, cards) {
   const { cfg, now } = ctx;
   const placed = cards.map((card) => ({ ...card, placement: placeCard(card, cfg.accounts, now) }));
   const reels = new Map(placed.filter((c) => c.type === 'reel').map((c) => [c.folder, c]));
+  const listings = new Map(placed.filter((c) => c.type === 'listing').map((c) => [c.folder, c]));
   return placed
-    .map((c) => (c.type === 'listing' ? { ...c, noPromoReel: noPromoReel(c, reels.get(c.folder), now, cfg.windowMs) } : c))
+    .map((c) => (c.type === 'listing' ? { ...c, noPromoReel: noPromoReel(c, reels.get(c.folder), now, cfg.windowMs) }
+      : c.type === 'reel' ? { ...c, dependency: resolveDependency(c, listings.get(c.folder)) } : c))
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 

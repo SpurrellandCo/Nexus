@@ -87,8 +87,10 @@ youtube: skipped
 ```
 
 The `format:` line lets later research see which formats this audience responds to (`references/trend-formats.md`).
-Write one line for each platform the brand posts video to. Any value but `skipped` or `scheduled ...` counts as
-done: a link if the user gave one, `posted, no link (<YYYY-MM-DD>)` if they didn't. `skipped` is a platform they chose
+Write one line for each platform the brand posts video to. Any value but `skipped` or `scheduled <YYYY-MM-DD>[
+<HH:MM>]` (a planned post, not yet made) counts as done: a link if the user gave one, `posted, no link (<YYYY-MM-DD>)`
+if they didn't, including a post they scheduled in the platform's own app (use the date it goes live; older records
+wrote these as `scheduled, no link (<YYYY-MM-DD>)`, which still counts as posted). `skipped` is a platform they chose
 to leave out; a video skipped on every platform counts as not used. If the file already exists (posting a day apart,
 say), add the new lines or replace that platform's line; don't replace the file. The `Reel:` line ties the record to
 one video: a newer render under another name shows as unposted until it's posted and the `Reel:` line and links are
