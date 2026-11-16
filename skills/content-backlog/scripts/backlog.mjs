@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// MakerWorld backlog: scans the model folders and lists everything started but not finished.
+// Content backlog: scans a brand's content folders and lists everything started but not finished.
 // Read-only: it never writes, moves or renames anything.
 //
 //   node backlog.mjs [--root <models folder>] [--settings <file>] [--days <n>] [--all] [--untracked] [--json]
@@ -332,7 +332,7 @@ function classifyModel(cfg, r, now) {
     const stale = r.status && r.status !== 'published' ? ` · brief.md still says "${r.status}"` : '';
     if (reel) return { ...base, group: 'done', time, detail: `published {date}, reel posted${link}` };
     const group = now - time <= cfg.windowMs ? 'noReel' : 'done';
-    return { ...base, group, time, detail: `published {date}${link}${stale}`, next: group === 'noReel' ? '/makerworld-reel' : undefined };
+    return { ...base, group, time, detail: `published {date}${link}${stale}`, next: group === 'noReel' ? '/reel' : undefined };
   }
   if (r.listing) {
     const draft = r.listing.draftUrl ? ` · draft: ${r.listing.draftUrl}` : '';
@@ -410,7 +410,7 @@ function scanTutorials(cfg) {
         kind: 'tutorial', group: 'tutorial', name,
         time: dateIn(brief, 'Created') || mtime(briefPath),
         detail: `${status === 'idea' ? 'idea, not approved' : status}, planned {date}`,
-        next: status === 'idea' ? 'approve it (/makerworld-idea)' : '/makerworld-reel (tutorial mode)',
+        next: status === 'idea' ? 'approve it (/makerworld-idea)' : '/reel (tutorial format)',
       });
     }
   }
@@ -468,7 +468,7 @@ function localDate(ms) {
 }
 
 function renderText(report, opts, now) {
-  const lines = [`MakerWorld backlog · ${localDate(now)}`, `Models folder: ${report.root}`, ''];
+  const lines = [`Content backlog · ${localDate(now)}`, `Models folder: ${report.root}`, ''];
   let shown = 0;
   for (const [key, title] of GROUPS) {
     const list = report.groups[key] || [];

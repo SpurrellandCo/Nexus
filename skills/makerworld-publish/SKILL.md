@@ -143,7 +143,7 @@ Report the draft link, what was filled in, anything you changed or couldn't do, 
 
 Before finishing, make sure the upload info folder matches what actually went onto MakerWorld. If anything changed on the page (wording, links, the 3MF, unticked printers), update `listing.md` and the HTML files. Once the user has published, save the model's MakerWorld link in `<upload folder>/published.txt`, and if there's a `brief.md`, set its **Status: published** and add the link.
 
-Then offer the last step of the pipeline: **"Make a promo reel for Instagram, TikTok and YouTube Shorts with makerworld-reel?"** On yes, follow the makerworld-reel skill with this model folder.
+Then offer the last step of the pipeline: **"Make a promo reel for Instagram, TikTok and YouTube Shorts with reel?"** On yes, follow the reel skill's promo format with this model folder.
 
 ## Upload info folder
 

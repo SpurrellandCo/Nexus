@@ -1,6 +1,6 @@
 # Formats for MakerWorld reels
 
-Written for makerworld-reel's research and script steps (sections 2 and 3). Formats come from two places, used
+Written for the reel skill's promo format, its research and build steps (sections 2 and 3 of `promo.md`). Formats come from two places, used
 together:
 
 - **This week's trends**, from quickvid's research step 3b. They change every week, so they're never written down

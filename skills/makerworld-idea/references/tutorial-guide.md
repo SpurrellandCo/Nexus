@@ -1,8 +1,8 @@
 # Tutorial guide
 
 Written for route D of the makerworld-idea skill: picking and researching a short tutorial or explainer video about
-Bambu Lab printers, Bambu Studio or one of the user's own models. The video itself is made by makerworld-reel's
-tutorial mode, so this guide stops at an approved brief with every fact sourced.
+Bambu Lab printers, Bambu Studio or one of the user's own models. The video itself is made by the reel skill's
+tutorial format, so this guide stops at an approved brief with every fact sourced.
 
 ## Kinds of tutorial
 

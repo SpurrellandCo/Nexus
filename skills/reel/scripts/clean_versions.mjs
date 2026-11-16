@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// makerworld-reel, after posting: keep only the video that was posted, and remove the versions that led up to it.
+// reel skill, after posting: keep only the video that was posted, and remove the versions that led up to it.
 //
 // Usage: node clean_versions.mjs "<Content>/Final" [--dry-run]
 //
@@ -32,7 +32,7 @@ function stop(message) {
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** The same line format makerworld-backlog reads: "Reel: <file>", "instagram: <link>", "- **youtube:** skipped". */
+/** The same line format content-backlog reads: "Reel: <file>", "instagram: <link>", "- **youtube:** skipped". */
 function parsePosted(text) {
   const fields = text
     .split(/\r?\n/)
