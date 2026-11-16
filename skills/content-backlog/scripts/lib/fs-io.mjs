@@ -21,7 +21,8 @@ export function createIo({ fs = nodeFs, warn }) {
       try {
         return fs.readdirSync(dir, { withFileTypes: true });
       } catch (err) {
-        if (err?.code !== 'ENOENT') warn(`Couldn't read ${dir} (${err?.code})`);
+        const code = /** @type {NodeJS.ErrnoException} */ (err)?.code;
+        if (code !== 'ENOENT') warn(`Couldn't read ${dir} (${code})`);
         return [];
       }
     },
