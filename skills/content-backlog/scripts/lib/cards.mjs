@@ -1,6 +1,7 @@
 // Cards (Content Board FR 4-6, FR 10, FR 11): one card per idea, tutorial, MakerWorld listing and video,
 // with a stable id, the final video resolved from publish.md (never "the newest file"), the raw posted.txt
 // lines, and a placement from stages.mjs. Read-only, through the scanner's io; no module state.
+import { Buffer } from 'node:buffer';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { cardId } from './card-id.mjs';
