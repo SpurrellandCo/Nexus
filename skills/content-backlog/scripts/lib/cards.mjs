@@ -10,9 +10,10 @@ import { localDate } from './dates.mjs';
 import { createIo } from './fs-io.mjs';
 import { headingOf, ideaDateFromName, ideaTitle } from './layouts.mjs';
 import { listingDateOf, readScheduledTxt } from './listings.mjs';
-import { NOT_PLATFORMS, parsePosted } from './posted.mjs';
+import { normalizeRel } from './config.mjs';
+import { NOT_PLATFORMS, isScheduledValue, parsePosted, parseScheduledValue } from './posted.mjs';
 import { readPublishMd } from './publish-md.mjs';
-import { SKIP_FOLDER, childCI, dateIn, firstUrl, isIgnored, statusOf, visible } from './scan.mjs';
+import { SKIP_FOLDER, childCI, dateIn, firstUrl, isIgnored, rel, statusOf, visible } from './scan.mjs';
 import { placeCard } from './stages.mjs';
 
 const DISCOVERY_DEPTH = 2;
@@ -133,6 +134,9 @@ function videoCard(ctx, type, dir, facts, ignored) {
   const warnings = [];
   if (video?.missing) warnings.push(`${video.source === 'publish-md' ? 'publish.md' : 'posted.txt'} names ${video.name}, which isn't in Final/`);
   if (!video && brief.status === 'made') warnings.push('Status says "made" but there is no video in Final/');
+  for (const l of record.platformLines) {
+    if (isScheduledValue(l.value) && !parseScheduledValue(l.value)) warnings.push(`${record.ref?.path}: can't read the scheduled date in "${l.key}: ${l.value}"`);
+  }
   const folder = relPosix(cfg, dir);
   return {
     id: cardId(cfg.brandId, type, folder),
@@ -168,11 +172,19 @@ function listingCard(ctx, dir, facts, ignored) {
   const publishedFile = up ? path.join(up, 'published.txt') : null;
   const listing = listingFile ? io.readText(listingFile) : null;
   const published = publishedFile ? io.readText(publishedFile) : null;
-  const publishedMs = published !== null ? dateIn(published, 'Published') || io.mtime(/** @type {string} */ (publishedFile)) : 0;
+  // A brief with Status `published` and no published.txt (older models) is published as of the brief's
+  // last change, as the backlog CLI has it.
+  const briefPublished = published === null && brief.status === 'published';
+  const publishedMs = published !== null ? dateIn(published, 'Published') || io.mtime(/** @type {string} */ (publishedFile))
+    : briefPublished ? brief.mtimeMs : 0;
   const publishedDate = publishedMs ? localDate(publishedMs) : null;
-  // scheduled.txt is ignored once published.txt exists (published wins, FR 8).
-  const scheduledFile = up ? path.join(up, 'scheduled.txt') : null;
-  const scheduled = scheduledFile && published === null ? readScheduledTxt(io.readText(scheduledFile)) : null;
+  // scheduled.txt is ignored once the listing is published (published wins, FR 8).
+  const scheduledFile = up && published === null && !briefPublished ? path.join(up, 'scheduled.txt') : null;
+  const scheduledText = scheduledFile ? io.readText(scheduledFile) : null;
+  const scheduled = readScheduledTxt(scheduledText);
+  /** @type {string[]} */
+  const warnings = [];
+  if (scheduledFile && scheduledText !== null && !scheduled) warnings.push(`${relPosix(cfg, scheduledFile)}: can't read a "makerworld: scheduled <YYYY-MM-DD>" line`);
   const folder = relPosix(cfg, dir);
   return {
     id: cardId(cfg.brandId, 'listing', folder),
@@ -197,7 +209,7 @@ function listingCard(ctx, dir, facts, ignored) {
     created: dateIn(brief.text, 'Created') ? localDate(dateIn(brief.text, 'Created')) : null,
     lastChanged: Math.max(brief.mtimeMs, listingFile ? io.mtime(listingFile) : 0, publishedFile ? io.mtime(publishedFile) : 0,
       scheduledFile && scheduled ? io.mtime(scheduledFile) : 0, up ? io.mtime(up) : 0),
-    warnings: [],
+    warnings,
   };
 }
 
@@ -347,7 +359,7 @@ export function scanBrand(cfg, options) {
     for (const e of visible(io.listDir(tutorialsDir)).filter((d) => d.isDirectory()).sort(byName)) {
       if (ctx.shouldStop()) break;
       const dir = path.join(tutorialsDir, e.name);
-      cards.push(videoCard(ctx, 'tutorial', dir, folderFacts(ctx, dir), isIgnored(cfg, dir)));
+      cards.push(videoCard(ctx, 'tutorial', dir, folderFacts(ctx, dir), ignoredWithin(cfg, dir)));
     }
     for (const e of top) {
       const found = discoverModels(ctx, path.join(cfg.root, e.name), DISCOVERY_DEPTH, false);
@@ -370,23 +382,39 @@ export function scanBrand(cfg, options) {
 }
 
 /**
- * The cards of one folder (or idea file), for a quick refresh after a write (FR 43).
+ * Whether a folder or any folder above it is on the ignore list, as a full scan sees it.
+ * @param {ScanConfig} cfg
+ * @param {string} dir
+ */
+function ignoredWithin(cfg, dir) {
+  const parts = normalizeRel(rel(cfg, dir)).split('/');
+  return parts.some((_, i) => cfg.ignore.has(parts.slice(0, i + 1).join('/')));
+}
+
+/**
+ * The cards of one folder (or idea file), for a quick refresh after a write (FR 43). Throws a RangeError
+ * for a path outside the content root.
  * @param {ScanConfig} cfg
  * @param {string} relFolder path relative to the content root
  * @param {{ now: number, fs?: typeof import('node:fs') }} options
  */
 export function scanCard(cfg, relFolder, options) {
+  const root = path.resolve(cfg.root);
+  const target = path.resolve(root, relFolder);
+  const inside = path.relative(root, target);
+  if (path.isAbsolute(relFolder) || !inside || inside === '..' || inside.startsWith(`..${path.sep}`) || path.isAbsolute(inside)) {
+    throw new RangeError(`"${relFolder}" is not a folder inside the content root`);
+  }
   const { ctx, warnings } = makeContext(cfg, options);
-  const target = path.join(cfg.root, relFolder);
   const parent = path.dirname(target);
   /** @type {any[]} */
   let cards;
   if (MD.test(relFolder) && path.basename(parent).toLowerCase() === cfg.ideasFolder.toLowerCase()) {
     cards = ideaCards(ctx).filter((c) => c.folder.toLowerCase() === relPosix(cfg, target).toLowerCase());
   } else if (cfg.layout === 'models' && path.basename(parent).toLowerCase() === cfg.tutorialsFolder.toLowerCase()) {
-    cards = [videoCard(ctx, 'tutorial', target, folderFacts(ctx, target), isIgnored(cfg, target))];
+    cards = [videoCard(ctx, 'tutorial', target, folderFacts(ctx, target), ignoredWithin(cfg, target))];
   } else {
-    cards = folderCards(ctx, target, folderFacts(ctx, target), isIgnored(cfg, target));
+    cards = folderCards(ctx, target, folderFacts(ctx, target), ignoredWithin(cfg, target));
   }
   return { cards: finish(ctx, cards), warnings };
 }

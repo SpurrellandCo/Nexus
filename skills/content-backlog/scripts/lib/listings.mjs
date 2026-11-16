@@ -11,11 +11,12 @@ import { matchRecordLine, parseScheduledValue } from './posted.mjs';
  */
 export function readScheduledTxt(text) {
   if (text === null) return null;
+  let value = null;
   for (const line of text.split(/\r?\n/)) {
     const m = matchRecordLine(line);
-    if (m?.key === 'makerworld') return parseScheduledValue(m.value);
+    if (m?.key === 'makerworld') value = m.value; // the last line wins, as in posted.txt (D-002)
   }
-  return null;
+  return value === null ? null : parseScheduledValue(value);
 }
 
 /**

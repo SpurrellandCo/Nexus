@@ -79,7 +79,9 @@ function placeVideo(card, accounts, now) {
     if (card.video.source === 'unconfirmed') return at('Made', 'Made, video unconfirmed', "Name the final video on publish.md's Video: line (/reel)");
     if (card.video.missing) return at('Made', 'Video missing', 'Render the video publish.md names, or fix its Video: line (/reel)');
     const statuses = cardStatuses(card, accounts, now);
-    if (statuses.length > 0 && statuses.every((s) => s.status === 'skipped')) return at('Posted', 'Not used', null, 'not-used');
+    // "Every active account skipped" (MASTER Section 7): an account the video predates (n/a) isn't asked.
+    const asked = statuses.filter((s) => s.status !== 'n/a');
+    if (asked.length > 0 && asked.every((s) => s.status === 'skipped')) return at('Posted', 'Not used', null, 'not-used');
     const open = statuses.some((s) => s.status === 'owed' || s.status === 'scheduled');
     if (open && card.files.publishMd) return at('Ready to post', 'Ready to post', 'Post it, then mark it posted');
     if (open) return at('Made', 'Made', 'Write the posting copy (/reel)');
