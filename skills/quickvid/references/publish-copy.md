@@ -48,6 +48,7 @@ Covers: `Final/<name>-cover.jpg` (Instagram, TikTok), `Final/<name>-thumb.jpg` (
 ## TikTok
 Cover text: Your bench stays clear
 Caption (118 / 2200): Your bench stays clear…
+**Sound:** a trending sound, picked in the app
 
 ## Instagram Reel
 Caption (118 / 2200):
@@ -67,15 +68,18 @@ The lines the tools rely on:
 
 - **`Video:`** on its own line, then the path of the exact render to post in backticks, relative to the footage folder.
   Name it explicitly: `Final/` keeps older versions until the post is recorded, so the newest file is not always the
-  one. Text after the closing backtick (length, size) is fine. A kit with no `Video:` line leaves the video
-  unconfirmed, and the Content Board won't schedule it until the line is there.
+  one. Text after the closing backtick (length, size) is fine. Without a `Video:` line, content-backlog falls back
+  to the `Reel:` line of `posted.txt` (or calls the video unconfirmed when there is none), and the Content Board
+  won't schedule the video until the `Video:` line is there.
 - **`Covers:`** on its own line: each cover or thumbnail path in backticks, followed by the places it's for in brackets.
 - **`## <place>`** headings, one per place: `TikTok`, `Instagram Reel`, `YouTube Shorts`, or the platform's name for any
   other (`Facebook`, `Threads`). The app gives each section to the account whose platform name starts the heading.
 - **Labelled fields** inside a section: `Cover text:`, `Caption`, `Title`, `Description`, `Tags` or `Hashtags`, each
   followed by its count in brackets if it has a limit, then a colon. The text follows on the same line or the lines
   below, up to the next label, a `---` rule or the next heading, and is copied exactly as written. A bold label
-  (`**Caption** (118 / 2200):`) reads the same. Any other label (`Sound:`, `Hook check:`) is kept as a note.
+  (`**Caption** (118 / 2200):`) reads the same. A note that isn't posting copy (`**Sound:**`, `**Hook check:**`)
+  needs a bold label, so it stays a note: a plain `Sound:` line would join the field above it and be copied into
+  the post. Things to do by hand go in `## Before posting` instead.
 - **`## Before posting`** last: a bullet list of the things to do by hand before posting.
 
 Older kits that put `Video:` and `Covers:` on one line, or have no `Video:` line, still read; write new ones in the

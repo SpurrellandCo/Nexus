@@ -28,8 +28,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  ConfigError, DAY_MS, DEFAULT_DAYS, GROUPS, brandInput, brandsFor, chooseBrand, localDate, parseAccounts, resolveConfig,
-  scanBacklog, startOfDay,
+  ConfigError, DAY_MS, DEFAULT_DAYS, GROUPS, brandInput, brandsFor, chooseBrand, isWithinRoot, localDate, parseAccounts,
+  resolveConfig, scanBacklog, startOfDay, techTipsBrand,
 } from './lib/index.mjs';
 
 const HIDDEN_BY_DEFAULT = new Set(['done', 'shelved']);
@@ -108,16 +108,29 @@ function loadSettings(opts) {
 }
 
 /**
- * tech-tips.json is only a fallback, so a broken one is ignored rather than fatal.
+ * tech-tips.json is only a fallback, so a broken one is reported, never fatal.
  * @param {string} file
+ * @returns {{ data: any, warning: string | null }}
  */
 function loadTechTips(file) {
   const text = readText(file);
-  if (text === null) return null;
+  if (text === null) return { data: null, warning: null };
   try {
-    return JSON.parse(text);
+    return { data: JSON.parse(text), warning: null };
+  } catch (err) {
+    return { data: null, warning: `Can't read ${file} (${err instanceof Error ? err.message : String(err)}), so it was skipped.` };
+  }
+}
+
+/**
+ * The real path, or the path as given when it can't be resolved (a volume that isn't mounted, say).
+ * @param {string} p
+ */
+function realOr(p) {
+  try {
+    return fs.realpathSync(p);
   } catch {
-    return null;
+    return p;
   }
 }
 
@@ -179,24 +192,43 @@ function renderText(scanned, opts, now, brandLine) {
 /**
  * The folder to scan and the brand it belongs to: --root, else the named brand's root, else the brand
  * holding the working folder, else makerworld.json's models_root.
+ * Roots are compared through their real paths, so a folder reached through a symlink still matches; the
+ * brand and root handed on are the ones the files name.
  * @param {ReturnType<typeof parseArgs>} opts
  * @param {any} settings
  * @param {import('./lib/accounts.mjs').AccountsDoc | null} doc
  * @param {any} techTips
+ * @param {string | null} accountsWarning shown with a brand error, since an unreadable file explains it
  */
-function pickBrand(opts, settings, doc, techTips) {
-  const fromCwd = !opts.root && !opts.brand ? brandsFor(doc, process.cwd())[0] : undefined;
-  const folder = opts.root ?? fromCwd?.contentRoot ?? (opts.brand ? null : settings?.models_root ?? null);
-  const choice = chooseBrand({ doc, techTips, folder, name: opts.brand });
-  if (choice.error) fail(choice.error);
-  return { choice, root: folder ?? choice.brand?.contentRoot ?? null };
+function pickBrand(opts, settings, doc, techTips, accountsWarning) {
+  const real = doc && { brands: doc.brands.map((b) => ({ ...b, contentRoot: realOr(b.contentRoot) })) };
+  const realTips = techTips && typeof techTips.videos_root === 'string' ? { ...techTips, videos_root: realOr(techTips.videos_root) } : techTips;
+  /** @param {any} brand */
+  const original = (brand) => (brand && doc?.brands.find((b) => b.id === brand.id && brand.id !== 'tech-tips')) ?? brand;
+  let folder = opts.root ?? (opts.brand ? null : settings?.models_root ?? null);
+  if (!opts.root && !opts.brand) {
+    const cwd = process.cwd();
+    const tips = techTipsBrand(realTips);
+    const here = brandsFor(real, cwd)[0] ?? (tips && isWithinRoot(cwd, tips.contentRoot) ? techTipsBrand(techTips) : undefined);
+    if (here) folder = original(here).contentRoot;
+  }
+  const choice = chooseBrand({ doc: real, techTips: realTips, folder: folder && realOr(folder), name: opts.brand });
+  if (choice.error) fail(accountsWarning ? `${choice.error}\n${accountsWarning}` : choice.error);
+  const brand = choice.source === 'tech-tips' ? techTipsBrand(techTips) : original(choice.brand);
+  return { choice: { ...choice, brand }, root: folder ?? brand?.contentRoot ?? null };
 }
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const settings = loadSettings(opts);
   const accounts = parseAccounts(readText(opts.accounts), opts.accounts);
-  const { choice, root } = pickBrand(opts, settings, accounts.doc, loadTechTips(opts.techTips));
+  const tips = loadTechTips(opts.techTips);
+  const picked = pickBrand(opts, settings, accounts.doc, tips.data, accounts.warning);
+  const { root } = picked;
+  // A broken tech-tips.json matters only when accounts.json had no brand for the folder.
+  const choice = picked.choice.source !== 'accounts' && tips.warning
+    ? { ...picked.choice, warnings: [tips.warning, ...picked.choice.warnings] }
+    : picked.choice;
   if (!settings && !root) fail(`No settings at ${opts.settings} and no brand for this folder in ${opts.accounts}. Pass --root <content folder> or --brand <name>.`);
   let cfg;
   try {
