@@ -211,8 +211,9 @@ For YouTube, also invoke `ai-seo` for a keyword-led title and tags:
 > "Give me a YouTube Shorts title of 100 characters or fewer, keyword first, and 3 to 5 tags, for a video about
 > [PRODUCT]. Here is the narration: [SCRIPT]."
 
-Write the result to `.quickvid/publish.md`, one section per place, each ready to copy and paste, with the character
-count beside anything that has a limit. Flag anything over a limit rather than trimming it silently. Show it to the
+Write the result to `.quickvid/publish.md` in the shape `references/publish-copy.md` sets out (other tools read it):
+a `Video:` line naming the exact render and a `Covers:` line, then one section per place, each ready to copy and
+paste, with the character count beside anything that has a limit, then `## Before posting`. Flag anything over a limit rather than trimming it silently. Show it to the
 user — this is copy they will post under their own name, so let them change it.
 
 Affiliate and Amazon links live in `~/.nexus-local/makerworld.json`. Use one only where it is clickable and belongs,
