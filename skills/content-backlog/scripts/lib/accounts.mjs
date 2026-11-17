@@ -43,7 +43,28 @@ export function parseAccounts(text, file = 'accounts.json') {
   const brands = data.brands.filter((/** @type {any} */ b) => b && typeof b === 'object'
     && typeof b.id === 'string' && b.id !== ''
     && typeof b.contentRoot === 'string' && b.contentRoot !== '');
-  return { doc: { brands }, warning: null };
+  return { doc: { brands: brands.map(cleanBrand) }, warning: null };
+}
+
+const FOLDER_KEYS = Object.freeze(['contentFolder', 'uploadFolder', 'ideasFolder', 'tutorialsFolder']);
+
+/**
+ * A brand every reader can use as is: accounts that are objects with a platform name, ignore entries
+ * that are strings, folder names that are non-empty strings (else the scanner's defaults apply), and a
+ * known layout. Entries that don't fit are dropped, never thrown on.
+ * @param {any} b
+ */
+function cleanBrand(b) {
+  /** @type {any} */
+  const clean = {
+    ...b,
+    layout: b.layout === 'videos' ? 'videos' : 'models',
+    accounts: (Array.isArray(b.accounts) ? b.accounts : []).filter((/** @type {any} */ a) => a && typeof a === 'object'
+      && typeof a.platform === 'string' && a.platform.trim() !== ''),
+    ignore: (Array.isArray(b.ignore) ? b.ignore : []).filter((/** @type {unknown} */ p) => typeof p === 'string'),
+  };
+  for (const key of FOLDER_KEYS) if (typeof clean[key] !== 'string' || clean[key].trim() === '') delete clean[key];
+  return clean;
 }
 
 /**
@@ -136,13 +157,18 @@ export function chooseBrand({ doc, techTips = null, folder, name = null }) {
     }
     return { brand, source: /** @type {BrandSource} */ ('accounts'), warnings };
   };
+  /** @param {any} tt */
+  const fromTechTips = (tt) => {
+    if (videoPlatforms(tt).length === 0) warnings.push(`${tt.name} (tech-tips.json) lists no platforms, so no platform is owed a video.`);
+    return { brand: tt, source: /** @type {BrandSource} */ ('tech-tips'), warnings };
+  };
 
   if (name) {
     const named = brandNamed(doc, name);
     if (named) return fromAccounts(named);
     const tt = techTipsBrand(techTips);
     if (tt && [tt.id, String(tt.name).toLowerCase()].includes(String(name).trim().toLowerCase())) {
-      return { brand: tt, source: 'tech-tips', warnings };
+      return fromTechTips(tt);
     }
     const known = doc ? doc.brands.filter(isActive) : [];
     return {
@@ -161,7 +187,7 @@ export function chooseBrand({ doc, techTips = null, folder, name = null }) {
     }
     if (matches.length) return fromAccounts(matches[0]);
     const tt = techTipsBrand(techTips);
-    if (tt && isWithinRoot(folder, tt.contentRoot)) return { brand: tt, source: 'tech-tips', warnings };
+    if (tt && isWithinRoot(folder, tt.contentRoot)) return fromTechTips(tt);
   }
   return { brand: null, source: 'makerworld', warnings };
 }
