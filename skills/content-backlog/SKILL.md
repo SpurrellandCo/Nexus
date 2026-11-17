@@ -61,16 +61,22 @@ shows its planned date too.
 
 ## 1. Scan
 
-From this skill's folder, with the brand's content root:
+From this skill's folder, with the brand's content root (or `--brand "<name>"` when the user named the brand):
 
 ```
 node scripts/backlog.mjs --root "<content root>"
 ```
 
-It reads folder names, the platform list and `backlog.ignore` from `~/.nexus-local/makerworld.json` (`--settings
-<file>` for another file; `content_folder`, `upload_folder`, `idea.ideas_folder`, `idea.tutorials_folder`,
-`reel.platforms`). The script never writes. Options:
+It finds the brand in `~/.nexus-local/accounts.json` by that root and takes its platforms, folder names and
+`ignore` list from there, and the report's first lines say which brand and platforms it used. With no accounts
+file, or no brand there for the folder, it falls back to `~/.nexus-local/tech-tips.json` when the folder is inside
+its `videos_root`, else to `~/.nexus-local/makerworld.json` (`content_folder`, `upload_folder`,
+`idea.ideas_folder`, `idea.tutorials_folder`, `reel.platforms`). `backlog.ignore` in `makerworld.json` always
+applies to the brand whose root is `models_root`. A warning at the end means the accounts file couldn't be read or
+the brand has no video accounts; pass it on. The script never writes. Options:
 
+- `--brand <id or name>`: scan that brand from the accounts file (it stops and lists the brands if none matches)
+- `--accounts <file>`, `--settings <file>`, `--tech-tips <file>`: other settings files (`none` skips one)
 - `--days <n>`: how far back "published recently, no reel" and "recently changed, no records" look [60]
 - `--all`: also list finished and shelved items
 - `--untracked`: list every older folder with no records too

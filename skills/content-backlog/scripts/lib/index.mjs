@@ -1,5 +1,6 @@
 // Public surface of the shared scanner. The content-backlog CLI and the Content Board app (which
 // vendors this folder, D-001) import from here.
+export { ACCOUNTS_VERSION, brandNamed, brandsFor, chooseBrand, isWithinRoot, parseAccounts, techTipsBrand, videoPlatforms } from './accounts.mjs';
 export { cardId } from './card-id.mjs';
 export { noPromoReel, scanBrand, scanCard } from './cards.mjs';
 export { ConfigError, DAY_MS, DEFAULTS, DEFAULT_DAYS, brandInput, normalizeRel, normalizeRoot, resolveConfig, sameRoot } from './config.mjs';
