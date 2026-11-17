@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-11 at 13:51:25.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-16 at 21:08:06.
 
 ## Agents
 
@@ -177,6 +177,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `competitor-profiling` | When the user wants to research, profile, or analyze competitors from their URLs. Also use when the user mentions 'competitor profile,' 'competitor research,' 'competitor analysis,' 'profile this competitor,' 'analyze competitor,' 'competitive intelligence,' 'competitor deep dive,' 'who are my competitors,' 'competitor landscape,' 'competitor dossier,' 'competitive audit,' or 'research these competitors.' Input is a list of competitor URLs. Output is structured competitor profile markdown files. For creating comparison/alternative pages from profiles, see competitor-alternatives. For sales-specific battle cards, see sales-enablement. |
+
+### content-backlog
+
+| Skill | Description |
+|-------|-------------|
+| `content-backlog` | List every piece of content work that's started but not finished, for any of the user's brands - videos made but not posted (promo reels, tutorials, tech tips), and, for a brand that publishes 3D models on MakerWorld, listings drafted but not published, models built but not listed, models still being built and recent listings with no promo reel yet; plus tutorials in progress, saved and approved ideas, and recently changed folders with no records. Reads the records the content skills leave in each folder, so there's no separate list to keep in sync. Works out the brand from the folder it's run in, or the one the user names. When the user says something is done (posted, published, dropped), records it so it leaves the list. Use when the user asks what's in their content backlog, what they haven't finished, published or posted yet for a brand or channel, what to work on next, or says "/content-backlog". |
 
 ### content-strategy
 
@@ -375,17 +381,11 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `lead-magnets` | When the user wants to create, plan, or optimize a lead magnet for email capture or lead generation. Also use when the user mentions "lead magnet," "gated content," "content upgrade," "downloadable," "ebook," "cheat sheet," "checklist," "template download," "opt-in," "freebie," "PDF download," "resource library," "content offer," "email capture content," "Notion template," "spreadsheet template," or "what should I give away for emails." Use this for planning what to create and how to distribute it. For interactive tools as lead magnets, see free-tool-strategy. For writing the actual content, see copywriting. For the email sequence after capture, see email-sequence. |
 
-### makerworld-backlog
-
-| Skill | Description |
-|-------|-------------|
-| `makerworld-backlog` | List every piece of MakerWorld work that's started but not finished, across the whole pipeline - promo reels and tutorial videos made but not posted, listings drafted but not published, models built but not listed, models still being built, tutorials in progress, recent listings with no reel yet, saved and approved ideas, and recently changed model folders with no pipeline records. Reads the records the other MakerWorld skills leave in each model folder, so there's no separate list to keep in sync. When the user says something is done (posted, published, dropped), records it so it leaves the list. Use when the user asks what's in their MakerWorld backlog, what they haven't finished, published or posted yet, what to work on next, or says "/makerworld-backlog". |
-
 ### makerworld-idea
 
 | Skill | Description |
 |-------|-------------|
-| `makerworld-idea` | Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to makerworld-reel's tutorial mode instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models. |
+| `makerworld-idea` | Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to the reel skill's tutorial format instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models. |
 
 ### makerworld-model
 
@@ -398,12 +398,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `makerworld-publish` | Publish a 3D model to the user's MakerWorld account from one folder of assets (Bambu Studio 3MF, real photos, optional STL/CAD, and the brief if makerworld-model built it). Always starts by asking for the folder path and a quick description of what the model is (both required; a brief.md in the folder supplies the description, parts list and contest), then measures the model, cleans the photos (GPS removed, 4:3 and 3:4 covers), drafts the name, description and tags (with any saved affiliate links), fills in the MakerWorld upload form in the user's signed-in browser, and stops before Publish. On first use it runs a short setup and saves the user's settings on their own machine. Use when the user asks to publish, upload, list or post a model on MakerWorld. |
-
-### makerworld-reel
-
-| Skill | Description |
-|-------|-------------|
-| `makerworld-reel` | Make a short vertical promo video (Instagram Reel, TikTok, YouTube Short) for a published MakerWorld model from its model folder, then write the title, caption or description and tags for each platform and make the thumbnails. Checks which formats and sounds are trending on TikTok, Instagram and YouTube Shorts that week and builds the script on one that fits the model (or on a proven 3D-printing format when none does), writing it from the model's own listing; the user records the voice-over line by line, then builds the reel with the quickvid tools; shot framing, motion graphics or animated photos where there is no footage, an end card, and narration overlays timed to the spoken words. Also has a tutorial mode for how-to and explainer videos (Bambu Studio settings, printer how-tos, a model's customiser) from a tutorial folder made by makerworld-idea: claims from the tutorial's official sources, a motion graphic per setting, a short Bambu Studio screen recording, and an optional filmed proof print. Use after makerworld-publish, when the user asks for a reel, short, TikTok or promo video for one of their MakerWorld models, or after makerworld-idea hands off a tutorial. |
 
 ### marketing-ideas
 
@@ -615,6 +609,12 @@ Skills are deep, actionable reference materials organized by topic. They provide
 |-------|-------------|
 | `redesign-existing-projects` | Upgrades existing websites and apps to premium quality. Audits current design, identifies generic AI patterns, and applies high-end design standards without breaking functionality. Works with any CSS framework or vanilla CSS. |
 
+### reel
+
+| Skill | Description |
+|-------|-------------|
+| `reel` | Make a short vertical video (Instagram Reel, TikTok, YouTube Short) for any of the user's brands, then write the title, caption or description and tags for each platform and make the thumbnails. Three formats - promo (a product or a published MakerWorld model, from its model folder and listing), tutorial (a how-to or explainer such as Bambu Studio settings, from a tutorial folder made by makerworld-idea, with claims from official sources only) and tech-tip (finds ranked tech-tip ideas, then a software walkthrough screen-recorded step by step with auto-zoom, or hardware the user films). Works out the brand from the folder (or the one the user names) and reads that brand's settings and accounts. Checks which formats and sounds are trending that week, writes the script, the user records the voice-over line by line, and the video is built with the quickvid tools; then records where it was posted and clears out the old render versions. Use when the user asks for a reel, short, TikTok or promo video, a tutorial or how-to video, a tech tip, ideas for their tech channel, a walkthrough of an app or setting, after makerworld-publish, or when makerworld-idea hands off a tutorial. |
+
 ### referral-program
 
 | Skill | Description |
@@ -722,12 +722,6 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `design-taste-frontend` | Senior UI/UX Engineer. Architect digital interfaces overriding default LLM biases. Enforces metric-based rules, strict component architecture, CSS hardware acceleration, and balanced design engineering. |
-
-### tech-tips
-
-| Skill | Description |
-|-------|-------------|
-| `tech-tips` | Make short vertical tech-tip videos (TikTok first, plus Instagram Reels and YouTube Shorts) for the user's tech-tips channel, from idea to posting kit. Finds ranked video ideas from new launches, updates and trending how-to searches; researches one tip from official sources only; writes a hook / numbered steps / CTA script with a recording sheet for the user's own voice-over; drives and screen-records software walkthroughs step by step (web apps in the browser, desktop apps by computer use) with every click logged for auto-zoom; gives a shot list for hardware the user films; then edits with the quickvid tools and writes titles, captions, tags and thumbnails. Use when the user wants a tech tip video, a how-to short, ideas for their tech channel, a walkthrough of an app or setting, or a video about a new device, keyboard, networking gear or software update. |
 
 ### three-js-webgl
 
@@ -980,7 +974,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 182
+- **Skills:** 181
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 
