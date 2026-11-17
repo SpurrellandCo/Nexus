@@ -53,7 +53,8 @@ on every platform in its `posted.txt` counts as not used, so its model shows as 
 counted as images in the content folder that aren't named after the model, since the pipeline's renders and
 generated images always are.
 
-A `scheduled <YYYY-MM-DD>[ <HH:MM>]` line in `posted.txt` is a planned post, not a post: the video stays on the list
+A `scheduled <YYYY-MM-DD>` or `scheduled <YYYY-MM-DDTHH:MM>` line in `posted.txt` (a space instead of the `T` reads
+the same; the Content Board app writes these) is a planned post, not a post: the video stays on the list
 with "scheduled for <date> (<platforms>)". Anything else starting with `scheduled` that can't be read as a date
 counts as not posted. The one exception is `scheduled, no link (<YYYY-MM-DD>)`, an older way of recording a post
 scheduled in the platform's own app: that counts as posted on that date. A drafted listing with a `scheduled.txt`

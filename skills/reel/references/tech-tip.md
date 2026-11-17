@@ -20,13 +20,21 @@ brief.md      the idea and the angle          sources.md   every fact, with its 
 Content/      footage folder (<Content> in the shared guide): voice memos 01..NN, filmed clips, Step NN clips, graphics
 Content/.quickvid/   working files (capture/, research.md, script.md, plan.json, timing.json, ...)
 Content/Final/       the finished videos and thumbnails, never overwritten
+Content/Final/posted.txt   where the video was posted or is scheduled to be (format in reel's section 3)
 ```
+
+`posted.txt` has the same lines here as for any other video: `Reel:`, `format:`, then one line per platform the
+brand posts video to, each a post (link or `posted, no link (<YYYY-MM-DD>)`), `skipped`, or a Content Board plan
+(`scheduled <YYYY-MM-DD>` or `scheduled <YYYY-MM-DDTHH:MM>`). content-backlog and the Content Board read it from this
+`Content/Final/` folder.
 
 Ideas waiting to be made live in `<content root>/_Ideas/`, one file per idea, named `YYYY-MM-DD <Idea title>.md`,
 with a `# <Idea title>` heading, a plain `- Status:` line, then `- Hook:`, `- Format:`, `- Needs:`, `- Why now:`,
 `- Leads:` and `- Score:`. The Status is `idea` when saved, `approved` once the user wants it made, or `shelved` when
-they drop it (a shelved idea stays in the folder and drops off content-backlog and the Content Board). When the user
-picks one to make, create its video folder with that file as `brief.md` and remove it from `_Ideas/`.
+they drop it (a shelved idea stays in the folder and drops off content-backlog and the Content Board). The Content
+Board can approve, unapprove or shelve these ideas by rewriting only the `- Status:` line, but it doesn't create
+tech-tip ideas: new ones are saved here, with the fields above. When the user picks one to make, create its video
+folder with that file as `brief.md` and remove it from `_Ideas/`.
 
 ## 1. Ideas
 

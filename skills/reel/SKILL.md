@@ -87,14 +87,23 @@ youtube: skipped
 ```
 
 The `format:` line lets later research see which formats this audience responds to (`references/trend-formats.md`).
-Write one line for each platform the brand posts video to. Any value but `skipped` or `scheduled <YYYY-MM-DD>[
-<HH:MM>]` (a planned post, not yet made) counts as done: a link if the user gave one, `posted, no link (<YYYY-MM-DD>)`
-if they didn't, including a post they scheduled in the platform's own app (use the date it goes live; older records
-wrote these as `scheduled, no link (<YYYY-MM-DD>)`, which still counts as posted). `skipped` is a platform they chose
-to leave out; a video skipped on every platform counts as not used. If the file already exists (posting a day apart,
-say), add the new lines or replace that platform's line; don't replace the file. The `Reel:` line ties the record to
-one video: a newer render under another name shows as unposted until it's posted and the `Reel:` line and links are
-updated.
+Write one line for each platform the brand posts video to (its accounts that accept video; section 0). Each value is
+one of:
+
+- **A post** (counts as done): the link if the user gave one, else `posted, no link (<YYYY-MM-DD>)`. A post the user
+  scheduled in the platform's own app is a post too: use the date it goes live. Older records wrote these as
+  `scheduled, no link (<YYYY-MM-DD>)` (with the comma), which still counts as posted; write the `posted` form now.
+- **`skipped`**: a platform they chose to leave out. A video skipped on every platform counts as not used.
+- **A plan** (not done): `scheduled <YYYY-MM-DD>`, or with a time `scheduled <YYYY-MM-DDTHH:MM>` (24-hour local time,
+  no zone; a space or a lowercase `t` instead of the `T` reads the same). The Content Board app writes these when the
+  user drags a video onto its calendar or queues it, with every platform of that video on the same date and time.
+  content-backlog lists the video as scheduled, not posted. Anything else starting with `scheduled` and no comma
+  counts as not posted.
+
+If the file already exists (posting a day apart, say), add the new lines or replace that platform's line; don't
+replace the file. When the user says a scheduled video went out, replace each platform's `scheduled ...` line with
+its post (or `skipped`), leaving the other lines as they are. The `Reel:` line ties the record to one video: a newer
+render under another name shows as unposted until it's posted and the `Reel:` line and links are updated.
 
 **Then clear out the old versions.** Every render, character pass, overlay pass and thumbnail is saved as a new
 version (`-V2`, `-V3`...), so `Final/` fills up with drafts. As soon as `posted.txt` names the video and at least one
@@ -108,7 +117,8 @@ It keeps the posted video (the `Reel:` line), its captions, and the newest cover
 version of that video in `Final/`, and the scratch that quickvid rebuilds when needed in `.quickvid/` (`cuts/`,
 `sheets/` and the `character*/` frame folders). Other videos, the footage and the `.quickvid` records (script, research,
 plan, overlays, timing, narration, posting copy) stay, so the video can still be re-rendered. The script removes nothing
-before a post is recorded, or for a video skipped on every platform, and stops if the `Reel:` file isn't there. This is
+before a post is recorded (a `scheduled` plan is not a post, so a video that is only scheduled keeps every version),
+or for a video skipped on every platform, and stops if the `Reel:` file isn't there. This is
 the standing rule for every posted video, so it needs no extra confirmation: tell the user what was removed and how
 much space it freed. Run it again whenever the `Reel:` line moves to a newer render (it's safe to repeat).
 
