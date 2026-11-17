@@ -1,6 +1,6 @@
 # Formats for MakerWorld reels
 
-Written for makerworld-reel's research and script steps (sections 2 and 3). Formats come from two places, used
+Written for the reel skill's promo format, its research and build steps (sections 2 and 3 of `promo.md`). Formats come from two places, used
 together:
 
 - **This week's trends**, from quickvid's research step 3b. They change every week, so they're never written down
@@ -18,7 +18,7 @@ Take the first that applies:
 3. A **niche outlier** from research step 3: a 3D-printing video from the last 30 days with several times its
    creator's usual views. Use its structure, never its wording or footage.
 4. The **niche format** below that best fits the footage. Between two that fit equally, prefer one that did well on
-   the user's own channel: earlier reels' `posted.txt` files (`<models_root>/*/<content_folder>/Final/posted.txt`)
+   the user's own channel: earlier videos' `posted.txt` files (`<content root>/*/<Content>/Final/posted.txt`)
    record a `format:` line, so set those against the views in research step 4.
 5. The default format (hook, steps, CTA).
 

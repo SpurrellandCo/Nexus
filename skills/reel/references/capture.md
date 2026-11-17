@@ -1,6 +1,6 @@
 # Capturing a software walkthrough
 
-Written for step 4a of the tech-tips skill: the agent drives the app, one recording per script step, every click
+Written for section 4a of the reel skill's tech-tip format (`tech-tip.md`), and a tutorial's screen recording: the agent drives the app, one recording per script step, every click
 logged, so `screen_zoom.py` can follow the action. Tools are in `$NEXUS_HOME/skills/quickvid/scripts/`; below,
 `QV` stands for that folder and `<Content>` for the video's content folder.
 
@@ -8,7 +8,7 @@ logged, so `screen_zoom.py` can follow the action. Tools are in `$NEXUS_HOME/ski
 
 Go through this with the user and wait for each item they have to do themselves.
 
-- **Demo account.** Record in the test account or demo tenant named in `demo_accounts` for this app. If there isn't
+- **Demo account.** Record in the test account or demo tenant named in the brand's `demoAccounts` for this app. If there isn't
   one, ask; never record in the user's real work or personal account. Never type a password or sign in for the user:
   ask them to sign in and say when they're done.
 - **Do Not Disturb on** (a Focus mode), so no notification slides in mid-step.

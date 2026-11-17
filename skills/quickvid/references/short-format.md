@@ -1,7 +1,7 @@
 # Short vertical video: the shared format and build
 
-Written for the channel skills that make short vertical videos with the user's own voice (makerworld-reel,
-tech-tips, and any later one). Each channel skill says where the facts and footage come from, its settings, its
+Written for the channel skills that make short vertical videos with the user's own voice (the reel skill's
+promo, tutorial and tech-tip formats, and any later one). Each channel skill says where the facts and footage come from, its settings, its
 end-card wording and its posting details; everything else is here, so a fix lands in every channel at once.
 
 Below, `QV` is `$NEXUS_HOME/skills/quickvid` and `<Content>` is the video's footage folder. Every command is a
@@ -45,7 +45,7 @@ the line best, not whatever is easiest:
 | The line... | Visual |
 |---|---|
 | has real footage that shows it | that clip, with `focusX`/`focusY`/`zoom` in the plan so wide shots crop well to vertical |
-| is a step on a screen (an app, a website, a generator) | a recorded step, auto-zoomed with `screen_zoom.py` (see the tech-tips capture guide) |
+| is a step on a screen (an app, a website, a generator) | a recorded step, auto-zoomed with `screen_zoom.py` (see the capture guide, `references/capture.md` in the reel skill) |
 | shows the product or result, but there's only a photo | an **animated photo**: `photo_motion.py` (push in, pull out or pan) |
 | explains an idea, a number, a comparison or a before/after nothing shows | a **custom motion graphic**: adapt `QV/references/explainer-example.py` |
 | is the call to action | the **end card**: `endcard.py` |
@@ -161,4 +161,4 @@ Instagram or TikTok captions. Show the user the copy: it goes out under their na
 
 Report the final video's path and length, the thumbnails, `publish.md`, and anything the channel skill lists to do
 before posting. Earlier versions stay in `Final/` until the video is posted; a channel skill may clear them out then
-(makerworld-reel does).
+(reel does).

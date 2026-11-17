@@ -1,8 +1,8 @@
 # Worked example: "Blur your background in Teams"
 
-A complete software tip through the tech-tips pipeline, to copy the shape of. The steps and labels below were read
+A complete software tip through the reel skill's tech-tip format, to copy the shape of. The steps and labels below were read
 from Microsoft's support article on 2026-11-09; menus change, so a real video re-reads the article and checks the
-installed version (step 2 of the skill) rather than trusting this file.
+installed version (section 2 of `tech-tip.md`) rather than trusting this file.
 
 ## brief.md
 

@@ -1,6 +1,6 @@
 # Research: what's already working for this topic
 
-Written for the research phase shared by quickvid, makerworld-reel and tech-tips. It runs before the script, on by
+Written for the research phase shared by quickvid and the reel skill (all its formats). It runs before the script, on by
 default in all three; skip it only when the user says so ("no research", `--no-research`). It answers one question:
 **what do the short videos that already do well on this topic open with, how long are they, and what words do people
 search?** It shapes the hook, the length, the title and the tags. It never supplies facts about the product; those
@@ -60,7 +60,7 @@ big numbers.
 ## 3b. Trending formats and sounds (when the calling skill asks for it)
 
 Step 3 shows what works for this keyword. This step shows what's spreading across each platform **this week**, so the
-video can use a format while it's still rising. It runs only when the calling skill asks for it (makerworld-reel
+video can use a format while it's still rising. It runs only when the calling skill asks for it (reel
 does). Allow about five extra minutes.
 
 **Reuse a recent check.** What's trending across a platform doesn't depend on the topic, so keep it in

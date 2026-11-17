@@ -1,6 +1,6 @@
 ---
 name: makerworld-idea
-description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to makerworld-reel's tutorial mode instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models.
+description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to the reel skill's tutorial format instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models.
 ---
 
 # MakerWorld idea
@@ -10,12 +10,12 @@ Idea in, approved brief out. This skill never models anything. It ends at a brie
 The four MakerWorld skills form a pipeline, and each one ends by offering the next:
 
 ```
-makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  makerworld-reel
+makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  reel
 ```
 
-Tutorials (route D) skip the middle: `makerworld-idea ──tutorial brief──▶ makerworld-reel (tutorial mode)`.
+Tutorials (route D) skip the middle: `makerworld-idea ──tutorial brief──▶ reel (tutorial format)`.
 
-makerworld-backlog lists anything left unfinished at any step: ideas not built, models not published, videos not
+content-backlog lists anything left unfinished at any step: ideas not built, models not published, videos not
 posted.
 
 ## 0. Settings and checks
@@ -142,7 +142,7 @@ Show a short summary for each brief: name, one-line pitch, parts list, open ques
 - **Yes:** follow the makerworld-model skill with that brief. For several approved briefs, ask which to build first.
 - **No:** stop. The brief waits in the backlog, and makerworld-model can pick it up later.
 
-For a tutorial, show the plan summary, what the user needs to film or print, and the folder, then ask: **"Make <name> now with makerworld-reel?"** and follow its tutorial mode. If the tutorial needs a model that doesn't exist yet (a test piece for a proof print, say), offer makerworld-model first.
+For a tutorial, show the plan summary, what the user needs to film or print, and the folder, then ask: **"Make <name> now with reel?"** and follow its tutorial format. If the tutorial needs a model that doesn't exist yet (a test piece for a proof print, say), offer makerworld-model first.
 
 ## Tool-specific notes
 
