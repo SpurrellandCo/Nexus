@@ -6,6 +6,7 @@
 import path from 'node:path';
 import { cardId } from './card-id.mjs';
 import { normalizeRel } from './config.mjs';
+import { fileFlags } from './flags.mjs';
 import { isImageName, isMp4Name, readMedia } from './media.mjs';
 import { mentionsMakerWorld } from './publish-md.mjs';
 import { resolveModel } from './models.mjs';
@@ -108,6 +109,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
   const kind = front.kind;
   const model = modelFacts(io, cfg, front.model);
   const media = readMedia(io, facts);
+  const files = { publishMd: work.hasPublish, scriptOrCopy: work.hasDraft };
   const ignored = isIgnoredPath(ignore, piece.path)
     || (model.path !== null && cfg.modelsRoot !== null && isIgnoredPath(ignore, path.relative(cfg.modelsRoot, model.path)));
   return {
@@ -123,7 +125,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
     piece: { name: piece.name, path: piece.path, kind, format: front.format, declaredStatus: front.status, created: front.created ?? null },
     video: media.video,
     slides: media.slides,
-    files: { publishMd: work.hasPublish, scriptOrCopy: work.hasDraft },
+    files,
     record: {
       posts: Object.entries(front.posts ?? {}).map(([key, value]) => ({ key, value })),
       ref: { path: status.path, size: status.size, mtimeMs: status.mtimeMs, sha1: status.sha1 },
@@ -131,7 +133,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
       statusSlides: kind === 'carousel' ? [...(front.slides ?? [])] : [],
     },
     model,
-    rawFlags: media.flags,
+    rawFlags: fileFlags({ brandId: cfg.brandId, front, files, video: media.video, slides: media.slides, namedSlides: media.namedSlides, model, mediaFlags: media.flags }),
     dependency: { mentionsMakerWorld: work.publishText === null ? false : mentionsMakerWorld(work.publishText) },
     created: front.created ?? null,
     lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs, media.changedMs),
