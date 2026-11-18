@@ -88,6 +88,57 @@ Before writing a word, read, and tell the user which files you read (one line):
 Claims on the slides come only from the brief, the listing and the user. If a photo or a fact is missing, ask rather than
 fill the gap.
 
+## 3. The slide copy and the approval gate
+
+Write the copy first, show it, and wait. **Nothing is written to the project and nothing is rendered until the user
+approves the copy in words** ("yes", "approved", "go ahead"). A question, a request for a change or silence is not approval,
+and changed copy is shown again. Keep the draft outside the project (a file in the system's temporary folder, or standard
+input for the checks below), so that no `Carousel/` folder exists until the user's yes.
+
+**The shape** is "The Carousel Hook" of social-content (`$NEXUS_HOME/skills/social-content/references/post-templates.md`): slide 1
+a bold statement or question, one point per value slide, and the last slide a summary and one call to action: the model's
+listing when the project links one (name it: "Free on MakerWorld: <model name>"), else the brand's `cta`.
+`references/copy-rules.md` has the rules for each slide, the photos and the claims; `references/copy-template.md` has the
+file's shape and a worked example the tools accept.
+
+**How many slides.** From 2 to the smallest maximum among the owed accounts (section 0), from
+`references/platform-slides.json`. The "10 slides" in `social-content/references/platforms.md` does not apply; these limits do.
+Ask the tool what the range is for the accounts you found:
+
+```
+node $NEXUS_HOME/skills/carousel/scripts/copy_md.mjs limits --platforms instagram,tiktok,pinterest
+```
+
+It prints the range and names a platform that takes no carousel. Facebook's maximum is an assumption (the platform publishes
+none); say so, and ask the user to confirm it on their first real post. When the copy has more slides than an owed account
+allows (for example 7 slides with Pinterest owed, whose maximum is 5), say so and offer to trim the copy to fit or to leave
+that platform out of this carousel (`skipped`, only with the user's yes). Never post fewer slides silently: a platform left out is
+named in the copy (`Left out: pinterest (6 slides; its maximum is 5)`), and its `skipped` is recorded with the other posts
+(section 6).
+
+**Claims come only from the brief, the listing and the user.** No number, material, measurement or promise that is in none of
+them. Check the numbers before showing the copy: every number in the slides' text and alt text has to be in the brief or the
+listing, or in what the user told you (pass their words with `--also`):
+
+```
+node $NEXUS_HOME/skills/carousel/scripts/copy_md.mjs check - --source "<brief file>" --source "<listing.md>" --also "<what the user told you>"
+```
+
+Give the draft on standard input (`-`) or as a file outside the project. The check also tests the slide count against the
+accounts the copy is made for, the shape of the file and, with `--project "<project folder>"`, that each photo is in the
+project's `content/` folder. It exits 1 and lists each problem; fix the copy, not the check, and never show copy that fails it.
+
+**After the yes**, create the piece and write the copy into it. The piece's `format` is the one the project's other pieces have
+(`status.mjs pieces` shows it), or `promo` when it has none:
+
+```
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name>/Carousel" --brand <brand id> --format promo --kind carousel --status scripted
+```
+
+(`references/finding-the-project.md` says how a model with no project gets one, and how a second carousel is named.) Then write
+the approved copy to `<piece folder>/.carousel/copy.md` in the shape of `references/copy-template.md`, and check it once more
+with `--project`. The piece is now `scripted`.
+
 ## Older brands (itemLayout 1)
 
 This skill has no older format. For a brand whose `itemLayout` is absent or `1`, or a folder of old records with no piece,
