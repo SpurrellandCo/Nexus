@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 // Phase 1 of the quickvid skill: read a folder of footage and report what is there.
-// Deterministic on purpose — nothing here is improvised by a model. Writes <folder>/.quickvid/inventory.json
+// Deterministic on purpose — nothing here is improvised by a model. Writes <out>/.quickvid/inventory.json
 // and one contact sheet per clip, and never changes a file the user put in the folder.
+//
+//   inventory.mjs <folder> [--out <piece folder>] [--frames=8] [--no-transcribe]
+//
+// <folder> is the footage. `--out` is where the work goes (.quickvid/): a piece folder of a brand in the new format, whose footage is
+// the project's content folder. With no --out the work goes in <folder>, as it always did.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
@@ -42,9 +47,12 @@ const fail = (message) => {
   process.exit(1);
 };
 
-const args = process.argv.slice(2);
+/** `--out <dir>` and `--out=<dir>` are the same; returns the arguments in the second form. @param {string[]} argv */
+const joinOut = (argv) => argv.flatMap((a, i) => (a === '--out' ? [`--out=${argv[i + 1] ?? ''}`] : argv[i - 1] === '--out' ? [] : [a]));
+const args = joinOut(process.argv.slice(2));
 const folder = args.find((arg) => !arg.startsWith('--'));
-if (!folder) fail('usage: inventory.mjs <folder> [--frames=8] [--no-transcribe]');
+const outFolder = args.find((a) => a.startsWith('--out='))?.slice('--out='.length) || null;
+if (!folder || args.some((a) => a === '--out=')) fail('usage: inventory.mjs <folder> [--out <piece folder>] [--frames=8] [--no-transcribe]');
 const frames = Number(args.find((a) => a.startsWith('--frames='))?.split('=')[1] ?? SHEET_FRAMES);
 const noTranscribe = args.includes('--no-transcribe');
 
@@ -159,7 +167,12 @@ async function contactSheet(path, seconds, workDir) {
 const main = async () => {
   const stats = await stat(folder).catch(() => fail(`no such folder: ${folder}`));
   if (!stats.isDirectory()) fail(`not a folder: ${folder}`);
-  const workDir = join(folder, WORK_DIR);
+  const outDir = outFolder ?? folder;
+  if (outFolder !== null) {
+    const outStats = await stat(outFolder).catch(() => fail(`no such folder: ${outFolder}`));
+    if (!outStats.isDirectory()) fail(`not a folder: ${outFolder}`);
+  }
+  const workDir = join(outDir, WORK_DIR);
   await mkdir(workDir, { recursive: true });
 
   const files = (await walk(folder)).sort();
@@ -219,14 +232,14 @@ const main = async () => {
 
     if (kind === 'video' && item.seconds) {
       const sheet = await contactSheet(path, item.seconds, workDir);
-      item.sheet = sheet ? relative(folder, sheet) : null;
+      item.sheet = sheet ? relative(outDir, sheet) : null;
     }
     items.push(item);
     const speech = item.hasSpeech === true ? 'talking' : item.hasSpeech === false ? 'no talking' : 'TALKING UNKNOWN, audio will be dropped';
     console.log(`  ${rel}: ${kind}${item.seconds ? ` ${item.seconds.toFixed(1)}s` : ''}${item.width ? ` ${item.width}x${item.height}` : ''}${kind === 'video' ? `, ${speech}` : ''}`);
   }
 
-  const inventory = { folder, scannedAt: new Date().toISOString(), items };
+  const inventory = { folder, ...(outFolder !== null ? { out: outFolder } : {}), scannedAt: new Date().toISOString(), items };
   await writeFile(join(workDir, 'inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`);
   const clips = items.filter((i) => i.kind === 'video' && !i.unreadable);
   const talking = clips.filter((i) => i.hasSpeech === true);

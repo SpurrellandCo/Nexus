@@ -1,13 +1,14 @@
 """Prepare the user's own recorded narration for the render, and time every phrase.
 
-Usage: python prep_voice.py <footage folder> [--hold-last 1.3] [--gap 0.4] [--min-pause 0.2]
+Usage: python prep_voice.py <footage folder> [--out <piece folder>] [--hold-last 1.3] [--gap 0.4] [--min-pause 0.2]
                             [--voice-profile <id>] [--no-dataset]
 
 Reads the recordings named 01, 02, ... (m4a, wav, mp3, aac, mov) in the footage folder, one per script line,
-and writes trimmed copies (silence cut from both ends, 48 kHz mono) to <folder>/.quickvid/narration/NN.wav.
+and writes trimmed copies (silence cut from both ends, 48 kHz mono) to <piece>/.quickvid/narration/NN.wav, where <piece> is the
+--out piece folder, or the footage folder itself when there is none.
 The originals are never changed. --hold-last adds silence after the final line so an end card can hold.
 
-It also writes <folder>/.quickvid/timing.json: where each line starts in the finished reel and the spoken
+It also writes <piece>/.quickvid/timing.json: where each line starts in the finished reel and the spoken
 phrases inside it, so overlays and motion graphics can be placed on exact words:
 
   {"gapSeconds": 0.4, "total": 42.3,
@@ -25,7 +26,8 @@ never stops the voice prep: it is reported and the timing is still written.
 
 Every video's memos are named 01, 02, ..., so each one goes into the dataset under the video's name instead
 ("<Video Name> - line 01.m4a"), through a temporary link: the dataset stays readable and the user's file is untouched.
-The video's name is the footage folder's, or its parent's when the footage folder is called "Content".
+The video's name is the footage folder's, or its parent's when the footage folder is called "Content"; with --out it is the piece
+folder's parent (the project's).
 """
 import os
 import tempfile
@@ -45,7 +47,9 @@ def opt(name):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else None
 
 
-def video_name(folder):
+def video_name(folder, piece=None):
+    if piece is not None:
+        return piece.resolve().parent.name
     folder = folder.resolve()
     return folder.parent.name if folder.name.lower() == "content" else folder.name
 
@@ -60,9 +64,9 @@ def line_number(path):
     return int(m.group(1)) if m else None
 
 
-def named_links(sources, folder, tmp):
+def named_links(sources, folder, tmp, piece=None):
     """Links named after the video and line, pointing at the user's original recordings."""
-    video = video_name(folder)
+    video = video_name(folder, piece)
     links = []
     for src in sources:
         link = Path(tmp) / f"{video} - line {line_number(src):02d}{src.suffix.lower()}"
@@ -71,7 +75,7 @@ def named_links(sources, folder, tmp):
     return links
 
 
-def add_to_voice_dataset(sources, folder):
+def add_to_voice_dataset(sources, folder, piece=None):
     """Hand the original recordings to the voice dataset. Reports, never raises."""
     if "--no-dataset" in sys.argv:
         return
@@ -93,7 +97,7 @@ def add_to_voice_dataset(sources, folder):
     print(f"voice dataset: adding {len(sources)} recordings to '{profile}' ...", flush=True)
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            links = named_links(sources, folder, tmp)
+            links = named_links(sources, folder, tmp, piece)
             out = subprocess.run(["node", str(cli), "mlx-audio", "dataset", "add", profile, *map(str, links)],
                                  capture_output=True, text=True, timeout=DATASET_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -107,6 +111,13 @@ def arg(name, default):
     if name in sys.argv:
         return float(sys.argv[sys.argv.index(name) + 1])
     return default
+
+
+def text_arg(name):
+    """The text after `name` on the command line (e.g. `--out <folder>`), or None."""
+    if name in sys.argv and sys.argv.index(name) + 1 < len(sys.argv):
+        return sys.argv[sys.argv.index(name) + 1]
+    return None
 
 
 def run(cmd):
@@ -137,8 +148,11 @@ def phrases(path, total, min_pause):
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit("usage: prep_voice.py <footage folder> [--hold-last SECONDS] [--gap SECONDS]")
+        sys.exit("usage: prep_voice.py <footage folder> [--out <piece folder>] [--hold-last SECONDS] [--gap SECONDS]")
     folder = Path(sys.argv[1])
+    piece = Path(text_arg("--out") or folder)  # where .quickvid/ goes: the piece folder, or the footage folder itself
+    if not piece.is_dir():
+        sys.exit(f"prep_voice: no such folder: {piece}")
     gap = arg("--gap", 0.4)
     hold = arg("--hold-last", 0.0)
     min_pause = arg("--min-pause", 0.2)
@@ -154,7 +168,7 @@ def main():
     if clashes:
         sys.exit("prep_voice: more than one recording for a line; keep one each: "
                  + "; ".join(f"line {n:02d}: {', '.join(names)}" for n, names in sorted(clashes.items())))
-    out_dir = folder / ".quickvid" / "narration"
+    out_dir = piece / ".quickvid" / "narration"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     lines, reel = [], 0.0
@@ -172,11 +186,11 @@ def main():
         reel += secs + (gap if i < len(sources) - 1 else 0)
 
     timing = {"gapSeconds": gap, "total": round(reel, 3), "lines": lines}
-    (folder / ".quickvid" / "timing.json").write_text(json.dumps(timing, indent=1))
+    (piece / ".quickvid" / "timing.json").write_text(json.dumps(timing, indent=1))
     for ln in lines:
         print(f"line {ln['line']:>2}: {ln['seconds']:5.2f}s at {ln['reelStart']:6.2f}s  phrases {ln['phrases']}")
     print(f"total {timing['total']:.2f}s -> {out_dir}")
-    add_to_voice_dataset(sources, folder)
+    add_to_voice_dataset(sources, folder, piece if text_arg("--out") else None)
 
 
 if __name__ == "__main__":

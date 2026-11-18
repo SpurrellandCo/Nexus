@@ -107,7 +107,7 @@ Tech-tip specifics:
 
   ```
   uv run --no-project --with pillow python $NEXUS_HOME/skills/quickvid/scripts/screen_zoom.py "<Content>" \
-      --clip 03 --out "<Content>/Step 03 - <what it shows>.mp4" --fit <line seconds + 0.4> --accent <accent>
+      --clip 03 --piece "<piece folder>" --out "<Content>/Step 03 - <what it shows>.mp4" --fit <line seconds + 0.4> --accent <accent>
   ```
 
   Sample frames from each: the action in frame, text readable, the pointer and ripple on the right spot. If the

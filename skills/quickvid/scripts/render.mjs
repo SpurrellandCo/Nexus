@@ -2,13 +2,16 @@
 // Phase 6 of the quickvid skill: cut the planned shots to the narration and write the finished video.
 // Every ffmpeg call lives here, in code that can be read and fixed. Nothing in this pipeline is improvised.
 //
-// Reads  <folder>/.quickvid/inventory.json, plan.json and the narration audio.
-// Writes <folder>/Final/<name>.mp4 and .srt, never replacing a file already there (-V2, -V3 instead).
+// Reads  the footage in <folder>, and <out>/.quickvid/inventory.json, plan.json and the narration audio.
+// Writes <out>/Final/<name>.mp4 and .srt, never replacing a file already there (-V2, -V3 instead).
+// <out> is --out <piece folder> (a piece of a brand in the new format: the footage is the project's content folder and the work and the
+// videos are the piece's), or <folder> itself when there is no --out, as it always was. With --out the default name is the project's:
+// the piece folder's parent.
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, extname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
@@ -71,14 +74,20 @@ const fail = (message) => {
   process.exit(1);
 };
 
-const args = process.argv.slice(2);
+/** `--out <dir>` and `--out=<dir>` are the same; returns the arguments in the second form. @param {string[]} argv */
+const joinOut = (argv) => argv.flatMap((a, i) => (a === '--out' ? [`--out=${argv[i + 1] ?? ''}`] : argv[i - 1] === '--out' ? [] : [a]));
+const args = joinOut(process.argv.slice(2));
 const folder = args.find((a) => !a.startsWith('--'));
 const flag = (name, fallback) => {
   const hit = args.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.split('=').slice(1).join('=') : fallback;
 };
-if (!folder) fail('usage: render.mjs <folder> --name=<name> [--platform=reel] [--music=<file>] [--no-captions]');
-const name = flag('name', basename(resolve(folder)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video');
+const outFolder = flag('out', null);
+if (!folder || outFolder === '') fail('usage: render.mjs <folder> [--out <piece folder>] --name=<name> [--platform=reel] [--music=<file>] [--no-captions]');
+/** Where the work and the videos go: the piece folder, or the footage folder itself. */
+const outDir = outFolder ?? folder;
+const nameSource = outFolder === null ? resolve(folder) : dirname(resolve(outFolder));
+const name = flag('name', basename(nameSource).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video');
 const platform = flag('platform', 'reel');
 const [width, height] = SHAPES[platform] ?? SHAPES.reel;
 const music = flag('music', null);
@@ -309,7 +318,7 @@ function shotFilters(item, shot = {}) {
 }
 
 const main = async () => {
-  const workDir = join(folder, WORK_DIR);
+  const workDir = join(outDir, WORK_DIR);
   const inventory = await readJson(join(workDir, 'inventory.json'), 'the inventory (run inventory.mjs first)');
   const plan = await readJson(join(workDir, 'plan.json'), 'the shot plan');
   const shots = plan.shots ?? [];
@@ -408,7 +417,7 @@ const main = async () => {
     fail(`the voice track is ${measured.toFixed(2)}s but the lines and gaps come to ${expected.toFixed(2)}s. Refusing to render a video the narration does not fit.`);
   }
 
-  const finalDir = join(folder, FINAL_DIR);
+  const finalDir = join(outDir, FINAL_DIR);
   await mkdir(finalDir, { recursive: true });
   const output = join(finalDir, await nextDelivery(finalDir, name, '.mp4'));
 

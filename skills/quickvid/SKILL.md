@@ -27,10 +27,11 @@ render needs to change, change the script.
 
 ## What it produces
 
-In the chosen folder: `Final/<name>.mp4`, `Final/<name>.srt`, and `.quickvid/publish.md` with the title, caption and
+In the output folder: `Final/<name>.mp4`, `Final/<name>.srt`, and `.quickvid/publish.md` with the title, caption and
 tags for each place it is going. A file already in `Final/` is never replaced — the
-next render is `<name>-V2.mp4`, then `-V3`. Everything working goes in `.quickvid/` inside the folder; the user's own
-clips, photos and audio are only ever read.
+next render is `<name>-V2.mp4`, then `-V3`. Everything working goes in `.quickvid/` inside the output folder; the user's own
+clips, photos and audio are only ever read. The output folder is the footage folder itself, unless the user's brand keeps
+projects with pieces (below): then footage and outputs are two folders.
 
 ## Phases
 
@@ -52,16 +53,30 @@ worth stopping: it is where the user's taste lives, and narration is the slow st
 
 Work through the phases in order. Take the folder from the user's request; if none was given, ask which folder to use.
 
-**If the folder holds a `Content` subfolder, the footage is in there.** The user's models follow
-`<models_root>/<category>/<Model Name>/` with `Content/` for the media and `upload info/` for the listing, so being
-given the model folder is normal. Use `<folder>/Content` for the footage and say which folder you settled on.
+**Footage in, outputs out.** There are two layouts, and every script that takes `<folder>` treats it as the footage:
+
+- **A project with pieces** (a brand in the new format): the footage is the project's content folder, `<Project>/content/`,
+  and the video being made is a piece folder, `<Project>/Reel/` (or `Reel 2`, or a carousel's folder). Give each script the
+  content folder as `<folder>` and the piece folder with `--out "<piece folder>"` (`screen_zoom.py` takes `--piece`, because
+  its `--out` is the clip): the work (`.quickvid/`) and the videos (`Final/`) are written in the piece folder, the footage is
+  only read, and the default video name is the project's. A zoomed screen recording is written into the footage folder,
+  because it becomes footage. When the piece's status file names a model (`model:`), the listing is read from that model's
+  upload folder; `status.mjs show "<piece folder>"` shows the link (`$NEXUS_HOME/skills/content-backlog/references/status-file.md`).
+- **One folder for everything** (no `--out`): the work and the videos go in the folder itself, as they always did. If the folder
+  holds a `Content` subfolder, the footage is in there: the user's models follow
+  `<models_root>/<category>/<Model Name>/` with `Content/` for the media and `upload info/` for the listing, so being given the
+  model folder is normal. Use `<folder>/Content` for the footage and say which folder you settled on.
+
+This skill never writes a status file, a brief, a record of what was posted, or a listing's records: those belong to the skills
+that own them. Handed a folder of old records inside a brand in the new format (a video folder with a `Content/Final/` of old
+records, say), say so, point at the migration (`npm run migrate:v2` in the Content Board app, with the app closed) and stop.
 
 ### Phase 1: Read the folder
 
 Run the inventory script, which writes `.quickvid/inventory.json` and contact sheets:
 
 ```
-node scripts/inventory.mjs <folder> [--fps 8]
+node scripts/inventory.mjs <folder> [--out <piece folder>] [--fps 8]
 ```
 
 It reports, per file: kind, duration, dimensions, whether the audio contains speech, and — for anything with speech —
@@ -82,8 +97,9 @@ lost sound effect.
 
 ### Phase 2: Product facts, angle and voice
 
-**Look for the model's own listing first.** When `../upload info/` sits beside the footage folder, read `listing.md`,
-`measurements.json` and `description.md`. For the user's own models this beats any web page: it is their measured,
+**Look for the model's own listing first.** When the piece's status file names a model (`model:`), read the listing in that
+model's upload folder (`<models_root>/<model>/<upload folder>/`); otherwise, when `../upload info/` sits beside the footage
+folder, read it there: `listing.md`, `measurements.json` and `description.md`. For the user's own models this beats any web page: it is their measured,
 verified data — the product's real dimensions, the part's fit, the print settings, and often a written list of tags and
 a note of what each photo shows, which phase 4 can use when picking shots. Save what matters to `.quickvid/product.md`
 and say which facts came from there. Ask for a product link only if that folder is missing or thin.
@@ -179,7 +195,7 @@ This is the slow phase. Report progress and do not regenerate scenes that are al
 ### Phase 6: Render
 
 ```
-node scripts/render.mjs <folder> --name <name> [--no-captions] [--music <file>] [--platform reel|tiktok|youtube]
+node scripts/render.mjs <folder> [--out <piece folder>] --name <name> [--no-captions] [--music <file>] [--platform reel|tiktok|youtube]
 ```
 
 The script cuts each shot to the length of its narration line, drops the audio of any clip containing speech, burns
@@ -196,9 +212,9 @@ If the render fails, read its error and fix the *script* or the plan — never w
 
 Read `references/publish-copy.md` first — it holds each platform's limits and the rules that matter.
 
-**Don't contradict the model's own page.** These videos often promote a model that already has a listing beside the
-footage folder in `../upload info/`. When it is there, read it and keep to the same claims, measurements and product
-name. Drafting that listing is not this skill's job — the `makerworld-publish` skill owns it.
+**Don't contradict the model's own page.** These videos often promote a model that already has a listing: in the model's upload folder when the piece
+names a model (`model:`), else beside the footage folder in `../upload info/`. When it is there, read it and keep to the same
+claims, measurements and product name. Drafting that listing is not this skill's job — the `makerworld-publish` skill owns it.
 
 Then invoke `social-content` for the platforms the user is posting to:
 
@@ -237,9 +253,11 @@ Run with `uv run --no-project --with pillow python scripts/<tool>.py`; each one 
 They share one look through `scripts/motion_style.py`.
 
 - `prep_voice.py` — trims the user's own recordings (`01`, `02`, ... in the footage folder) into
-  `.quickvid/narration/` and writes `.quickvid/timing.json`: each line's start in the reel and its spoken phrases.
+  `.quickvid/narration/` and writes `.quickvid/timing.json` (in the `--out` piece folder): each line's start in the reel and its
+  spoken phrases.
 - `overlays.py` — narration overlays (hook title, step badges, headlines, chips, payoff words) from
-  `.quickvid/overlays.json`, timed to phrases, composited over a finished render as the next version.
+  `.quickvid/overlays.json`, timed to phrases, composited over a finished render as the next version (`--out` names the piece
+  folder that holds `.quickvid/`).
 - `photo_motion.py` — an animated photo (push in, pull out, pan) for a line with no video.
 - `endcard.py` — the call-to-action end card (headline, typed search bar, pulsing button).
 - `thumbnail.py` — a YouTube thumbnail (1280x720) and a vertical cover (1080x1920) from a photo and the hook.

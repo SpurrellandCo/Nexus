@@ -21,9 +21,10 @@ Written for phase 7 of the quickvid skill. Limits are the platforms' own; count 
 
 ## Don't contradict the model's own page
 
-These videos often promote a 3D model that already has a listing, kept beside the footage folder in `../upload info/`
-(`listing.md`, `description.md`, `links.md`). When that folder is there, read it before writing and keep to the same
-claims, measurements and product name. The social copy and the model page have to agree.
+These videos often promote a 3D model that already has a listing, kept in the model's upload folder: found through `model:` in
+the piece's status file when it names a model, else beside the footage folder in `../upload info/` (`listing.md`,
+`description.md`, `links.md`). When that folder is there, read it before writing and keep to the same claims, measurements and
+product name. The social copy and the model page have to agree.
 
 **The listing itself is not this skill's job.** The `makerworld-publish` skill drafts the model name, description and
 links for MakerWorld, including its 50-character name limit. Read the listing here for grounding only, and leave
@@ -66,12 +67,13 @@ Tags: …
 
 The lines the tools rely on:
 
-- **`Video:`** on its own line, then the path of the exact render to post in backticks, relative to the footage folder.
-  Name it explicitly: `Final/` keeps older versions until the post is recorded, so the newest file is not always the
-  one. Text after the closing backtick (length, size) is fine. Without a `Video:` line, content-backlog falls back
-  to the `Reel:` line of `posted.txt` (or calls the video unconfirmed when there is none), and the Content Board
+- **`Video:`** on its own line, then the path of the exact render to post in backticks, relative to the output folder (the
+  piece folder, or the footage folder when there is no piece: `Final/<name>.mp4` is the same string either way). Name it
+  explicitly: `Final/` keeps older versions until the post is recorded, so the newest file is not always the one. Text
+  after the closing backtick (length, size) is fine. Without a `Video:` line, content-backlog falls back to the file
+  `video:` names in the piece's status file (or calls the video unconfirmed when there is none), and the Content Board
   won't schedule the video until the `Video:` line is there.
-- **`Covers:`** on its own line: each cover or thumbnail path in backticks, followed by the places it's for in brackets.
+- **`Covers:`** on its own line: each cover or thumbnail path in backticks (relative to the output folder, like `Video:`), followed by the places it's for in brackets.
 - **`## <place>`** headings, one per place: `TikTok`, `Instagram Reel`, `YouTube Shorts`, or the platform's name for any
   other (`Facebook`, `Threads`). The app gives each section to the account whose platform name starts the heading.
 - **Labelled fields** inside a section: `Cover text:`, `Caption`, `Title`, `Description`, `Tags` or `Hashtags`, each
