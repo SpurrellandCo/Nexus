@@ -44,14 +44,15 @@ const CREATE_ONLY = ['format', 'kind', 'status', 'model', 'created'];
 const SET_KEYS = ['status', 'video', 'slides', 'style', 'kind', 'model'];
 const MAX_NAME = 80;
 
-const HELP = `Usage: status.mjs <command> ... [--accounts <file>] [--root <content root>] [--models <folder>] [--dry-run] [--json]
+const HELP = `Usage: status.mjs <command> ... [--accounts <file>] [--root <content root>] [--models <folder>] [--brand <id>] [--dry-run] [--json] [--replace-record]
   show <piece>                                    the piece's file and what each account is owed
   pieces <project>                                the pieces of a project
   create <project>/<piece> --brand <id> --format <f> --kind <reel|carousel> --status <s> [--model <path>] [--created <date>]
   set <piece> status|video|style <value...>       set one line (slides takes the paths in order)
   set <piece> kind <reel|carousel>                only while the status is idea or approved
   set <project|piece> model <path>                a project: every piece, each its own write
-  post <piece> <platform> <value>                 record a post (a link and date, "posted, no link (date)", "scheduled <date>", "skipped")
+  post <piece> <platform> <value>                 record a post (a link and date, "posted, no link (date)", "scheduled <date>", "skipped");
+                                                  --replace-record starts the record of a newer video (the old file is kept as status.previous.md)
   clear-post <piece> <platform>                   remove a platform's post
 Exit codes: 0 done, 1 refused (nothing written), 2 bad arguments.`;
 
@@ -248,6 +249,9 @@ function locate(args, ctx, arg, depth) {
   if (names[0] === '..' || names[0] === '' || names.length > 2) {
     throw new Refused(`${abs} is not a project or piece folder under ${brand.name ?? brand.id}'s content root (${contentReal}).`);
   }
+  // Hidden, pipeline (`_x`) and template (`z.x`) folders are not projects or pieces: the scan skips them, so no command reads or writes in them.
+  const skipped = names.find((name) => isSkippedFolder(name));
+  if (skipped !== undefined) throw new Refused(`${path.join(parent, entry.name)} is skipped by the scan (a folder starting with ".", "_" or "z." is not a project or piece), so it is not read or written.`);
   if (depth !== undefined && names.length !== depth) throw new Refused(`${arg} must be a ${depth === 1 ? 'project folder' : 'piece folder'} (${depth === 1 ? 'Project' : 'Project/Piece'} under the content root).`);
   if (entry.isSymbolicLink() || !entry.isDirectory()) throw new Refused(`${path.join(parent, entry.name)} is a link or not a folder; it is not read or written.`);
   // A project folder reached through a link is refused as well (the real path above resolved it): like the app, no link is followed.

@@ -123,7 +123,7 @@ converted: say so, point at the migration and stop.
   `Published: <YYYY-MM-DD>`), creating the upload folder for an older model that doesn't have one. Never overwrite an existing
   `published.txt`.
 - **A video won't be posted** (an old reel being replaced, say): record `skipped` for every account it is owed to
-  (`status.mjs post ... skipped`). The model then shows under "no promo reel yet", and a new render is listed as unposted.
+  (`status.mjs post "<piece folder>" <platform> skipped`). The model then shows under "no promo reel yet", and a new render is listed as unposted.
 - **Dropping something:** `node scripts/status.mjs set "<piece folder>" status shelved`. For a model folder with no piece in the
   MakerWorld brand, add its path (relative to the models folder) to `backlog.ignore` in `makerworld.json`, merging into the file
   without touching other sections; for any other brand, ask the user to add it to the brand's ignore list in the Content Board

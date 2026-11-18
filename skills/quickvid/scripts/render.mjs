@@ -13,6 +13,7 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { joinOut } from './out-arg.mjs';
 
 const run = promisify(execFile);
 const WORK_DIR = '.quickvid';
@@ -74,8 +75,7 @@ const fail = (message) => {
   process.exit(1);
 };
 
-/** `--out <dir>` and `--out=<dir>` are the same; returns the arguments in the second form. @param {string[]} argv */
-const joinOut = (argv) => argv.flatMap((a, i) => (a === '--out' ? [`--out=${argv[i + 1] ?? ''}`] : argv[i - 1] === '--out' ? [] : [a]));
+/** `--out <dir>` and `--out=<dir>` are the same (out-arg.mjs); the arguments in the second form. */
 const args = joinOut(process.argv.slice(2));
 const folder = args.find((a) => !a.startsWith('--'));
 const flag = (name, fallback) => {

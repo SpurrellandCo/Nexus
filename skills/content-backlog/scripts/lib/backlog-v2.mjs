@@ -6,6 +6,7 @@
 import { resolveDependencyV2 } from './dependency.mjs';
 import { composeFlags, modelNotes } from './flags.mjs';
 import { carriedByListing, noPromoReelV2 } from './piece-cards.mjs';
+import { GROUPS } from './scan.mjs';
 import { placeCardV2 } from './stages-v2.mjs';
 import { pieceStatuses, slotsOf } from './status.mjs';
 
@@ -14,13 +15,13 @@ import { pieceStatuses, slotsOf } from './status.mjs';
  * @typedef {{ groups: Record<string, BacklogItem[]>, older: BacklogItem[], ignored: string[], warnings: string[] }} Backlog
  */
 
-/** The groups of the CLI, in display order (v1's `GROUPS` keys). */
-const GROUP_KEYS = Object.freeze(['notPosted', 'draft', 'built', 'building', 'tutorial', 'noReel', 'approved', 'idea', 'recent', 'done', 'shelved']);
+/** The groups of the CLI, in display order: the scan's own `GROUPS` keys (v1's), not a second list. */
+const GROUP_KEYS = Object.freeze(GROUPS.map(([key]) => key));
 
 /** The stages of a media card that has a video or slides: it is made and not (all) posted. */
 const MADE_STAGES = Object.freeze(['Ready to post', 'Made', 'Made, video unconfirmed', 'Made, slides unconfirmed', 'Video missing', 'Slides missing']);
 
-/** A date `YYYY-MM-DD` as the time of its midday, local (the way a file's date is read elsewhere), or null. @param {string | null | undefined} date */
+/** A date `YYYY-MM-DD` as the time of its midday, local (a listing's or an idea's day has no hour), or null. @param {string | null | undefined} date */
 const dateMs = (date) => (date ? Date.parse(`${date}T12:00:00`) || null : null);
 
 /**
@@ -117,9 +118,26 @@ function detailOf(card, group, now) {
   return 'saved {date}';
 }
 
-/** @param {any} card the time an item is dated by: when the piece was made or created, else when it last changed */
+/**
+ * The time an item is dated by: when a listing or idea's day began, else when the piece's video or its newest slide was last changed
+ * (a file time, the same kind for both), else when it was created or last changed.
+ * @param {any} card
+ */
 const timeOf = (card) => (card.type === 'listing' ? card.listingDate?.date && dateMs(card.listingDate.date) : card.type === 'idea' ? dateMs(card.created) : null)
-  || card.video?.mtimeMs || dateMs(card.slides?.date) || dateMs(card.created) || card.lastChanged || 0;
+  || card.video?.mtimeMs || card.slides?.mtimeMs || dateMs(card.created) || card.lastChanged || 0;
+
+/**
+ * Oldest first; an item with no date (time 0) last; items of one time by name. Returns 0 for two equal items, never NaN.
+ * @param {{ time: number, name: string }} a
+ * @param {{ time: number, name: string }} b
+ */
+export function byOldestFirst(a, b) {
+  const first = a.time || Infinity;
+  const second = b.time || Infinity;
+  if (first !== second) return first < second ? -1 : 1;
+  if (a.name === b.name) return 0;
+  return a.name < b.name ? -1 : 1;
+}
 
 /**
  * The piece cards with their per-account statuses, placement and flags, and the listing cards with the pieces that link them, as the
@@ -166,7 +184,7 @@ export function backlogV2(result, context) {
       kind: card.type, group, name: card.title, time: timeOf(card), detail: detailOf(card, group, context.now), next: nextOf(card, group), ...(flags.length ? { flags } : {}),
     };
   });
-  const groups = Object.fromEntries(GROUP_KEYS.map((key) => [key, items.filter((i) => /** @type {any} */ (i).group === key).sort((a, b) => (a.time || Infinity) - (b.time || Infinity) || (a.name < b.name ? -1 : 1))]));
+  const groups = Object.fromEntries(GROUP_KEYS.map((key) => [key, items.filter((i) => /** @type {any} */ (i).group === key).sort(byOldestFirst)]));
   const warnings = [...new Set([...(result.warnings ?? []), ...modelNotes(result.cards), ...result.cards.flatMap((c) => c.warnings ?? [])])];
   return { groups, older: [], ignored: result.ignored ?? [], warnings };
 }

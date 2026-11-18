@@ -24,7 +24,7 @@ import { fold } from './status-file-text.mjs';
  * @typedef {{ name: string | null, path: string | null, source: 'publish-md' | 'status' | 'unconfirmed', date: string | null, mtimeMs: number,
  *             newerRender: string | null, finalFiles: string[], missing: boolean }} Video
  * @typedef {{ name: string, path: string, exists: boolean }} NamedSlide
- * @typedef {{ named: NamedSlide[], source: 'publish-md' | 'status' | 'unconfirmed', finalImages: string[], date: string | null, missingCount: number }} Slides
+ * @typedef {{ named: NamedSlide[], source: 'publish-md' | 'status' | 'unconfirmed', finalImages: string[], date: string | null, mtimeMs: number, missingCount: number }} Slides
  * @typedef {{ video: Video | null, slides: Slides | null, flags: RawFlag[], namedSlides: NamedSlide[], changedMs: number }} Media
  */
 
@@ -202,7 +202,7 @@ function readSlides(io, facts, lines) {
   }
   const present = named.length > 0 ? images.length >= 1 : images.length >= MIN_SLIDES;
   const slides = present
-    ? { named, source: named.length > 0 ? chosen.source : /** @type {const} */ ('unconfirmed'), finalImages: images, date: newestMs > 0 ? localDate(newestMs) : null, missingCount: named.filter((s) => !s.exists).length }
+    ? { named, source: named.length > 0 ? chosen.source : /** @type {const} */ ('unconfirmed'), finalImages: images, date: newestMs > 0 ? localDate(newestMs) : null, mtimeMs: newestMs, missingCount: named.filter((s) => !s.exists).length }
     : null;
   return { slides, flags, namedSlides: named, changedMs: newestMs };
 }

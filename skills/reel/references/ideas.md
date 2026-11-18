@@ -75,5 +75,5 @@ node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Idea title>/
 ```
 
 The idea's status is the piece's (`idea`, `approved`, `shelved`). When the user picks one to make, set `status: approved` on
-`<Idea title>/Reel` (`status.mjs set "<Idea title>/Reel" status approved`); the project is the video's project, so nothing
-is moved.
+the idea's piece (`node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" status approved`, where
+`<piece folder>` is `<content root>/<Idea title>/Reel`); the project is the video's project, so nothing is moved.

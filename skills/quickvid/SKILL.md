@@ -76,7 +76,7 @@ records, say), say so, point at the migration (`npm run migrate:v2` in the Conte
 Run the inventory script, which writes `.quickvid/inventory.json` and contact sheets:
 
 ```
-node scripts/inventory.mjs <folder> [--out <piece folder>] [--fps 8]
+node scripts/inventory.mjs <folder> [--out <piece folder>] [--frames=8]
 ```
 
 It reports, per file: kind, duration, dimensions, whether the audio contains speech, and — for anything with speech —

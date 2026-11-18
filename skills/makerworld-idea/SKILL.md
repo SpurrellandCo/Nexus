@@ -132,7 +132,7 @@ For each approved concept make a project in the brand's content root: `<contentR
    node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Idea Name>/Reel" --brand <brand id> --format promo --kind reel --status approved
    ```
 
-   `--status idea` for an idea the user liked but didn't approve. Every idea is a reel until the user asks for a carousel (`status.mjs set "<piece folder>" kind carousel` works while the status is `idea` or `approved`). The command prints the folder and the file it made; read it back with `status.mjs show "<piece folder>"` if the user asks.
+   `--status idea` for an idea the user liked but didn't approve. Every idea is a reel until the user asks for a carousel (`status.mjs set "<idea piece folder>" kind carousel` works while the status is `idea` or `approved`). The command prints the folder and the file it made; read it back with `status.mjs show "<piece folder>"` if the user asks.
 2. Write `brief.md` in the project folder from `references/brief-template.md`. It has no status and no model-folder line: the piece's status file holds the status, and makerworld-model sets `model:` on it when the model folder exists.
 
 - Use the user's own words for "What it is". Don't embellish.

@@ -64,13 +64,14 @@ at the migration (`npm run migrate:v2` in the Content Board app, with the app cl
 
 **The piece.** The piece folder is the unit: footage is read from the project's `content/` folder, and `.quickvid/` (working
 files, `publish.md`) and `Final/` (the videos) are written in the piece folder. Pass the quickvid tools the footage folder as
-their folder and `--out "<piece folder>"` (their `--help` and `$NEXUS_HOME/skills/quickvid/SKILL.md` say how). Which piece:
+their folder and `--out "<piece folder>"` (`screen_zoom.py` takes `--piece` instead; the tools' `--help` and
+`$NEXUS_HOME/skills/quickvid/SKILL.md` say how). Which piece:
 
 - **From a tutorial or tech-tip project, or a piece the user names:** that piece.
 - **From a model folder** (the hand-off from makerworld-publish): find the project whose pieces link the model (`status.mjs pieces
   "<project folder>"` for each project in the content root; a piece links it when its `model` is the model folder's path under
   `modelsRoot`). One project: use its `Reel` piece. Several projects: ask which. A project that holds only a carousel: add a piece
-  to it with `status.mjs create "<Project>/Reel" --brand <brand id> --format promo --kind reel --status approved` (it copies
+  to it with `status.mjs create "<Project Name>/Reel" --brand <brand id> --format promo --kind reel --status approved` (it copies
   `model:` from the sibling). No project: create the project and its piece the same way, with `--model "<model path under modelsRoot>"`,
   and tell the user to put the footage in the project's `content/` folder.
 - **A second video of the same model** is another piece (`Reel 2`, or a name the user gives), made with `status.mjs create`; it
@@ -136,7 +137,7 @@ Run `post` again for an account whenever its record changes (a link added, a pla
 line with the post or `skipped`); it replaces that account's line and leaves the others. Use `--dry-run` to show the user the
 change first. If it says the posts belong to another video (a newer render is named now), ask the user, then run it again with
 `--replace-record`: the old file is kept as `status.previous.md` and the new record starts with this post. The format used
-goes in `style:` (`status.mjs set "<piece folder>" style "<format>"`), so later research can see which formats this audience
+goes in `style:` (`status.mjs set "<piece folder>" style "<video format>"`), so later research can see which formats this audience
 responds to (`references/trend-formats.md`); a `Note:` goes in the notes below the front matter only when the user asks for one.
 
 **Then clear out the old versions.** Every render, character pass, overlay pass and thumbnail is saved as a new
@@ -153,8 +154,11 @@ other version of that video in `Final/`, and the scratch that quickvid rebuilds 
 plan, overlays, timing, narration, posting copy) stay, so the video can still be re-rendered. The script removes nothing
 before a post is recorded (a `scheduled` plan is not a post, so a video that is only scheduled keeps every version), or
 for a video skipped on every account, and stops if the video isn't there. This is the standing rule for every posted
-video, so it needs no extra confirmation: tell the user what was removed and how much space it freed. Run it again whenever
-`video:` moves to a newer render (it's safe to repeat).
+video, so it needs no extra confirmation: tell the user what was removed and how much space it freed. Run it right after
+the new render is posted, never before: it stops with nothing removed when the piece's `publish.md` names a different video
+than `video:` does (the posts then may belong to either render; set `video:` or post again with `--replace-record` first), it
+takes exactly one folder and no option but `--dry-run` (anything else is a usage error and removes nothing), and it counts as
+a post only a value `status.mjs post` could have written. It's safe to repeat on a piece that is already clean.
 
 ## Older brands (itemLayout 1)
 

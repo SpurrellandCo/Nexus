@@ -33,7 +33,7 @@ heading, then the `- Hook:`, `- Format:`, `- Needs:`, `- Why now:`, `- Leads:` a
 Make it with `node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Idea title>/Reel" --brand <brand id> --format tech-tip --kind reel --status idea --created <YYYY-MM-DD>`.
 When the user picks one to make, set `status: approved` on that piece (`status.mjs set "<piece folder>" status approved`):
 nothing moves and nothing is removed, and the project becomes the video's project. The user can approve, unapprove or shelve
-an idea in the Content Board, or you can with `status.mjs set ... status shelved` (a shelved idea stays where it is and drops
+an idea in the Content Board, or you can with `status.mjs set "<idea piece folder>" status shelved` (a shelved idea stays where it is and drops
 off content-backlog and the board). The Content Board doesn't create tech-tip ideas: new ones are saved here.
 
 ## 1. Ideas
