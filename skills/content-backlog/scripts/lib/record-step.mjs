@@ -15,9 +15,11 @@
 // the scanner's own `deriveStatusesFor`, so the status written here is the one the board derives, and `status-lags` and
 // `posted-but-open` cannot follow a record action. Only front-matter lines are edited, through the shared editor: the notes, the
 // BOM and the line ending stay as they are. No state, no file access, no clock: the time is in the context.
+import { URL } from 'node:url';
 import { invalidValue, isRealDate } from './status-file-text.mjs';
 import { KINDS, editStatusFile, describeChange, isKind, parseStatusFile } from './status-file.mjs';
 import { isScheduledValue, parseScheduledValue } from './posted.mjs';
+import { MIN_SLIDES, isConfirmedSlides } from './media.mjs';
 import { activeAccountsFor, deriveStatusesFor } from './status.mjs';
 
 /**
@@ -32,25 +34,27 @@ import { activeAccountsFor, deriveStatusesFor } from './status.mjs';
  * @typedef {{ ok: false, code: 'NOT_READY' | 'STATUS_FILE_INVALID', message: string }} Refused
  */
 
-/** A carousel is confirmed with at least this many slides named and on disk (V2-74). */
-const MIN_SLIDES = 2;
 /** The statuses a record action steps (V2-26). */
 const STEPPED = Object.freeze(['made', 'scripted', 'posted']);
 /** The longest post link written (v1's writer's limit). */
 const MAX_LINK = 2000;
 const POSTED_NO_LINK = /^posted, no link \((\d{4}-\d{2}-\d{2})\)$/;
 const POSTED_LINK = /^(\S+) \((\d{4}-\d{2}-\d{2})\)$/;
-/** The part of a link between `//` and the path, query or fragment: where a user name or password would sit. */
-const AUTHORITY = /^https?:\/\/([^/?#]*)/i;
+/** A link starts with http or https and a host (not a slash), as the app's writer requires. */
+const LINK_START = /^https?:\/\/[^/]/i;
 /** A link is printable ASCII with no brackets, so nothing can break the line or hide in it. */
 const SAFE_LINK = /^[\x21-\x7e]+$/;
 const LINK_BRACKETS = /[()<>]/;
 
-/** @param {string} link */
+/** The same test the app's writer applies to a link (src/main/records/line-format.js: a table test runs both on the same cases). @param {string} link */
 function isPostLink(link) {
-  if (link.length > MAX_LINK || !SAFE_LINK.test(link) || LINK_BRACKETS.test(link)) return false;
-  const authority = AUTHORITY.exec(link);
-  return authority !== null && authority[1] !== '' && !authority[1].includes('@');
+  if (link.length > MAX_LINK || !SAFE_LINK.test(link) || LINK_BRACKETS.test(link) || !LINK_START.test(link)) return false;
+  try {
+    const parsed = new URL(link);
+    return parsed.username === '' && parsed.password === '';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -82,7 +86,7 @@ function confirmedMedia(card) {
   const none = { media: { video: null, slides: /** @type {string[]} */ ([]) }, date: null };
   if (card.piece.kind === 'carousel') {
     const slides = card.slides;
-    if (!slides || slides.source === 'unconfirmed' || slides.named.length < MIN_SLIDES || slides.missingCount > 0) return none;
+    if (!isConfirmedSlides(slides)) return none;
     return { media: { video: null, slides: slides.named.map((/** @type {{ path: string }} */ slide) => slide.path) }, date: slides.date };
   }
   const video = card.video;
@@ -153,13 +157,14 @@ const pairsOf = (posts) => Object.entries(posts ?? {}).map(([key, value]) => ({ 
 
 /**
  * The status after the step (V2-26): `made`, `scripted` and `posted` become `posted` when no account is left owed or scheduled and
- * `made` otherwise; every other status stays.
+ * `made` otherwise; every other status stays, and so does any when no account takes the kind (the board then says so, and
+ * "nothing is owed" would hold of no one).
  * @param {string} status
  * @param {Array<{ status: string }>} statuses the derived statuses of the accounts that take the kind
  * @returns {string}
  */
 function stepped(status, statuses) {
-  if (!STEPPED.includes(status)) return status;
+  if (!STEPPED.includes(status) || statuses.length === 0) return status;
   return statuses.some((s) => s.status === 'owed' || s.status === 'scheduled') ? 'made' : 'posted';
 }
 

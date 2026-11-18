@@ -9,12 +9,17 @@
 //   Slides: `Final/slide-01.png`, `Final/slide-02.png` (2 slides, 1080x1350, 4:5)            (every path on the line, in order)
 //   Slides 9:16: `Final/9x16/slide-01.png`, ...                                              (a size set: not read)
 //
-// The file is untrusted text and is read in linear time: a line at a time, with single-pass scans and no regular expression
-// that can backtrack (the one it replaces, with nested quantifiers, could take hours on a hostile line). Pure; no state.
+// The file is untrusted text and is read in linear time: single-pass scans and no regular expression that can backtrack (the one
+// it replaces, with nested quantifiers, could take hours on a hostile line). It reads what that expression read, so v1's output
+// does not change: a label starts a line (after blanks, `>`, `*` and `-`; a lone CR or a CRLF also ends a line), the path may
+// be on a later line, and a span may cross a line break. Pure; no state.
 import path from 'node:path';
+import { fold } from './status-file-text.mjs';
 
 const MENTIONS_MAKERWORLD = /makerworld/i;
 const TICK = '`';
+const LINE_SEPARATOR = String.fromCharCode(0x2028);
+const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
 /** The most `## <place>` sections kept, so a hostile file cannot make a long list (a real kit has one per account and one more). */
 const MAX_SECTIONS = 200;
 
@@ -35,59 +40,88 @@ export const mentionsMakerWorld = (text) => MENTIONS_MAKERWORLD.test(text);
 const isBlank = (ch) => ch.trim() === '';
 /** A character that may come before a label: blank, or a quote, bullet or emphasis mark. @param {string} ch */
 const isPrefix = (ch) => isBlank(ch) || ch === '>' || ch === '*' || ch === '-';
-/** A character allowed between a label, its colon and its first path. @param {string} ch */
-const isGap = (ch) => isBlank(ch) || ch === '*';
+/** @param {string} ch */
+const isStar = (ch) => ch === '*';
+/** The line ends a regular expression's `^` knows: LF, CR, and the two Unicode separators. @param {string} ch */
+const isLineEnd = (ch) => ch === '\n' || ch === '\r' || ch === LINE_SEPARATOR || ch === PARAGRAPH_SEPARATOR;
 
 /**
  * The index of the first character at or after `from` that fails `test`.
- * @param {string} line
+ * @param {string} text
  * @param {number} from
  * @param {(ch: string) => boolean} test
  */
-function skip(line, from, test) {
+function skip(text, from, test) {
   let i = from;
-  while (i < line.length && test(line[i])) i += 1;
+  while (i < text.length && test(text[i])) i += 1;
   return i;
 }
 
+/** Blanks, one run of stars, blanks: what may stand between a label, its colon and its first path. @param {string} text @param {number} from */
+const skipGap = (text, from) => skip(text, skip(text, skip(text, from, isBlank), isStar), isBlank);
+
 /**
- * The backticked spans of a line from `from` on, in order (a span with nothing in it, or that never closes, is not one).
- * @param {string} line
+ * Whether only blanks, `>`, `*` and `-` lie between the start of a line and `at` (the start of the text counts as a line start).
+ * Each run is read backwards from the one label after it, so the scan is linear in the text.
+ * @param {string} text
+ * @param {number} at
+ */
+function startsLine(text, at) {
+  for (let i = at - 1; i >= 0; i -= 1) {
+    if (!isPrefix(text[i])) return false;
+    if (isLineEnd(text[i])) return true;
+  }
+  return true;
+}
+
+/**
+ * The backticked spans after `from`, on the line where `from` is: trimmed, in order, none that is empty or never closes.
+ * @param {string} text
  * @param {number} from
  * @returns {string[]}
  */
-function spans(line, from) {
+function spansOnLine(text, from) {
+  const end = skip(text, from, (ch) => !isLineEnd(ch));
   /** @type {string[]} */
   const found = [];
   let i = from;
-  while (i < line.length) {
-    const open = line.indexOf(TICK, i);
-    if (open === -1) break;
-    const close = line.indexOf(TICK, open + 1);
+  while (i < end) {
+    const open = text.indexOf(TICK, i);
+    if (open === -1 || open >= end) break;
+    const close = text.indexOf(TICK, open + 1);
     if (close === -1) break;
-    const text = line.slice(open + 1, close).trim();
-    if (text !== '') found.push(text);
+    const inner = text.slice(open + 1, close).trim();
+    if (inner !== '') found.push(inner);
     i = close + 1;
   }
   return found;
 }
 
 /**
- * The medium a posting-copy line names, and where its first backtick is: `Video:` or `Slides:` (any letter case), after any
- * bullet, quote or emphasis marks, with only blanks and stars between the label, the colon and the first path. A
- * `Slides 9:16:` line (a size set) does not match.
- * @param {string} line
- * @returns {{ label: 'video' | 'slides', from: number } | null}
+ * The backticked spans of the first `<label>:` line that has one: the label starts a line, then (as the old expression read it)
+ * blanks and one run of stars on either side of a colon, and a first span that is not empty and closes, which may be on a later
+ * line and may cross a line break. The first span is the video's (kept as it reads, even when it is only blanks); the rest of
+ * the line after it adds the other slides. A `Slides 9:16:` size line has no colon after the word, so it never matches.
+ * @param {string} text
+ * @param {'video' | 'slides'} label
+ * @returns {string[] | null} null when no line names a path
  */
-function mediaLine(line) {
-  const start = skip(line, 0, isPrefix);
-  const head = line.slice(start, start + 6).toLowerCase();
-  const label = head.startsWith('video') ? 'video' : head === 'slides' ? 'slides' : null;
-  if (label === null) return null;
-  const colon = skip(line, start + label.length, isGap);
-  if (line[colon] !== ':') return null;
-  const first = skip(line, colon + 1, isGap);
-  return line[first] === TICK ? { label, from: first } : null;
+function mediaSpans(text, label) {
+  const word = new RegExp(label, 'gi');
+  for (let hit = word.exec(text); hit !== null; hit = word.exec(text)) {
+    if (!startsLine(text, hit.index)) continue;
+    const colon = skipGap(text, hit.index + label.length);
+    if (text[colon] !== ':') continue;
+    const first = skipGap(text, colon + 1);
+    if (text[first] !== TICK) continue;
+    const close = text.indexOf(TICK, first + 1);
+    if (close === -1 || close === first + 1) continue;
+    const firstSpan = text.slice(first + 1, close).trim();
+    if (label === 'video') return [firstSpan];
+    const named = [firstSpan, ...spansOnLine(text, close + 1)].filter((span) => span !== '');
+    if (named.length > 0) return named;
+  }
+  return null;
 }
 
 /**
@@ -128,30 +162,15 @@ function sectionsOf(lines) {
  */
 export function parsePublishMd(text) {
   const source = typeof text === 'string' ? text : '';
-  const lines = source.split('\n').map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line));
-  /** @type {string | null} */
-  let videoPath = null;
-  /** @type {string[] | null} */
-  let slidePaths = null;
-  for (const line of lines) {
-    if (videoPath !== null && slidePaths !== null) break;
-    const found = mediaLine(line);
-    if (found === null) continue;
-    const named = spans(line, found.from);
-    if (found.label === 'video' && videoPath === null && named.length > 0) videoPath = named[0];
-    else if (found.label === 'slides' && slidePaths === null && named.length > 0) slidePaths = named;
-  }
+  const videoPath = mediaSpans(source, 'video')?.[0] ?? null;
   return {
     videoPath,
     videoName: videoPath ? path.posix.basename(videoPath.replace(/\\/g, '/')) : null,
     mentionsMakerWorld: mentionsMakerWorld(source),
-    slidePaths: slidePaths ?? [],
-    sections: sectionsOf(lines),
+    slidePaths: mediaSpans(source, 'slides') ?? [],
+    sections: sectionsOf(source.split(/\r\n|\n|\r/)),
   };
 }
-
-/** @param {string} text */
-const fold = (text) => text.normalize('NFC').toLowerCase();
 
 /**
  * Give each section to the account whose platform name starts its heading (V2-84): the longest such name wins (`youtube shorts`

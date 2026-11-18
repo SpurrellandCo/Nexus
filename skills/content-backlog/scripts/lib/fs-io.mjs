@@ -2,7 +2,7 @@
 // disposable worker process, and the CLI is a one-shot script. Reads never throw: a missing file is
 // a normal state (null or 0), and an unreadable folder or file becomes a warning through `warn` (FR 13).
 const ABSENT = new Set(['ENOENT', 'ENOTDIR']);
-import { Buffer } from 'node:buffer';
+import { Buffer, isUtf8 } from 'node:buffer';
 import nodeFs from 'node:fs';
 
 /**
@@ -14,7 +14,7 @@ import nodeFs from 'node:fs';
  * @property {(p: string) => Lstat | null} lstat                     what a path is, never following a link; null when absent (warns on other failures)
  * @property {(file: string, maxBytes: number) => CappedRead | null} readCapped  a file read up to a cap, never through a link; null when absent or not a regular file
  * @typedef {{ isLink: boolean, isFile: boolean, isDirectory: boolean, size: number, mtimeMs: number }} Lstat
- * @typedef {{ text: string, size: number } | { tooLarge: true, size: number }} CappedRead
+ * @typedef {{ text: string, size: number } | { tooLarge: true, size: number } | { notUtf8: true, size: number }} CappedRead
  */
 
 /**
@@ -78,7 +78,8 @@ const readFlags = (fs) => fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0)
 /**
  * Read a regular file up to `maxBytes`, through one open descriptor: a link is refused by the open itself (so a file
  * swapped for a link after it was listed is not followed), a file that is not a regular file is not read, a file the
- * size of which is over the cap is not read at all, and a file that grows past the cap while it is read is refused.
+ * size of which is over the cap is not read at all, a file that grows past the cap while it is read is refused, and a file whose
+ * bytes are not valid UTF-8 is not decoded (`notUtf8`), so a size or a hash taken from the text is always that of the bytes.
  * @param {typeof nodeFs} fs
  * @param {string} file
  * @param {number} maxBytes
@@ -100,6 +101,7 @@ function readCapped(fs, file, maxBytes, warn) {
       filled += read;
     }
     if (filled > maxBytes) return { tooLarge: true, size: filled };
+    if (!isUtf8(buffer.subarray(0, filled))) return { notUtf8: true, size: filled };
     return { text: buffer.toString('utf8', 0, filled), size: filled };
   } catch (err) {
     const code = /** @type {NodeJS.ErrnoException} */ (err)?.code;

@@ -14,7 +14,7 @@ export { cardId } from './card-id.mjs';
 export { ConfigError, DAY_MS, DEFAULTS, DEFAULT_DAYS, brandInput, itemLayoutOf, modelsRootOf, normalizeRel, normalizeRoot, resolveConfig, sameRoot } from './config.mjs';
 export { dependentsOf, resolveDependency, resolveDependencyV2 } from './dependency.mjs';
 export { headingOf, ideaDateFromName, ideaTitle } from './layouts.mjs';
-export { listingDateOf, listingStatuses, noPromoReelV2, readScheduledTxt } from './listings.mjs';
+export { listingDateOf, listingStatuses, readScheduledTxt } from './listings.mjs';
 export { parsePublishMd, readPublishMd, sectionsByAccount } from './publish-md.mjs';
 export { LANES, cardStatuses, placeCard } from './stages.mjs';
 export { buildStage, placeCardV2, placeListingV2, placePiece } from './stages-v2.mjs';
@@ -29,9 +29,9 @@ export {
   activeAccountsFor, activeVideoAccounts, deriveStatuses, deriveStatusesFor, dueState, effectivePosts, pieceStatuses, postedDays, postedDaysApprox, slotsOf,
 } from './status.mjs';
 export { FLAG_CODES, FLAG_SEVERITY, accountFlags, composeFlags, describeFlag, fileFlags, flagText, modelDetail, modelNotes, projectFlags } from './flags.mjs';
-export { isImageName, isMp4Name, readMedia } from './media.mjs';
+export { MIN_SLIDES, OTHER_MEDIA_FLAGS, isConfirmedSlides, isImageName, isMp4Name, readMedia } from './media.mjs';
 export { discoverPieces, isSkippedFolder, readPiece, readProject } from './pieces.mjs';
-export { carriedByListing, pieceCard } from './piece-cards.mjs';
+export { carriedByListing, noPromoReelV2, pieceCard } from './piece-cards.mjs';
 export { IMAGE_META_READ_BYTES, readImageMeta } from './image-meta.mjs';
 export { applyRecord, classifyValue, recordContext } from './record-step.mjs';
 export {

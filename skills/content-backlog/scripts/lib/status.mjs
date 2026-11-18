@@ -2,6 +2,7 @@
 // Pure functions: the current time is passed in, dates are `YYYY-MM-DD` strings and times `HH:MM`
 // (D-019), and nothing here depends on Temporal.
 import { localDate } from './dates.mjs';
+import { OTHER_MEDIA_FLAGS, isConfirmedSlides } from './media.mjs';
 import { accountKinds } from './presets.mjs';
 import { isScheduledValue, isSkipped, parseScheduledValue, postedDateOf, postedUrlOf } from './posted.mjs';
 
@@ -175,7 +176,6 @@ export function postedDaysApprox(statuses, recordMtimeMs) {
 }
 
 /** The flags that say the posts of a piece are for other media than the piece's own (V2-8, V2-74). */
-const OTHER_MEDIA_FLAGS = Object.freeze(['posts-other-video', 'posts-other-slides']);
 
 /**
  * The `posts:` pairs that count for a piece: none when they are for other media (`posts-other-video`,
@@ -199,7 +199,7 @@ export function effectivePosts(card) {
 export function pieceStatuses(card, accounts, now) {
   const kind = card.piece.kind;
   const media = kind === 'carousel' ? card.slides : card.video;
-  const named = kind === 'carousel' ? media && media.source !== 'unconfirmed' && !(media.missingCount > 0) : media?.name && !media.missing;
+  const named = kind === 'carousel' ? isConfirmedSlides(media) : media?.name && !media.missing;
   if (!named) return [];
   return deriveStatusesFor(effectivePosts(card), media.date, accounts, kind, now);
 }

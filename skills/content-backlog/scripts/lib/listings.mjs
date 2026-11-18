@@ -49,20 +49,3 @@ export function listingStatuses(card, accounts, now) {
       return { accountKey: a.key, status: 'owed' };
     });
 }
-
-/**
- * The "No promo reel yet" chip of a v2 listing (V2-19): it shows for a listing published within the window when no
- * piece of any project that links its model has a reel card, or only "Not used" ones. Carousel and tutorial pieces,
- * and pieces that have no card of their own, do not count. Both arguments are placed cards.
- * @param {any} listing a placed listing card
- * @param {readonly any[]} linked the placed piece cards whose model is the listing's folder
- * @param {number} now ms
- * @param {number} windowMs
- * @returns {boolean}
- */
-export function noPromoReelV2(listing, linked, now, windowMs) {
-  if (listing.placement?.stage !== 'Published') return false;
-  const date = listing.listing?.publishedDate;
-  const recent = date ? now - Date.parse(`${date}T12:00:00`) <= windowMs : false;
-  return recent && linked.filter((c) => c.type === 'reel').every((c) => c.placement?.hidden === 'not-used');
-}

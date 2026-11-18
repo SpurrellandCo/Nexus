@@ -29,7 +29,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import {
-  ConfigError, KINDS, LIMITS, STATUSES, applyRecord, brandInput, brandNamed, brandsFor, chooseBrand, classifyValue, createIo, createStatusFile, describeChange,
+  ConfigError, KINDS, LIMITS, OTHER_MEDIA_FLAGS, STATUSES, applyRecord, brandInput, brandNamed, brandsFor, chooseBrand, classifyValue, createIo, createStatusFile, describeChange,
   editStatusFile, flagText, isKind, isModelLink, isPieceRelPath, isSkippedFolder, localDate, parseAccounts, parseStatusFile, pieceCard, pieceStatuses, readPiece,
   readProject, recordContext, resolveConfig,
 } from './lib/index.mjs';
@@ -41,7 +41,6 @@ const FLAG_OPTIONS = ['dry-run', 'json', 'replace-record', 'help'];
 const CREATE_ONLY = ['format', 'kind', 'status', 'model', 'created'];
 const SET_KEYS = ['status', 'video', 'slides', 'style', 'kind', 'model'];
 const MAX_NAME = 80;
-const OTHER_MEDIA = ['posts-other-video', 'posts-other-slides'];
 
 const HELP = `Usage: status.mjs <command> ... [--accounts <file>] [--root <content root>] [--models <folder>] [--dry-run] [--json]
   show <piece>                                    the piece's file and what each account is owed
@@ -527,7 +526,7 @@ function cmdPost(args, ctx, clearing) {
   const where = locate(args, ctx, target, 2);
   const loaded = loadPiece(where);
   const flags = loaded.card.rawFlags.map((/** @type {{ code: string }} */ f) => f.code);
-  const otherMedia = flags.some((/** @type {string} */ code) => OTHER_MEDIA.includes(code));
+  const otherMedia = flags.some((/** @type {string} */ code) => OTHER_MEDIA_FLAGS.includes(code));
   if (otherMedia && !args.replaceRecord) {
     throw new Refused(`The posts in ${where.display}/status.md belong to another ${flags.includes('posts-other-slides') ? 'set of slides' : 'video'} than the one it names now. Nothing was changed. `
       + 'To start a new record, run it again with --replace-record: the old file is kept as status.previous.md.');

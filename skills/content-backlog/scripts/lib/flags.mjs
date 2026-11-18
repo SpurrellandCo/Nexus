@@ -11,7 +11,9 @@
 //     posted-but-open, status-lags (every account is posted or skipped), post-without-account, no-account-for-kind -> accountFlags
 //     model-differs                                                                               -> projectFlags
 // composeFlags joins them. A flag is `{ code, params }` with string params; `describeFlag` adds severity and text.
-import { clip } from './status-file-text.mjs';
+import { MIN_SLIDES } from './media.mjs';
+import { clip, isWrittenOut } from './status-file-text.mjs';
+import { activeAccountsFor } from './status.mjs';
 
 /**
  * @typedef {{ code: string, params: Record<string, string> }} RawFlag
@@ -45,10 +47,7 @@ const SHOWN_AT = 60;
  * @param {number} [max]
  */
 function plain(value, max = SHOWN_AT) {
-  const text = Array.from(String(value ?? ''), (ch) => {
-    const code = /** @type {number} */ (ch.codePointAt(0));
-    return code < 0x20 || (code >= 0x7f && code <= 0x9f) || code === 0x2028 || code === 0x2029 ? ' ' : ch;
-  }).join('');
+  const text = Array.from(String(value ?? ''), (ch) => (isWrittenOut(/** @type {number} */ (ch.codePointAt(0))) ? ' ' : ch)).join('');
   return clip(text, max);
 }
 
@@ -143,9 +142,9 @@ export function fileFlags({ brandId, front, files, video, slides, namedSlides, m
   if (kind === 'reel' && status === 'made' && (video === null || video.missing)) flags.push(make('video-missing'));
   if (kind === 'carousel' && status === 'made') {
     const missing = namedSlides.filter((s) => !s.exists).length;
-    if (namedSlides.length < 2 || missing > 0) flags.push(make('slides-missing', { named: String(namedSlides.length), missing: String(missing) }));
+    if (namedSlides.length < MIN_SLIDES || missing > 0) flags.push(make('slides-missing', { named: String(namedSlides.length), missing: String(missing) }));
   }
-  const hasMedia = kind === 'carousel' ? slideCount(slides) >= 2 : video !== null && !video.missing;
+  const hasMedia = kind === 'carousel' ? slideCount(slides) >= MIN_SLIDES : video !== null && !video.missing;
   if (LAGS_BEHIND_MEDIA.includes(status) && hasMedia) flags.push(make('status-lags', { reason: kind === 'carousel' ? 'slides' : 'video', status }));
   else if (LAGS_BEHIND_COPY.includes(status) && files.scriptOrCopy) flags.push(make('status-lags', { reason: kind === 'carousel' ? 'copy' : 'script', status }));
   if (front.brand !== brandId) flags.push(make('brand-mismatch', { found: front.brand, expected: brandId }));
@@ -164,7 +163,7 @@ export function fileFlags({ brandId, front, files, video, slides, namedSlides, m
  */
 export function accountFlags(card, { statuses, accounts, brandName }) {
   const kind = card.piece.kind;
-  const taking = accounts.filter((a) => !a.archived && (a.kinds ?? []).includes(kind));
+  const taking = activeAccountsFor(accounts, kind);
   /** @type {RawFlag[]} */
   const flags = [];
   if (taking.length === 0) flags.push(make('no-account-for-kind', { brand: brandName, kind }));

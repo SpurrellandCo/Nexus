@@ -9,6 +9,7 @@
 // facts are null when `Final/` holds no video (or no slide) at all, so a card with media always has a file to name
 // or to miss. A listing card needs `linked`, the piece cards (or `{ status, format }` pairs) whose `model:` is its folder.
 // No module state; nothing is changed in what is passed in.
+import { isConfirmedSlides } from './media.mjs';
 
 /**
  * @typedef {'shelved' | 'not-used' | 'ignored' | null} Hidden
@@ -48,7 +49,9 @@ const kindOf = (card) => (card.piece?.kind === 'carousel' ? 'carousel' : 'reel')
 function mediaOf(card) {
   if (kindOf(card) === 'carousel') {
     const slides = card.slides;
-    return slides ? { unconfirmed: slides.source === 'unconfirmed', missing: (slides.missingCount ?? 0) > 0 } : null;
+    if (!slides) return null;
+    const unconfirmed = slides.source === 'unconfirmed';
+    return { unconfirmed, missing: !unconfirmed && !isConfirmedSlides(slides) };
   }
   const video = card.video;
   return video ? { unconfirmed: video.source === 'unconfirmed', missing: Boolean(video.missing) } : null;

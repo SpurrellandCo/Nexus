@@ -7,10 +7,11 @@ import path from 'node:path';
 import { cardId } from './card-id.mjs';
 import { normalizeRel } from './config.mjs';
 import { fileFlags } from './flags.mjs';
-import { isImageName, isMp4Name, readMedia } from './media.mjs';
+import { MIN_SLIDES, isImageName, isMp4Name, readMedia } from './media.mjs';
+import { noPromoReel } from './cards.mjs';
 import { mentionsMakerWorld } from './publish-md.mjs';
 import { isScheduledValue, parseScheduledValue } from './posted.mjs';
-import { clip } from './status-file-text.mjs';
+import { clip, fold } from './status-file-text.mjs';
 import { resolveModel } from './models.mjs';
 import { KINDS } from './status-file.mjs';
 
@@ -22,14 +23,9 @@ import { KINDS } from './status-file.mjs';
  *             suggestion: string | null, listingCardId: string | null }} ModelFacts
  */
 
-/** A carousel with no copy file is a carousel card once it holds this many images directly in `Final/` (V2-74). */
-export const MIN_SLIDE_IMAGES = 2;
 /** The statuses a listing card carries for a piece that links its model (V2-10): the piece has no card of its own. */
 const CARRIED_STATUSES = Object.freeze(['idea', 'approved', 'building', 'built']);
 const TITLE_SEPARATOR = ' · ';
-
-/** @param {string} text */
-const fold = (text) => text.normalize('NFC').toLowerCase();
 
 /** A path as the ignore list compares it (V2-15): NFC, each segment trimmed, any letter case. @param {string} p */
 const ignoreKey = (p) => normalizeRel(p.normalize('NFC'));
@@ -60,9 +56,9 @@ export function isIgnoredPath(ignore, rel) {
  * @param {PieceFacts} facts
  * @returns {PieceCardType}
  */
-export function pieceCardType({ front, final, work }) {
+function pieceCardType({ front, final, work }) {
   if (front.kind === 'carousel') {
-    return work.hasDraft || final.files.filter(isImageName).length >= MIN_SLIDE_IMAGES ? 'carousel' : 'idea';
+    return work.hasDraft || final.files.filter(isImageName).length >= MIN_SLIDES ? 'carousel' : 'idea';
   }
   if (front.format === 'tutorial') return 'tutorial';
   return work.hasDraft || final.files.some(isMp4Name) ? 'reel' : 'idea';
@@ -73,7 +69,7 @@ export function pieceCardType({ front, final, work }) {
  * is not the kind label in any letter case (`Example Bin · Reel (Assembly)`).
  * @param {PieceFacts} facts
  */
-export function pieceTitle({ project, piece, front }) {
+function pieceTitle({ project, piece, front }) {
   const label = KINDS[/** @type {'reel' | 'carousel'} */ (front.kind)].label;
   const named = fold(piece.name) === fold(label) ? '' : ` (${piece.name})`;
   return `${project.name}${TITLE_SEPARATOR}${label}${named}`;
@@ -87,7 +83,7 @@ export function pieceTitle({ project, piece, front }) {
  * @param {string | undefined} link
  * @returns {ModelFacts}
  */
-export function modelFacts(io, cfg, link) {
+function modelFacts(io, cfg, link) {
   if (link === undefined) return { link: null, state: 'none', path: null, suggestion: null, listingCardId: null };
   const resolved = resolveModel(io, cfg, link);
   const listingCardId = resolved.state === 'ok'
@@ -151,7 +147,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
     dependency: { mentionsMakerWorld: work.publishText === null ? false : mentionsMakerWorld(work.publishText) },
     created: front.created ?? null,
     lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs, media.changedMs),
-    warnings: [...(work.publishTooLarge ? [`${work.name ?? kind}/publish.md is over 1 MiB, so it is not read`] : []), ...unreadableSchedules(front.posts, status.path)],
+    warnings: [...(work.publishTooLarge ? [`${work.name ?? kind}/publish.md is over 1 MiB, so it is not read`] : []), ...(work.publishNotUtf8 ? [`${work.name ?? kind}/publish.md is not valid UTF-8, so it is not read`] : []), ...unreadableSchedules(front.posts, status.path)],
   };
 }
 
@@ -164,3 +160,18 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
  * @param {Pick<PieceCard, 'type' | 'piece' | 'model'>} card
  */
 export const carriedByListing = (card) => card.type === 'idea' && CARRIED_STATUSES.includes(card.piece.declaredStatus) && card.model.state === 'ok';
+
+/**
+ * The "No promo reel yet" chip of a v2 listing (V2-24): v1's rule (`noPromoReel`: published within the window, and no reel, or
+ * only one that was not used) applied to the reel cards of every piece that links the model. Carousel and tutorial pieces, and
+ * pieces that have no card of their own, do not count. Both arguments are placed cards.
+ * @param {any} listing a placed listing card
+ * @param {readonly any[]} linked the placed piece cards whose model is the listing's folder
+ * @param {number} now ms
+ * @param {number} windowMs
+ * @returns {boolean}
+ */
+export function noPromoReelV2(listing, linked, now, windowMs) {
+  const reels = linked.filter((c) => c.type === 'reel');
+  return reels.every((c) => c.placement?.hidden === 'not-used') && noPromoReel(listing, reels[0], now, windowMs);
+}

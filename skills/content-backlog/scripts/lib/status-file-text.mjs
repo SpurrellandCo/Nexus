@@ -27,8 +27,11 @@ export function clip(text, max = CLIP_AT) {
   return `${/[\ud800-\udbff]$/.test(cut) ? cut.slice(0, -1) : cut}\u2026`;
 }
 
+/** A name as it is compared: NFC, in lower case (a share may hold either spelling of an accent, and a case-insensitive twin). @param {string} text */
+export const fold = (text) => text.normalize('NFC').toLowerCase();
+
 /** Whether a character is written out in a message: C0 and C1 controls, DEL, and the Unicode line and paragraph separators. @param {number} code */
-const isWrittenOut = (code) => code < 0x20 || (code >= 0x7f && code <= 0x9f) || code === 0x2028 || code === 0x2029;
+export const isWrittenOut = (code) => code < 0x20 || (code >= 0x7f && code <= 0x9f) || code === 0x2028 || code === 0x2029;
 
 /** Control characters written out as \\uXXXX, so a message never carries a raw escape or line break from a file. @param {string} text */
 const visible = (text) => Array.from(text, (ch) => {

@@ -15,6 +15,7 @@ import path from 'node:path';
 import { localDate } from './dates.mjs';
 import { parsePublishMd } from './publish-md.mjs';
 import { isPieceRelPath } from './status-file.mjs';
+import { fold } from './status-file-text.mjs';
 
 /**
  * @typedef {Pick<import('./fs-io.mjs').Io, 'listDir' | 'lstat'>} MediaIo
@@ -30,8 +31,14 @@ import { isPieceRelPath } from './status-file.mjs';
 const MP4 = /\.mp4$/i;
 /** The image files that count as slides (V2-74). */
 const IMAGE = /\.(png|jpe?g|webp)$/i;
-/** A carousel that names no slides has media once `Final/` holds this many images directly (V2-74). */
-const MIN_UNNAMED_IMAGES = 2;
+/**
+ * A carousel is made when it names at least this many slides and every one is there (V2-74); one that names none has slides
+ * only once `Final/` holds this many images directly. The one number, and `isConfirmedSlides` the one rule, for the scan's flags,
+ * the board's stages, the accounts' statuses and the record step.
+ */
+export const MIN_SLIDES = 2;
+/** The flags that say a piece's posts belong to other media: its record is read as empty and a record action asks first (V2-28). */
+export const OTHER_MEDIA_FLAGS = Object.freeze(['posts-other-video', 'posts-other-slides']);
 const ABSENT = Object.freeze({ state: /** @type {const} */ ('absent') });
 const OUTSIDE = Object.freeze({ state: /** @type {const} */ ('outside') });
 
@@ -40,8 +47,13 @@ export const isMp4Name = (name) => MP4.test(name);
 /** @param {string} name */
 export const isImageName = (name) => IMAGE.test(name);
 
-/** @param {string} text */
-const fold = (text) => text.normalize('NFC').toLowerCase();
+/**
+ * Whether a carousel's slides are confirmed (V2-74): named on the `Slides:` line or in `slides:`, at least `MIN_SLIDES` of them, and
+ * every one there as an image. Fewer, or one missing, is not made; slides found only by counting `Final/` are never confirmed.
+ * @param {{ source: string, named: ReadonlyArray<unknown>, missingCount: number } | null | undefined} slides the card's `slides`
+ */
+export const isConfirmedSlides = (slides) => Boolean(slides) && /** @type {any} */ (slides).source !== 'unconfirmed' && /** @type {any} */ (slides).named.length >= MIN_SLIDES && /** @type {any} */ (slides).missingCount === 0;
+
 /** A path as it is compared: each segment in NFC and lower case. @param {string} p */
 const foldPath = (p) => p.split('/').map(fold).join('/');
 /** @param {string} p */
@@ -111,7 +123,7 @@ const flag = (code, params = {}) => ({ code, params });
 function readVideo(io, facts, lines) {
   const files = facts.final.files.filter(isMp4Name);
   const sources = /** @type {Array<{ source: 'publish-md' | 'status', named: string, walked: Walk }>} */ ([]);
-  for (const [source, named] of /** @type {const} */ ([['publish-md', lines.videoPath], ['status', facts.front.video ?? null]])) {
+  for (const [source, named] of /** @type {const} */ ([['publish-md', lines.videoPath || null], ['status', facts.front.video ?? null]])) {
     if (named !== null) sources.push({ source, named, walked: walk(io, facts.piece.dir, named) });
   }
   const usable = sources.filter((s) => s.walked.state !== 'outside');
@@ -163,11 +175,12 @@ const sameList = (a, b) => a.length === b.length && a.every((p, i) => foldPath(p
 function readSlides(io, facts, lines) {
   const fromPublish = lines.slidePaths;
   const fromStatus = facts.front.slides ?? [];
-  const chosen = fromPublish.length > 0 ? { source: /** @type {const} */ ('publish-md'), paths: fromPublish } : { source: /** @type {const} */ ('status'), paths: fromStatus };
+  const lexical = (/** @type {string[]} */ paths) => paths.filter(isPieceRelPath);
+  // As for the video, a `Slides:` line names the slides only when at least one of its paths could be a path in the folder (L1).
+  const chosen = lexical(fromPublish).length > 0 ? { source: /** @type {const} */ ('publish-md'), paths: fromPublish } : { source: /** @type {const} */ ('status'), paths: fromStatus };
   const images = facts.final.files.filter(isImageName);
   /** @type {RawFlag[]} */
   const flags = [];
-  const lexical = (/** @type {string[]} */ paths) => paths.filter(isPieceRelPath);
   const anyOutside = fromPublish.some((p) => !isPieceRelPath(p)) || fromStatus.some((p) => !isPieceRelPath(p));
 
   /** @type {NamedSlide[]} */
@@ -187,7 +200,7 @@ function readSlides(io, facts, lines) {
   if (Object.keys(facts.front.posts).length > 0 && lexical(fromPublish).length > 0 && lexical(fromStatus).length > 0 && !sameList(lexical(fromPublish), lexical(fromStatus))) {
     flags.push(flag('posts-other-slides'));
   }
-  const present = named.length > 0 ? images.length >= 1 : images.length >= MIN_UNNAMED_IMAGES;
+  const present = named.length > 0 ? images.length >= 1 : images.length >= MIN_SLIDES;
   const slides = present
     ? { named, source: named.length > 0 ? chosen.source : /** @type {const} */ ('unconfirmed'), finalImages: images, date: newestMs > 0 ? localDate(newestMs) : null, missingCount: named.filter((s) => !s.exists).length }
     : null;

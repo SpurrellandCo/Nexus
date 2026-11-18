@@ -8,10 +8,10 @@
 // status file and publish.md are the only files opened (each through a capped read that never follows a link), and
 // nothing is looked for with a stat of a joined path.
 // No module state; a folder that cannot be read is the io's warning, never an exception here.
-import { Buffer } from 'node:buffer';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { KINDS, LIMITS, parseStatusFile } from './status-file.mjs';
+import { fold } from './status-file-text.mjs';
 
 /**
  * @typedef {import('./config.mjs').ScanConfig} ScanConfig
@@ -21,15 +21,13 @@ import { KINDS, LIMITS, parseStatusFile } from './status-file.mjs';
  * @typedef {{ name: string, path: string, size: number, mtimeMs: number, sha1: string }} FileRef
  * @typedef {{ project: FolderRef, piece: FolderRef, status: FileRef, front: import('./status-file.mjs').StatusFront,
  *             extra: Record<string, string>, final: { name: string | null, files: string[] },
- *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishTooLarge: boolean, publishMtimeMs: number } }} PieceFacts
+ *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishTooLarge: boolean, publishNotUtf8: boolean, publishMtimeMs: number } }} PieceFacts
  * @typedef {{ pieces: PieceFacts[], warnings: string[], legacyFolders: number, foldersRead: number, stopped: boolean }} Discovery
  */
 
 /** Folders that are never projects or pieces: hidden, pipeline (`_Ideas`) and template (`z.`) folders. */
 export const SKIPPED_FOLDER = /^(\.|_|z\.)/;
 
-/** @param {string} text */
-const fold = (text) => text.normalize('NFC').toLowerCase();
 /** @param {{ name: string }} a @param {{ name: string }} b */
 const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 
@@ -122,6 +120,7 @@ export function readPiece(io, cfg, project, name) {
   const read = io.readCapped(file, LIMITS.fileBytes);
   if (read === null) return null;
   if ('tooLarge' in read) return { invalid: `${statusPath}: is over 1 MiB, so it is not read` };
+  if ('notUtf8' in read) return { invalid: `${statusPath}: is not valid UTF-8, so it is not read` };
   const text = read.text;
   const parsed = parseStatusFile(text);
   if (!parsed.ok) return { invalid: `${statusPath}: ${parsed.reason}${parsed.line === undefined ? '' : ` (line ${parsed.line})`}` };
@@ -138,7 +137,7 @@ export function readPiece(io, cfg, project, name) {
     piece: {
       project,
       piece,
-      status: { name: entry.name, path: statusPath, size: Buffer.byteLength(text, 'utf8'), mtimeMs: io.lstat(file)?.mtimeMs ?? 0, sha1: crypto.createHash('sha1').update(text).digest('hex') },
+      status: { name: entry.name, path: statusPath, size: read.size, mtimeMs: io.lstat(file)?.mtimeMs ?? 0, sha1: crypto.createHash('sha1').update(text).digest('hex') },
       front: parsed.fm,
       extra: parsed.extra,
       final: { name: finalName, files: finalEntries.filter((e) => e.isFile()).map((e) => e.name).sort() },
@@ -148,6 +147,7 @@ export function readPiece(io, cfg, project, name) {
         hasPublish: publishName !== null,
         publishText: publish !== null && 'text' in publish ? publish.text : null,
         publishTooLarge: publish !== null && 'tooLarge' in publish,
+        publishNotUtf8: publish !== null && 'notUtf8' in publish,
         publishMtimeMs: publishFile === null ? 0 : io.lstat(publishFile)?.mtimeMs ?? 0,
       },
     },

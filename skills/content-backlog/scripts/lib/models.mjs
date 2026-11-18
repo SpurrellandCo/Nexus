@@ -214,7 +214,7 @@ function pieceLinkedTo(io, dir, name, link) {
   const entry = statusEntryIn(io.listDir(dir));
   if (entry === null || !entry.isFile()) return null;
   const read = io.readCapped(path.join(dir, entry.name), LIMITS.fileBytes);
-  if (read === null || 'tooLarge' in read) return null;
+  if (read === null || !('text' in read)) return null;
   const parsed = parseStatusFile(read.text);
   if (!parsed.ok || typeof parsed.fm.model !== 'string' || nfc(parsed.fm.model) !== nfc(link)) return null;
   return { name, kind: parsed.fm.kind, status: parsed.fm.status };
