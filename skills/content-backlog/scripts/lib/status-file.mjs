@@ -37,10 +37,18 @@ const INDENT = 2;
  * @typedef {{ label: string, media: 'video' | 'slides', mediaKey: 'video' | 'slides', workFolder: string, publish: string, draft: string }} KindRow
  */
 /** @type {Readonly<Record<'reel' | 'carousel', Readonly<KindRow>>>} */
-export const KINDS = Object.freeze({
+export const KINDS = Object.freeze(Object.assign(Object.create(null), {
   reel: Object.freeze({ label: 'Reel', media: 'video', mediaKey: 'video', workFolder: '.quickvid', publish: 'publish.md', draft: 'script.md' }),
   carousel: Object.freeze({ label: 'Carousel', media: 'slides', mediaKey: 'slides', workFolder: '.carousel', publish: 'publish.md', draft: 'copy.md' }),
-});
+}));
+
+/**
+ * Whether a value from outside (a file, an account, an argument) is a kind: a key of KINDS and nothing
+ * inherited, so `constructor` and `toString` are not kinds. Every check of a kind string uses this.
+ * @param {unknown} kind
+ * @returns {kind is 'reel' | 'carousel'}
+ */
+export const isKind = (kind) => typeof kind === 'string' && Object.hasOwn(KINDS, kind);
 
 /** The eight statuses of V2-2, in lifecycle order. */
 export const STATUSES = Object.freeze(['idea', 'approved', 'building', 'built', 'scripted', 'made', 'posted', 'shelved']);
@@ -60,8 +68,6 @@ const FORMAT_WORD = /^[a-z][a-z0-9-]*$/;
 const ALL_SPACES = /^ *$/;
 
 /** @typedef {{ ok: false, reason: string, line?: number }} Refusal */
-
-const isKind = (/** @type {unknown} */ kind) => typeof kind === 'string' && Object.hasOwn(KINDS, kind);
 
 /**
  * The editable values: [test, what a good one looks like]. Reader, editor and `createStatusFile` all check with these.
@@ -320,6 +326,9 @@ function acceptKey(body, step, line) {
   return null;
 }
 
+/** @param {unknown} key */
+const postKeyProblem = (key) => (isPlatformKey(key) ? null : `${describe(key)} is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`);
+
 /**
  * A `  platform key: value` child of `posts:`.
  * @param {Body} body
@@ -330,7 +339,8 @@ function acceptPost(body, step) {
   if (step.type !== 'entry') return 'is not "key: value"';
   const problem = keyProblem(step.key, [body.posts]);
   if (problem) return problem;
-  if (!isPlatformKey(step.key)) return `${describe(step.key)} is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`;
+  const platformProblem = postKeyProblem(step.key);
+  if (platformProblem) return platformProblem;
   if (Object.keys(body.posts).length >= LIMITS.posts) return `lists more than ${LIMITS.posts} posts`;
   const scalar = readScalar(step.raw);
   if ('problem' in scalar) return `${describe(step.key)} ${scalar.problem}`;
@@ -470,9 +480,6 @@ export function parseStatusFile(text) {
 // --- Writing: quoting, then one line at a time ----------------------------------------------
 
 /** @typedef {{ ok: false, code: 'STATUS_FILE_INVALID', reason: string }} Invalid */
-
-/** @param {unknown} key */
-const postKeyProblem = (key) => (isPlatformKey(key) ? null : `${describe(key)} is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`);
 
 /** @param {unknown} slides */
 function slidesProblem(slides) {
@@ -712,7 +719,9 @@ function fieldLines(fields) {
  * @param {{ eol?: '\n' | '\r\n', notes?: string }} [options]
  * @returns {string}
  */
-export function createStatusFile(fields, { eol = LF, notes = '' } = {}) {
+export function createStatusFile(fields, options = {}) {
+  if (options === null || typeof options !== 'object') throw invalidValue('options must be an object');
+  const { eol = LF, notes = '' } = options;
   if (eol !== LF && eol !== CRLF) throw invalidValue('eol must be LF or CRLF');
   if (fields === null || typeof fields !== 'object') throw invalidValue('fields must be an object');
   if (typeof notes !== 'string') throw invalidValue('notes must be text');

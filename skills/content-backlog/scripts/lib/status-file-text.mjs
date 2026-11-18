@@ -27,8 +27,21 @@ export function clip(text, max = CLIP_AT) {
   return `${/[\ud800-\udbff]$/.test(cut) ? cut.slice(0, -1) : cut}\u2026`;
 }
 
-/** A value for a message, never throwing: text is quoted and clipped, anything else is named by its type. @param {unknown} value */
-export const describe = (value) => (typeof value === 'string' ? `"${clip(value)}"` : `<${value === null ? 'null' : typeof value}>`);
+/** Whether a character is written out in a message: C0 and C1 controls, DEL, and the Unicode line and paragraph separators. @param {number} code */
+const isWrittenOut = (code) => code < 0x20 || (code >= 0x7f && code <= 0x9f) || code === 0x2028 || code === 0x2029;
+
+/** Control characters written out as \\uXXXX, so a message never carries a raw escape or line break from a file. @param {string} text */
+const visible = (text) => Array.from(text, (ch) => {
+  const code = /** @type {number} */ (ch.codePointAt(0));
+  return isWrittenOut(code) ? `\\u${code.toString(16).padStart(4, '0')}` : ch;
+}).join('');
+
+/**
+ * A value for a message, never throwing: text is clipped, quoted and shown with its control characters written
+ * out (so a hostile file cannot send an ANSI escape or a line break into a reason); anything else is named by its type.
+ * @param {unknown} value
+ */
+export const describe = (value) => (typeof value === 'string' ? `"${visible(clip(value))}"` : `<${value === null ? 'null' : typeof value}>`);
 
 /** Whether the text holds a control character, DEL, or a Unicode line separator. @param {string} text */
 export function hasControlChar(text) {

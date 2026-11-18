@@ -1,11 +1,11 @@
 // Which kinds of piece each platform takes (Content Board v2: V2-76, D-033), the one copy of that table.
-// Dependency-free apart from the KINDS table, so the app's renderer can bundle it too, and pure: an
+// Dependency-free apart from the kinds table (isKind), so the app's renderer can bundle it too, and pure: an
 // account in, a list of kinds out, never an exception (a hand-edited accounts file must not stop a scan).
 //
 // An account takes the kinds in its own optional `kinds` list. With none, the preset for its platform key
 // supplies them. An account with neither takes `reel` when it accepts video, so every v1 file behaves as
 // it did before kinds existed. MakerWorld takes neither kind: it is a listing account.
-import { KINDS } from './status-file.mjs';
+import { isKind } from './status-file.mjs';
 
 const BOTH = Object.freeze(['reel', 'carousel']);
 const REEL_ONLY = Object.freeze(['reel']);
@@ -27,9 +27,6 @@ export const PRESET_KINDS = Object.freeze({
   makerworld: Object.freeze(/** @type {string[]} */ ([])),
 });
 
-/** @param {unknown} kind */
-const isKnownKind = (kind) => typeof kind === 'string' && Object.hasOwn(KINDS, kind);
-
 /**
  * The known kinds in an account's own `kinds` value, each once, in the order written; empty when it is
  * not a list or holds none.
@@ -38,7 +35,7 @@ const isKnownKind = (kind) => typeof kind === 'string' && Object.hasOwn(KINDS, k
  */
 function ownKinds(kinds) {
   if (!Array.isArray(kinds)) return [];
-  return [...new Set(kinds.filter(isKnownKind))];
+  return [...new Set(kinds.filter(isKind))];
 }
 
 /**
