@@ -3,11 +3,13 @@
 // Read-only: it never writes, moves or renames anything. The scanning lives in ./lib (shared with the
 // Content Board app); this file is only the command line: options, the settings files, output, exit codes.
 //
-//   node backlog.mjs [--root <content folder>] [--brand <id or name>] [--accounts <file>] [--settings <file>]
-//                    [--tech-tips <file>] [--days <n>] [--all] [--untracked] [--json]
+//   node backlog.mjs [--root <content folder>] [--brand <id or name>] [--models <folder>] [--accounts <file>]
+//                    [--settings <file>] [--tech-tips <file>] [--days <n>] [--all] [--untracked] [--json]
 //
 //   --root       content folder to scan (default: the root of the brand named with --brand, else the brand
 //                whose content root holds the working folder, else models_root in the settings file)
+//   --models     the brand's models folder, for a brand in the new format (itemLayout 2 in accounts.json), instead of the
+//                `modelsRoot` it has: its model folders are the MakerWorld listings on the list
 //   --brand      brand to scan, by its id or name in the accounts file
 //   --accounts   shared accounts file (default: ~/.nexus-local/accounts.json; "none" to ignore it)
 //   --settings   settings file (default: ~/.nexus-local/makerworld.json)
@@ -22,6 +24,10 @@
 // accounts file, or no brand there for the folder, they come from tech-tips.json (its videos_root) or
 // makerworld.json (reel.platforms), for one release.
 //
+// A brand in the new format (itemLayout 2) is read through the v2 scan: projects with pieces (`status.md`), the models folder's
+// listings, in the same groups. A brand in the older format is read as it always was, and its brand object carries
+// `notice: "not-migrated"` (and the text report one line) until it is migrated.
+//
 // Exit codes: 0 ok, 2 settings, brand or content folder missing, 1 bad option.
 
 import fs from 'node:fs';
@@ -29,11 +35,15 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   ConfigError, DAY_MS, DEFAULT_DAYS, GROUPS, brandInput, brandsFor, chooseBrand, isWithinRoot, localDate, parseAccounts,
-  resolveConfig, scanBacklog, startOfDay, techTipsBrand,
+  resolveConfig, scanBacklog, scanBrand, startOfDay, techTipsBrand,
 } from './lib/index.mjs';
+import { backlogV2 } from './lib/backlog-v2.mjs';
 
 const HIDDEN_BY_DEFAULT = new Set(['done', 'shelved']);
 const LOCAL = path.join(os.homedir(), '.nexus-local');
+/** The notice a brand in the older format carries until it is migrated (V2-35). */
+const NOT_MIGRATED = 'not-migrated';
+const NOT_MIGRATED_TEXT = 'This brand is not migrated to the new format (it is read as it always was). Run the migration with the Content Board app closed: npm run migrate:v2.';
 const SOURCE_LABELS = { accounts: 'accounts.json', 'tech-tips': 'tech-tips.json', makerworld: 'makerworld.json' };
 
 /**
@@ -51,6 +61,7 @@ function parseArgs(argv) {
   const opts = {
     root: /** @type {string | null} */ (null),
     brand: /** @type {string | null} */ (null),
+    models: /** @type {string | null} */ (null),
     accounts: path.join(LOCAL, 'accounts.json'),
     settings: path.join(LOCAL, 'makerworld.json'),
     techTips: path.join(LOCAL, 'tech-tips.json'),
@@ -72,6 +83,7 @@ function parseArgs(argv) {
     else if (arg === '--json') opts.json = true;
     else if (arg === '--root') opts.root = value(++i);
     else if (arg === '--brand') opts.brand = value(++i);
+    else if (arg === '--models') opts.models = value(++i);
     else if (arg === '--accounts') opts.accounts = value(++i);
     else if (arg === '--settings') opts.settings = value(++i);
     else if (arg === '--tech-tips') opts.techTips = value(++i);
@@ -153,9 +165,10 @@ function formatDate(ms, now) {
  * @param {ReturnType<typeof parseArgs>} opts
  * @param {number} now
  * @param {string | null} brandLine
+ * @param {string | null} modelsLine
  */
-function renderText(scanned, opts, now, brandLine) {
-  const lines = [`Content backlog · ${localDate(now)}`, ...(brandLine ? [brandLine] : []), `Content folder: ${scanned.root}`, ''];
+function renderText(scanned, opts, now, brandLine, modelsLine) {
+  const lines = [`Content backlog · ${localDate(now)}`, ...(brandLine ? [brandLine] : []), `Content folder: ${scanned.root}`, ...(modelsLine ? [modelsLine] : []), ''];
   let shown = 0;
   for (const [key, title] of GROUPS) {
     const list = scanned.groups[key] || [];
@@ -166,6 +179,7 @@ function renderText(scanned, opts, now, brandLine) {
       const tag = item.kind === 'tutorial' ? ' [tutorial]' : '';
       lines.push(`  • ${item.name}${tag}: ${item.detail.replace('{date}', formatDate(item.time, now))}`);
       if (item.next) lines.push(`      next: ${item.next}`);
+      for (const note of /** @type {any} */ (item).flags ?? []) lines.push(`      note: ${note}`);
     }
     lines.push('');
   }
@@ -237,7 +251,7 @@ function main() {
       root,
       days: opts.days,
       settingsFile: opts.settings,
-      brand: choice.brand ? brandInput(choice.brand) : undefined,
+      brand: choice.brand ? brandInput(opts.models && choice.source === 'accounts' ? { ...choice.brand, modelsRoot: opts.models } : choice.brand) : undefined,
     });
   } catch (err) {
     if (err instanceof ConfigError) fail(err.message, err.exitCode);
@@ -245,9 +259,15 @@ function main() {
   }
   if (!fs.existsSync(cfg.root)) fail(`Content folder not found: ${cfg.root}\nIs the drive mounted?`);
   const now = Date.now();
-  const scanned = scanBacklog(cfg, { now });
+  // A brand in the new format is read through the v2 scan; any other brand as it always was (V2-35).
+  const scanned = cfg.itemLayout === 2
+    ? { root: cfg.root, ...backlogV2(scanBrand(cfg, { now }), { accounts: cfg.accounts, now, windowMs: cfg.windowMs, brandName: choice.brand?.name ?? choice.brand?.id ?? 'this brand' }) }
+    : scanBacklog(cfg, { now });
   const warnings = [...(accounts.warning ? [accounts.warning] : []), ...choice.warnings, ...scanned.warnings];
-  const brand = choice.source === 'makerworld' ? null : { id: choice.brand.id, name: choice.brand.name ?? choice.brand.id, source: SOURCE_LABELS[choice.source] };
+  const notMigrated = choice.source === 'accounts' && cfg.itemLayout !== 2;
+  const brand = choice.source === 'makerworld' ? null : {
+    id: choice.brand.id, name: choice.brand.name ?? choice.brand.id, source: SOURCE_LABELS[choice.source], ...(notMigrated ? { notice: NOT_MIGRATED } : {}), ...(cfg.itemLayout === 2 ? { itemLayout: 2 } : {}),
+  };
 
   if (opts.json) {
     /** @param {Array<{ time: number }>} list */
@@ -264,8 +284,8 @@ function main() {
     };
     console.log(JSON.stringify(out, null, 2));
   } else {
-    const brandLine = brand ? `Brand: ${brand.name} (${brand.source}; platforms: ${cfg.platforms.join(', ') || 'none'})` : null;
-    console.log(renderText({ ...scanned, warnings }, opts, now, brandLine));
+    const brandLine = brand ? `Brand: ${brand.name} (${brand.source}; platforms: ${cfg.platforms.join(', ') || 'none'})${notMigrated ? `\n${NOT_MIGRATED_TEXT}` : ''}` : null;
+    console.log(renderText({ ...scanned, warnings }, opts, now, brandLine, cfg.itemLayout === 2 && cfg.modelsRoot ? `Models folder: ${cfg.modelsRoot}` : null));
   }
 }
 
