@@ -9,6 +9,8 @@ import { normalizeRel } from './config.mjs';
 import { fileFlags } from './flags.mjs';
 import { isImageName, isMp4Name, readMedia } from './media.mjs';
 import { mentionsMakerWorld } from './publish-md.mjs';
+import { isScheduledValue, parseScheduledValue } from './posted.mjs';
+import { clip } from './status-file-text.mjs';
 import { resolveModel } from './models.mjs';
 import { KINDS } from './status-file.mjs';
 
@@ -95,6 +97,18 @@ export function modelFacts(io, cfg, link) {
 }
 
 /**
+ * A warning for each post whose `scheduled ...` value has no date that can be read (V2-6, FR 8): the account is owed.
+ * @param {Record<string, string> | undefined} posts
+ * @param {string} file the status file's path, for the message
+ * @returns {string[]}
+ */
+function unreadableSchedules(posts, file) {
+  return Object.entries(posts ?? {})
+    .filter(([, value]) => isScheduledValue(value) && !parseScheduledValue(value))
+    .map(([key, value]) => `${file}: can't read the scheduled date in "${clip(key, 40)}: ${clip(value, 80)}"`);
+}
+
+/**
  * The raw card of one piece.
  * A piece is `ignored` (V2-15) when its project or its own folder is in the brand's ignore list, or the model its link
  * resolves to is, or a folder above that model.
@@ -137,7 +151,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
     dependency: { mentionsMakerWorld: work.publishText === null ? false : mentionsMakerWorld(work.publishText) },
     created: front.created ?? null,
     lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs, media.changedMs),
-    warnings: work.publishTooLarge ? [`${work.name ?? kind}/publish.md is over 1 MiB, so it is not read`] : /** @type {string[]} */ ([]),
+    warnings: [...(work.publishTooLarge ? [`${work.name ?? kind}/publish.md is over 1 MiB, so it is not read`] : []), ...unreadableSchedules(front.posts, status.path)],
   };
 }
 

@@ -88,6 +88,7 @@ function walk(io, pieceDir, relPath) {
     const full = path.join(dir, name);
     const stat = io.lstat(full);
     if (stat === null) return ABSENT;
+    // V2-71: a link is never followed, so any link segment counts as leaving the piece folder (the safer side).
     if (stat.isLink) return OUTSIDE;
     names.push(name);
     if (index === segments.length - 1) return stat.isFile ? { state: 'present', names, mtimeMs: stat.mtimeMs } : ABSENT;
