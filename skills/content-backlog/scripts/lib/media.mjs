@@ -13,7 +13,7 @@
 // (`listDir` and `lstat`), and keeps no state.
 import path from 'node:path';
 import { localDate } from './dates.mjs';
-import { parseMediaLines } from './publish-md.mjs';
+import { parsePublishMd } from './publish-md.mjs';
 import { isPieceRelPath } from './status-file.mjs';
 
 /**
@@ -202,7 +202,7 @@ function readSlides(io, facts, lines) {
  * @returns {Media}
  */
 export function readMedia(io, facts) {
-  const lines = parseMediaLines(facts.work.publishText ?? '');
+  const lines = parsePublishMd(facts.work.publishText ?? '');
   if (facts.front.kind === 'carousel') {
     const { slides, flags, namedSlides, changedMs } = readSlides(io, facts, lines);
     return { video: null, slides, flags, namedSlides, changedMs };
