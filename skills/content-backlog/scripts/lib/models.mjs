@@ -10,6 +10,7 @@
 // `accounts.mjs` re-exports the three functions below.
 import path from 'node:path';
 import { DEFAULTS, modelsRootOf } from './config.mjs';
+import { pieceNames, projectNames, statusEntryIn } from './pieces.mjs';
 import { isModelLink, parseStatusFile } from './status-file.mjs';
 import { clip } from './status-file-text.mjs';
 
@@ -23,8 +24,6 @@ import { clip } from './status-file-text.mjs';
  */
 
 const SEP = '/';
-/** Folders that are never projects or pieces (V2-1, the scanner's skip rule): hidden, pipeline and template folders. */
-const SKIPPED_FOLDER = /^(\.|_|z\.)/;
 
 /** @param {string} text */
 const nfc = (text) => text.normalize('NFC');
@@ -34,8 +33,6 @@ const squash = (text) => nfc(text).replace(/\s+/g, ' ').trim();
 const fold = (text) => squash(text).toLowerCase();
 /** A name or link for a message: quoted, cut short and with any control character written out (a hostile file cannot flood or garble it). @param {string} text */
 const shown = (text) => JSON.stringify(clip(text, 80));
-/** @param {string} a @param {string} b */
-const byName = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
  * An io whose `listDir` answers each directory once (V2-11): the first answer is kept and every later call
@@ -206,16 +203,6 @@ function relativeToRoot(root, target) {
 }
 
 /**
- * The status file in a piece folder's listing: a file (not a link) named `status.md` in any letter case.
- * @param {import('node:fs').Dirent[]} entries
- * @returns {string | null}
- */
-function statusFileName(entries) {
-  const hit = entries.find((e) => e.isFile() && nfc(e.name).toLowerCase() === 'status.md');
-  return hit ? hit.name : null;
-}
-
-/**
  * The piece in `dir`, as `projectsLinkedTo` reports it, when its status file parses and names `link`.
  * @param {ReadingIo} io
  * @param {string} dir the piece folder
@@ -224,9 +211,9 @@ function statusFileName(entries) {
  * @returns {LinkedPiece | null}
  */
 function pieceLinkedTo(io, dir, name, link) {
-  const file = statusFileName(io.listDir(dir));
-  if (file === null) return null;
-  const text = io.readText(path.join(dir, file));
+  const entry = statusEntryIn(io.listDir(dir));
+  if (entry === null || !entry.isFile()) return null;
+  const text = io.readText(path.join(dir, entry.name));
   if (text === null) return null;
   const parsed = parseStatusFile(text);
   if (!parsed.ok || typeof parsed.fm.model !== 'string' || nfc(parsed.fm.model) !== nfc(link)) return null;
@@ -249,15 +236,12 @@ export function projectsLinkedTo(io, brand, modelPath) {
   const link = linkFor(modelsRootOf(brand), modelPath);
   const contentRoot = typeof brand?.contentRoot === 'string' ? brand.contentRoot : '';
   if (link === null || contentRoot === '') return [];
-  const contentFolder = nfc(typeof brand.contentFolder === 'string' && brand.contentFolder.trim() !== '' ? brand.contentFolder : DEFAULTS.contentFolder).toLowerCase();
+  const contentFolder = typeof brand.contentFolder === 'string' && brand.contentFolder.trim() !== '' ? brand.contentFolder : DEFAULTS.contentFolder;
   const memo = memoListDir(io);
-  /** @param {string} dir */
-  const children = (dir) => folderNames(memo.listDir(dir)).filter((name) => !SKIPPED_FOLDER.test(name)).sort(byName);
 
-  return children(contentRoot).flatMap((project) => {
+  return projectNames(memo.listDir(contentRoot)).flatMap((project) => {
     const dir = path.join(contentRoot, project);
-    const pieces = children(dir)
-      .filter((name) => nfc(name).toLowerCase() !== contentFolder)
+    const pieces = pieceNames(memo.listDir(dir), contentFolder)
       .map((name) => pieceLinkedTo(memo, path.join(dir, name), name, link))
       .filter((piece) => piece !== null);
     return pieces.length > 0 ? [{ project, dir, pieces: /** @type {LinkedPiece[]} */ (pieces) }] : [];

@@ -328,7 +328,7 @@ function finish(ctx, cards) {
  * @param {ScanConfig} cfg
  * @param {{ now: number, fs?: typeof import('node:fs'), shouldStop?: () => boolean, onProgress?: (n: number) => void }} options
  */
-function makeContext(cfg, { now, fs, shouldStop = () => false, onProgress = () => {} }) {
+export function makeContext(cfg, { now, fs, shouldStop = () => false, onProgress = () => {} }) {
   /** @type {string[]} */
   const warnings = [];
   /** @param {string} message */
