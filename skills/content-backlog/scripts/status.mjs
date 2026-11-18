@@ -16,13 +16,15 @@
 //
 // <piece> and <project> are folders: a path from the working folder (or absolute), or relative to --root. The brand is the one in
 // accounts.json whose content root holds the folder, matched on real paths, so a path that reaches a content root through a link,
-// or lies under none, is refused. `--accounts` names another accounts file ("none" ignores it); `--models` replaces the brand's
-// models folder for the model check.
+// or lies under none, is refused, and so is a project folder that is a link. `--root` only selects a content root that accounts.json
+// already has (it never makes a brand of a folder). `--accounts` names another accounts file ("none" ignores it); `--models` replaces
+// the brand's models folder for the model check.
 //
 // Exit codes: 0 done (or dry run), 1 refused (an invalid or changed file, a link, a folder that is not a piece, a brand in the
 // older format, media not ready), 2 bad arguments. Every refusal leaves the files as they were. `post` writes the post, sets video:
 // or slides:, and steps `status` by one rule (V2-26); `--replace-record` is for posts that belong to another video (V2-28): the old
 // file is kept as `status.previous.md` first. See references/status-file.md for the format and the three similar file names.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -31,7 +33,7 @@ import { pathToFileURL } from 'node:url';
 import {
   ConfigError, KINDS, LIMITS, OTHER_MEDIA_FLAGS, STATUSES, applyRecord, brandInput, brandNamed, brandsFor, chooseBrand, classifyValue, createIo, createStatusFile, describeChange,
   editStatusFile, flagText, isKind, isModelLink, isPieceRelPath, isSkippedFolder, localDate, parseAccounts, parseStatusFile, pieceCard, pieceStatuses, readPiece,
-  readProject, recordContext, resolveConfig,
+  readProject, recordContext, resolveConfig, sameRoot,
 } from './lib/index.mjs';
 import { StatusIoError, createChecked, readStatus, replaceCopy, writeChecked } from './status-io.mjs';
 
@@ -59,7 +61,7 @@ class Usage extends Error {}
 class Refused extends Error {}
 
 /**
- * @typedef {{ cwd?: string, now?: number, home?: string, hooks?: import('./status-io.mjs').Hooks }} Context
+ * @typedef {{ cwd?: string, now?: number, home?: string, hooks?: import('./status-io.mjs').Hooks & { afterFactsRead?: (file: string) => void } }} Context
  * @typedef {{ command: string, positionals: string[], accounts: string | null, root: string | null, models: string | null, brand: string | null,
  *             format: string | null, kind: string | null, status: string | null, model: string | null, created: string | null,
  *             dryRun: boolean, json: boolean, replaceRecord: boolean, help: boolean }} Args
@@ -153,9 +155,6 @@ function loadAccounts(args, home) {
   return { doc, file };
 }
 
-/** A brand for a content root that accounts.json does not know (--root with no match): the new format, no accounts. @param {string} id @param {string} root */
-const syntheticBrand = (id, root) => ({ id, name: id, layout: 'models', contentRoot: root, itemLayout: 2, accounts: [] });
-
 /** @param {any} doc @returns {any} the accounts with every content root as a real path (a missing one is kept as written) */
 function withRealRoots(doc) {
   if (!doc) return doc;
@@ -172,24 +171,38 @@ function tryReal(p) {
 }
 
 /**
+ * The brand whose content root is `rootArg` (`--root` only selects: it never makes a brand of a folder, so a folder that is no brand's
+ * content root is refused). With `--brand`, that brand's root must be the folder too.
+ * @param {Args} args
+ * @param {{ doc: any, file: string | null }} accounts
+ * @param {string} rootArg the real --root
+ * @returns {any} the accounts.json brand
+ */
+function brandAtRoot(args, accounts, rootArg) {
+  if (accounts.doc === null) throw new Refused(`There is no accounts file to say which brand ${rootArg} is the content root of.`);
+  const real = withRealRoots(accounts.doc);
+  const named = args.brand ? brandNamed(real, args.brand) : null;
+  if (args.brand && named === null) throw new Refused(`No brand "${args.brand}" in ${accounts.file}.`);
+  const match = (named ? [named] : brandsFor(real, rootArg)).find((b) => sameRoot(b.contentRoot, rootArg));
+  if (!match) throw new Refused(`${rootArg} is not the content root of ${args.brand ? `brand "${args.brand}"` : 'any brand'} in ${accounts.file}.`);
+  return accounts.doc.brands.find((/** @type {any} */ b) => b.id === match.id) ?? match;
+}
+
+/**
  * The brand a folder belongs to: the one named with --brand, else the one whose content root holds the folder (real paths).
  * @param {Args} args
  * @param {{ doc: any, file: string | null }} accounts
  * @param {string} realFolder the folder, or its parent, as a real path
  * @param {string | null} rootArg the real --root, when given
- * @returns {any} the accounts.json brand (or a synthetic one for --root)
+ * @returns {any} the accounts.json brand
  */
 function pickBrand(args, accounts, realFolder, rootArg) {
   const real = withRealRoots(accounts.doc);
-  if (rootArg !== null) {
-    const named = args.brand ? brandNamed(real, args.brand) : brandsFor(real, rootArg)[0];
-    if (args.brand && !named && accounts.doc) throw new Refused(`No brand "${args.brand}" in ${accounts.file}.`);
-    return named ?? syntheticBrand(args.brand ?? 'cli', rootArg);
-  }
+  if (rootArg !== null) return brandAtRoot(args, accounts, rootArg);
   const choice = chooseBrand({ doc: real, folder: realFolder, name: args.brand });
   if (choice.error) throw new Refused(choice.error);
   if (choice.source !== 'accounts' || !choice.brand) {
-    throw new Refused(`No brand in ${accounts.file ?? 'the accounts file'} has a content root that holds ${realFolder}. Name the content root with --root.`);
+    throw new Refused(`No brand in ${accounts.file ?? 'the accounts file'} has a content root that holds ${realFolder}.`);
   }
   return accounts.doc.brands.find((/** @type {any} */ b) => b.id === choice.brand.id) ?? choice.brand;
 }
@@ -237,6 +250,8 @@ function locate(args, ctx, arg, depth) {
   }
   if (depth !== undefined && names.length !== depth) throw new Refused(`${arg} must be a ${depth === 1 ? 'project folder' : 'piece folder'} (${depth === 1 ? 'Project' : 'Project/Piece'} under the content root).`);
   if (entry.isSymbolicLink() || !entry.isDirectory()) throw new Refused(`${path.join(parent, entry.name)} is a link or not a folder; it is not read or written.`);
+  // A project folder reached through a link is refused as well (the real path above resolved it): like the app, no link is followed.
+  if (names.length === 2 && fs.lstatSync(path.dirname(abs)).isSymbolicLink()) throw new Refused(`${path.dirname(abs)} is a link, not a folder; the pieces in it are not read or written.`);
   return { brand, cfg, io, contentReal, names, display: names.join('/') };
 }
 
@@ -246,14 +261,17 @@ const projectRef = (where) => ({ name: where.names[0], path: where.names[0], dir
 /**
  * A piece read for a change: its facts and card, and its status file as bytes and text (checked to be the file the facts came from).
  * @param {ReturnType<typeof locate>} where
+ * @param {import('./status-io.mjs').Hooks & { afterFactsRead?: (file: string) => void }} [hooks] for tests: called between the two reads
  */
-function loadPiece(where) {
+function loadPiece(where, hooks = {}) {
   const read = readPiece(where.io, where.cfg, projectRef(where), where.names[1]);
   if (read === null) throw new Refused(`${where.display} has no status.md, so it is not a piece.`);
   if ('invalid' in read) throw new Refused(read.invalid);
   const file = path.join(where.contentReal, read.piece.status.path);
+  hooks.afterFactsRead?.(file);
   const bytes = readStatus(file);
-  if (Buffer.byteLength(bytes.text, 'utf8') !== read.piece.status.size) throw new Refused(`${read.piece.status.path} changed while it was read. Run the command again.`);
+  // The facts came from one read and the text and bytes from another: they must be of the same file, byte for byte.
+  if (crypto.createHash('sha1').update(bytes.bytes).digest('hex') !== read.piece.status.sha1) throw new Refused(`${read.piece.status.path} changed while it was read. Run the command again.`);
   return { facts: read.piece, file, ...bytes, card: pieceCard(where.io, where.cfg, read.piece) };
 }
 
@@ -293,8 +311,14 @@ function commit(out, { args, ctx, where, loaded, text, backup = false }) {
   out.lines.push(`${piece} (brand ${where.brand.id})`, ...changeLines(changes));
   const unchanged = text === loaded.text;
   if (!unchanged && !args.dryRun) {
-    if (backup) replaceCopy(path.join(path.dirname(loaded.file), 'status.previous.md'), loaded.bytes);
-    writeChecked(loaded.file, loaded.bytes, text, { hooks: ctx.hooks });
+    // The earlier backup is only replaced for a write that happens: if that write is refused, it is put back as it was.
+    const undo = backup ? replaceCopy(path.join(path.dirname(loaded.file), 'status.previous.md'), loaded.bytes, fs.lstatSync(loaded.file).mode & 0o777) : null;
+    try {
+      writeChecked(loaded.file, loaded.bytes, text, { hooks: ctx.hooks });
+    } catch (error) {
+      undo?.();
+      throw error;
+    }
   }
   out.lines.push(args.dryRun ? 'Dry run: nothing written.' : unchanged ? 'Nothing to write.' : `Written: ${loaded.file}${backup ? ' (the old file is kept as status.previous.md)' : ''}`);
   const done = { piece, written: !unchanged && !args.dryRun, changes, backup: backup && !args.dryRun };
@@ -321,7 +345,7 @@ function describePiece(loaded, where, ctx) {
 function cmdShow(args, ctx) {
   needPositionals(args, 1, 'status.mjs show <piece>');
   const where = locate(args, ctx, args.positionals[0], 2);
-  const doc = describePiece(loadPiece(where), where, ctx);
+  const doc = describePiece(loadPiece(where, ctx.hooks), where, ctx);
   if (args.json) return { json: doc, lines: [] };
   const model = doc.model.link === null ? '(none)' : `${doc.model.link} (${doc.model.state === 'ok' ? 'found' : doc.model.state})`;
   const lines = [
@@ -348,15 +372,18 @@ function cmdPieces(args, ctx) {
   };
 }
 
-/** Whether a name holds a slash, a backslash or a control character. @param {string} name */
-const hasBadCharacter = (name) => Array.from(name).some((ch) => ch === '/' || ch === '\\' || ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127);
+/** Unicode format characters (category Cf: a right-to-left override, a zero-width space): they make a name that reads as another. */
+const FORMAT_CHARACTER = /\p{Cf}/u;
+
+/** Whether a name holds a slash, a backslash, a colon, a control or format character, or ends in a dot or a space. @param {string} name */
+const hasBadCharacter = (name) => Array.from(name).some((ch) => ch === '/' || ch === '\\' || ch === ':' || ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127) || FORMAT_CHARACTER.test(name) || /[. ]$/.test(name);
 
 /** @param {string} name @param {string} what @param {string} contentFolder */
 function checkName(name, what, contentFolder) {
-  if (name === '' || name === '.' || name === '..' || hasBadCharacter(name)) throw new Refused(`"${name}" is not a usable ${what} name (no empty name, no slashes, backslashes or control characters).`);
+  if (name === '' || name === '.' || name === '..' || hasBadCharacter(name)) throw new Refused(`"${name}" is not a usable ${what} name (no empty name, no slash, backslash or colon, no control or invisible characters, and no dot or space at the end).`);
   if (name.length > MAX_NAME) throw new Refused(`The ${what} name is over ${MAX_NAME} characters.`);
   if (isSkippedFolder(name)) throw new Refused(`"${name}" starts with ".", "_" or "z.", which the board never reads as a ${what}.`);
-  if (what === 'piece' && fold(name) === fold(contentFolder)) throw new Refused(`"${name}" is the project's footage folder, not a piece.`);
+  if (fold(name) === fold(contentFolder)) throw new Refused(`"${name}" is the name of the project's footage folder, so it is not a ${what} name.`);
 }
 
 /** @param {import('node:fs').Dirent[]} entries @param {string} name @returns {{ exact: import('node:fs').Dirent | null, twin: import('node:fs').Dirent | null }} */
@@ -379,11 +406,10 @@ function cmdCreate(args, ctx) {
 
   const accounts = loadAccounts(args, ctx.home);
   const rootArg = args.root === null ? null : realPath(path.resolve(ctx.cwd, args.root));
-  const named = brandNamed(withRealRoots(accounts.doc), /** @type {string} */ (args.brand));
-  if (!named && rootArg === null) throw new Refused(`No brand "${args.brand}" in ${accounts.file ?? 'the accounts file'}. Check the id, or give the content root with --root.`);
-  const brand = named ?? syntheticBrand(/** @type {string} */ (args.brand), /** @type {string} */ (rootArg));
+  const brand = rootArg !== null ? brandAtRoot(args, accounts, rootArg) : brandNamed(accounts.doc, /** @type {string} */ (args.brand));
+  if (!brand) throw new Refused(`No brand "${args.brand}" in ${accounts.file ?? 'the accounts file'}. Check the id.`);
   const contentReal = rootArg ?? realPath(brand.contentRoot);
-  const cfg = configFor(args, accounts.doc ? (accounts.doc.brands.find((/** @type {any} */ b) => b.id === brand.id) ?? brand) : brand, contentReal);
+  const cfg = configFor(args, brand, contentReal);
   checkName(projectName, 'project', cfg.contentFolder);
   checkName(pieceName, 'piece', cfg.contentFolder);
 
@@ -470,7 +496,7 @@ function edited(text, edits) {
 /** One piece of a `set`, read, changed and written; a refusal is returned, not thrown, so a project's other pieces go on. @returns {string | null} the refusal */
 function setOne(out, args, ctx, where, key, edits) {
   try {
-    const loaded = loadPiece(where);
+    const loaded = loadPiece(where, ctx.hooks);
     if (key === 'kind' && !['idea', 'approved'].includes(loaded.facts.front.status)) {
       throw new Refused(`${where.display} has status ${loaded.facts.front.status}; the kind can change only while the status is idea or approved.`);
     }
@@ -524,7 +550,7 @@ function cmdPost(args, ctx, clearing) {
     throw new Usage('A post value is a link and a date ("https://... (2026-11-11)"), "posted, no link (2026-11-11)", "scheduled 2026-11-20" (with a time: "scheduled 2026-11-20T18:30") or "skipped".');
   }
   const where = locate(args, ctx, target, 2);
-  const loaded = loadPiece(where);
+  const loaded = loadPiece(where, ctx.hooks);
   const flags = loaded.card.rawFlags.map((/** @type {{ code: string }} */ f) => f.code);
   const otherMedia = flags.some((/** @type {string} */ code) => OTHER_MEDIA_FLAGS.includes(code));
   if (otherMedia && !args.replaceRecord) {

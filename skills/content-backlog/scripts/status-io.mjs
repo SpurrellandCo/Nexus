@@ -30,7 +30,8 @@ const DECODER = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 const NUL = String.fromCharCode(0);
 
 /**
- * @typedef {{ afterTempWritten?: (file: string) => void }} Hooks  for tests only: called with the target after the temp file is written
+ * @typedef {{ afterTempWritten?: (file: string) => void, afterRenamed?: (file: string) => void }} Hooks  for tests only: called with the target
+ *   after the temp file is written, and after it has been renamed over the target
  * @typedef {{ bytes: Buffer, text: string }} StatusRead
  */
 
@@ -123,6 +124,7 @@ const tempName = (dir, name) => path.join(dir, `.${name}.${crypto.randomBytes(6)
 function writeNew(file, bytes, mode) {
   const fd = fs.openSync(file, 'wx', mode);
   try {
+    fs.fchmodSync(fd, mode); // exactly the mode asked for, whatever the umask
     fs.writeSync(fd, bytes, 0, bytes.length, 0);
     fs.fsyncSync(fd);
   } finally {
@@ -178,10 +180,18 @@ export function writeChecked(file, expected, newText, { hooks = {} } = {}) {
     removeQuietly(temp);
     throw error instanceof StatusIoError ? error : new StatusIoError(`Can't replace ${file}: ${/** @type {Error} */ (error).message}`);
   }
+  hooks.afterRenamed?.(file);
   const back = bytesOrNull(file);
   if (back !== null && back.equals(next)) return;
-  restore(file, expected, stat.mode & 0o777);
-  throw new StatusIoError(`${file} did not read back as written, so the original was put back.`);
+  const again = bytesOrNull(file); // one more look, in case the first was a moment too soon
+  if (again !== null && again.equals(next)) return;
+  // Only a damaged copy of our own write (empty, or cut short) is put back. Anything else in the file was written by someone
+  // else after our rename: it stays, and our change is the one that is not kept (no lost update).
+  if (again !== null && again.length < next.length && next.subarray(0, again.length).equals(again)) {
+    restore(file, expected, stat.mode & 0o777);
+    throw new StatusIoError(`${file} did not read back as written, so the original was put back.`);
+  }
+  throw new StatusIoError(`${file} changed while writing; your change was not kept (what is in the file now was written by someone else, and was left as it is). Run the command again.`);
 }
 
 /**
@@ -202,20 +212,31 @@ function restore(file, original, mode) {
 }
 
 /**
- * Create a file that does not exist yet, and read it back. A failure removes what this call made.
+ * Create a file that does not exist yet, and read it back. A failure removes only what this call made.
  * @param {string} file
  * @param {string} text
  * @param {number} [mode]
  */
 export function createChecked(file, text, mode = 0o666) {
   const bytes = Buffer.from(text, 'utf8');
+  /** @type {number} */
+  let fd;
   try {
-    writeNew(file, bytes, mode);
+    fd = fs.openSync(file, 'wx', mode);
   } catch (error) {
     if (/** @type {NodeJS.ErrnoException} */ (error).code === 'EEXIST') throw new StatusIoError(`${file} already exists, so it was not written.`);
+    throw new StatusIoError(`Can't create ${file}: ${/** @type {Error} */ (error).message}`);
+  }
+  // From here the file is this call's: any failure removes it.
+  try {
+    fs.writeSync(fd, bytes, 0, bytes.length, 0);
+    fs.fsyncSync(fd);
+  } catch (error) {
+    fs.closeSync(fd);
     removeQuietly(file);
     throw new StatusIoError(`Can't create ${file}: ${/** @type {Error} */ (error).message}`);
   }
+  fs.closeSync(fd);
   const back = bytesOrNull(file);
   if (back === null || !back.equals(bytes)) {
     removeQuietly(file);
@@ -225,23 +246,37 @@ export function createChecked(file, text, mode = 0o666) {
 
 /**
  * Put a copy of a file's bytes in another file in the same folder, replacing an earlier copy (the old-record backup of
- * V2-28), through a temp file and a rename, and check it by reading it back.
+ * V2-28), through a temp file and a rename, and check it by reading it back. The copy has `mode` (the source's, so a backup is
+ * never more readable than what it copies). Returns a function that puts the file as it was before: the earlier copy's bytes back,
+ * or the copy removed when there was none, for a caller whose next step fails.
  * @param {string} file the backup's path
  * @param {Buffer} bytes
+ * @param {number} [mode]
+ * @returns {() => void}
  */
-export function replaceCopy(file, bytes) {
+export function replaceCopy(file, bytes, mode = 0o666) {
   const dir = lstatOrNull(path.dirname(file));
   if (dir === null || dir.isSymbolicLink() || !dir.isDirectory()) throw new StatusIoError(`${path.dirname(file)} is not a plain folder.`);
   const existing = lstatOrNull(file);
   if (existing !== null && !existing.isFile()) throw new StatusIoError(`${file} is not a regular file, so it was not replaced.`);
+  const earlier = existing === null ? null : bytesOrNull(file);
+  put(file, bytes, mode);
+  const back = bytesOrNull(file);
+  if (back === null || !back.equals(bytes)) throw new StatusIoError(`${file} did not read back as written.`);
+  return () => {
+    if (earlier === null) removeQuietly(file);
+    else put(file, earlier, existing === null ? mode : existing.mode & 0o777);
+  };
+}
+
+/** Write bytes to a file through a temp file and a rename. @param {string} file @param {Buffer} bytes @param {number} mode */
+function put(file, bytes, mode) {
   const temp = tempName(path.dirname(file), path.basename(file));
   try {
-    writeNew(temp, bytes, 0o666);
+    writeNew(temp, bytes, mode);
     fs.renameSync(temp, file);
   } catch (error) {
     removeQuietly(temp);
     throw new StatusIoError(`Can't write ${file}: ${/** @type {Error} */ (error).message}`);
   }
-  const back = bytesOrNull(file);
-  if (back === null || !back.equals(bytes)) throw new StatusIoError(`${file} did not read back as written.`);
 }

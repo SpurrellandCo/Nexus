@@ -129,7 +129,7 @@ folder, or absolute. The brand is the one in `~/.nexus-local/accounts.json` whos
 | `clear-post <piece> <platform>` | Removes that platform's line, and steps `status` |
 
 Every command takes `--dry-run` (print the change, write nothing) and `--json`. `--accounts <file>` names another accounts file,
-`--root <content root>` names the content root, and `--models <folder>` replaces the brand's models folder for the model check.
+`--root <content root>` selects one of the content roots in the accounts file (a folder that is no brand's is refused), and `--models <folder>` replaces the brand's models folder for the model check. A project folder that is a link is refused.
 
 `post` and `clear-post` refuse a piece that has no video (or fewer than two slides) named and in `Final/`: record the media first.
 When the posts already in the file belong to another video, they refuse and say so; run them again with `--replace-record` to
