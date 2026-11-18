@@ -1,9 +1,9 @@
 # <Idea Name>
 
-- **Status:** idea | approved | building | built | published | shelved
 - **Source:** own idea | inspiration (<search terms>, data as of <date>) | contest (<link>)
 - **Created:** <YYYY-MM-DD>
-- **Model folder:** <path, once makerworld-model has created it>
+
+The idea's status and its model folder are not written here: they live in the piece's `status.md` next to this file (`Reel/status.md`), which `scripts/status.mjs` in content-backlog keeps.
 
 ## What it is
 
@@ -64,3 +64,10 @@ Theme or demand fit, standout, printability, buildability in Fusion, commission 
 ## Open questions
 
 Anything still undecided. makerworld-model asks these before it builds.
+
+## Older brands (itemLayout 1)
+
+In a brand in the older format the brief is a single file in the ideas folder and holds its own status and model folder. Add these two lines under the title, after the **Created** line, and keep them up to date as the model is built and published:
+
+- **Status:** idea | approved | building | built | published | shelved
+- **Model folder:** <path, once makerworld-model has created it>

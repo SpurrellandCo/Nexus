@@ -1,6 +1,6 @@
 ---
 name: makerworld-idea
-description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to the reel skill's tutorial format instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a brief in the ideas backlog, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models.
+description: Turn a 3D-print idea into an approved, buildable brief for MakerWorld, four ways. The user's own idea ("I want to make X") gets follow-up questions until it can be built. "Give me ideas" mines MakerWorld's Creator Center inspiration pages (popular searches, trends, trending Maker's Supply parts) and checks each lead against what's already published. A contest link, or "what contests are open", researches the contest and its entries. A tutorial request ("explain these Bambu Studio settings", "tutorial ideas") plans a short how-to or explainer video from official Bambu Lab sources (the Bambu Lab Wiki, Bambu Studio's tooltips), split into a series when the topic is big, and hands off to the reel skill's tutorial format instead of makerworld-model. Each way ends with 3 to 5 scored concepts (or one refined idea) for the user to approve, saved as a project folder with a brief and a piece for the board, then offers to hand off to makerworld-model. Use when the user wants to make something for MakerWorld, asks what to make, wants ideas or inspiration, shares a MakerWorld contest link, or wants a tutorial or explainer video about Bambu Studio, Bambu Lab printers or one of their models.
 ---
 
 # MakerWorld idea
@@ -22,19 +22,19 @@ posted.
 
 All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.json`, kept on the user's machine and never in this skill (the skill is shared publicly). This skill uses:
 
-- `models_root`: the folder the model folders live in.
-- `idea.ideas_folder`: the backlog folder inside `models_root` [`_Ideas`].
+- `models_root`: the folder the model folders live in. It is matched against the `modelsRoot` of the brands in `~/.nexus-local/accounts.json` to find the brand.
 - `idea.commission_access`: whether MakerWorld's parts-list commission is switched on for the user (`true`, `false`, or `null` if not known).
 - `model.ams`: whether the user can print multi-colour.
-- `idea.tutorials_folder`: the folder inside `models_root` that holds one folder per tutorial video [`_Tutorials`] (route D only).
 - `printer`: the user's printer and nozzle, so tutorial research reads the right wiki section (route D only).
+- `idea.ideas_folder` and `idea.tutorials_folder` are for brands in the older format only (see "Older brands (itemLayout 1)").
 
-If the file or any of these is missing, ask only for what's missing, in one message, and save it. Start from `references/settings-template.json` for the `idea` section, and leave the other sections to their own skills. For `commission_access`, explain the access rules in one line (see `references/inspiration-guide.md`) and ask whether it's on. If they don't know, save `null`.
+If the file or any of these is missing, ask only for what's missing, in one message, and save it. Start from `references/settings-template.json` for the `idea` section (skip the keys that start with an underscore, which are notes), and leave the other sections to their own skills. For `commission_access`, explain the access rules in one line (see `references/inspiration-guide.md`) and ask whether it's on. If they don't know, save `null`.
 
 Checks:
 
 - **Browser:** reading MakerWorld needs a browser-automation tool attached to the user's signed-in browser. MakerWorld blocks most plain fetches, and the Creator Center pages need a sign-in. Without one, the own-idea route still works (skip the market check), and for the others ask the user to paste the page text. The Bambu Lab Wiki (route D) blocks plain fetches too, so read it the same way.
-- **Backlog folder:** `<models_root>/<idea.ideas_folder>`. If `models_root` is on a network drive that isn't mounted, carry on and save briefs in the session's scratch space, then tell the user where they are and that they should be moved once the drive is back.
+- **The brand and its format:** find the brand in `~/.nexus-local/accounts.json` whose `modelsRoot` is `models_root` (compare full paths, ignoring a trailing slash and letter case; an archived brand is skipped; two matching brands: ask which). Its `itemLayout` says which format to write. With `itemLayout: 2`, ideas are projects in the brand's `contentRoot` (this skill's main text). With `itemLayout` absent or `1`, or no accounts file, use "Older brands (itemLayout 1)" at the end, as before. Never write `accounts.json`, and never convert a folder from one format to the other. If the user hands over an old idea file or a folder of old records inside a brand in the new format (a file from an old ideas folder, or a model folder with a `Content/Final/` of old records), say so, point at the migration (`npm run migrate:v2` in the Content Board app, with the app closed) and stop.
+- **Where projects go:** `<contentRoot>`, the brand's content root. If it is on a network drive that isn't mounted, carry on and save the project in the session's scratch space, then tell the user where it is and that it should be moved once the drive is back.
 
 ## 1. Pick the way in
 
@@ -49,7 +49,7 @@ Read the user's request:
 
 Mixed requests are fine. "I want to make X, is there demand?" is route A plus the market check. "Ideas for the accessibility contest" is route C. If it's unclear, ask which they mean in one line.
 
-Before starting, list the backlog folder. If an existing brief looks like the same idea, say so and ask whether to continue that one instead.
+Before starting, list the project folders in the content root (`node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs pieces "<project folder>"` shows one project's pieces). If a project looks like the same idea (the same name in any letter case, or the same pitch), say so and ask whether to continue that one instead.
 
 ## A. Own idea
 
@@ -124,25 +124,43 @@ Then go to step 2 (write the brief), using the tutorial template.
 
 ## 2. Write the brief
 
-For each approved concept, fill in `references/brief-template.md` and save it as `<models_root>/<idea.ideas_folder>/<Idea Name>.md`, with **Status: approved**. Name it the way the user's model folders are named (plain words, title case, no dates), because makerworld-model uses that name for the model folder. Never overwrite an existing brief: if the name is taken, ask.
+For each approved concept make a project in the brand's content root: `<contentRoot>/<Idea Name>/` holding `brief.md` (from `references/brief-template.md`) and a piece, `Reel/status.md`. Name the project the way the user's model folders are named (plain words, title case, no dates), because makerworld-model uses that name for the model folder. The project name has at most 80 characters and does not start with `.`, `_` or `z.`. Never overwrite a folder: if a folder of that name exists in any letter case, ask.
+
+1. Create the piece first, with the command that makes the folders and the file (it never makes a `content` folder and refuses a name that is taken):
+
+   ```
+   node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Idea Name>/Reel" --brand <brand id> --format promo --kind reel --status approved
+   ```
+
+   `--status idea` for an idea the user liked but didn't approve. Every idea is a reel until the user asks for a carousel (`status.mjs set "<piece folder>" kind carousel` works while the status is `idea` or `approved`). The command prints the folder and the file it made; read it back with `status.mjs show "<piece folder>"` if the user asks.
+2. Write `brief.md` in the project folder from `references/brief-template.md`. It has no status and no model-folder line: the piece's status file holds the status, and makerworld-model sets `model:` on it when the model folder exists.
 
 - Use the user's own words for "What it is". Don't embellish.
 - Mark every unconfirmed dimension "to measure", and put every undecided choice under "Open questions". A brief that admits what it doesn't know is better than one that guesses.
 - For a contest, copy all the research into the Contest and Market check sections, so the contest details survive until publishing.
 - The listing draft is a starting point for makerworld-publish, not the final listing.
 
-Ideas the user liked but didn't approve can be saved with **Status: idea** if they want them kept for later.
+Ideas the user liked but didn't approve can be saved with `--status idea` if they want them kept for later.
 
-**Tutorials (route D)** get a folder each instead of a single file: `<models_root>/<idea.tutorials_folder>/<Tutorial Name>/` holding `brief.md` (from `references/tutorial-brief-template.md`), `sources.md`, and an empty footage folder named like the model folders' (`content_folder` in the settings). A series gets one folder per part, named so the parts sort in order ("Support Settings 1 - Z Distance and Interface"). Never overwrite an existing tutorial folder.
+**Tutorials (route D)** are projects too: `<contentRoot>/<Tutorial Name>/` holding `brief.md` (from `references/tutorial-brief-template.md`), `sources.md`, an empty footage folder named like the brand's content folder (`content_folder` in the settings: the project's footage folder, `content` by default), and the piece `Reel/status.md`, made with `status.mjs create "<Tutorial Name>/Reel" --brand <brand id> --format tutorial --kind reel --status approved`. A tutorial about one of the user's models adds `--model "<model folder path under models_root>"`; a tutorial about no model of theirs gets no `model:` at all. A series gets one project per part, named so the parts sort in order ("Support Settings 1 - Z Distance and Interface"). Never overwrite an existing project.
 
 ## 3. Hand off
 
-Show a short summary for each brief: name, one-line pitch, parts list, open questions, deadline if any, and where the brief is saved. Then ask: **"Build <name> now with makerworld-model?"**
+Show a short summary for each brief: name, one-line pitch, parts list, open questions, deadline if any, and where the project is saved. Then ask: **"Build <name> now with makerworld-model?"**
 
 - **Yes:** follow the makerworld-model skill with that brief. For several approved briefs, ask which to build first.
-- **No:** stop. The brief waits in the backlog, and makerworld-model can pick it up later.
+- **No:** stop. The project waits on the board and in the backlog, and makerworld-model can pick it up later.
 
-For a tutorial, show the plan summary, what the user needs to film or print, and the folder, then ask: **"Make <name> now with reel?"** and follow its tutorial format. If the tutorial needs a model that doesn't exist yet (a test piece for a proof print, say), offer makerworld-model first.
+For a tutorial, show the plan summary, what the user needs to film or print, and the project folder, then ask: **"Make <name> now with reel?"** and follow its tutorial format. If the tutorial needs a model that doesn't exist yet (a test piece for a proof print, say), offer makerworld-model first.
+
+## Older brands (itemLayout 1)
+
+For a brand whose `itemLayout` is absent or `1` (or with no accounts file) nothing changes from how this skill always worked: ideas are single files in a backlog folder and tutorials are folders in a tutorials folder, both inside `models_root`. Settings: `idea.ideas_folder`, the backlog folder inside `models_root` [`_Ideas`]; `idea.tutorials_folder`, the folder that holds one folder per tutorial video [`_Tutorials`].
+
+- **Before starting:** list `<models_root>/<idea.ideas_folder>`. If an existing brief looks like the same idea, say so and ask whether to continue that one. If `models_root` is on a network drive that isn't mounted, save briefs in the session's scratch space and tell the user.
+- **Write the brief:** fill in `references/brief-template.md`, add its two older-format lines (see the end of that file), and save it as `<models_root>/<idea.ideas_folder>/<Idea Name>.md` with **Status: approved**. Never overwrite an existing brief: if the name is taken, ask. Ideas the user liked but didn't approve are saved with **Status: idea**.
+- **Tutorials (route D)** get a folder each: `<models_root>/<idea.tutorials_folder>/<Tutorial Name>/` holding `brief.md` (from `references/tutorial-brief-template.md`, with its older-format lines), `sources.md`, and an empty footage folder named like the model folders' (`content_folder` in the settings). A series gets one folder per part. Never overwrite an existing tutorial folder.
+- **Hand off:** the brief waits in the ideas folder when the user says no, and makerworld-model picks it up from there.
 
 ## Tool-specific notes
 

@@ -15,5 +15,9 @@
     },
     "ams": null,
     "blender": "<path to the Blender executable>"
+  },
+  "_about": {
+    "models_root": "The folder your model folders live in. It is matched against the brands' modelsRoot in ~/.nexus-local/accounts.json to find the brand; accounts.json is written by the Content Board app, never by this skill.",
+    "content_folder": "The footage folder of a project: inside each project folder in a brand with itemLayout 2 (renders and real photos go there), inside each model folder in a brand with itemLayout 1. The template's own copy of it is not copied into a new model folder for a brand with itemLayout 2."
   }
 }
