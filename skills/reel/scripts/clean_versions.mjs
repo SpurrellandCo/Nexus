@@ -13,14 +13,25 @@
 // plan, overlays, timing, narration, publish copy), so the reel can still be re-rendered later.
 // Removes nothing when posted.txt is missing, names no video, or no platform has a post yet (only "skipped" or
 // "scheduled ...": a reel that wasn't used, or one that hasn't gone out yet).
-// If the shared grammar can't be loaded, the script stops at import time, before it reads or removes anything.
+//
+// A piece folder of a brand in the new format has a status.md in the folder above Final/ (Content Board v2, V2-48). The script then
+// reads that instead: `video:` is the posted video and the `posts:` values are read with the same isPost (a `scheduled` value is
+// never a post). For a carousel (`kind: carousel`) it keeps the slides `slides:` names and, once a post is recorded, removes the
+// other versions of them in Final/ and in its size folders (slide-NN.<ext> is version 1, slide-NN-V<k>.<ext> the others), and
+// nothing else. A size folder that does not hold the kept version is left alone. A status file that is a link, does not read, or
+// names a video or slide outside Final/ is refused with nothing removed. With no status.md it reads Final/posted.txt as before.
+//
+// If the shared grammar or the status-file reader can't be loaded, the script stops at import time, before it reads or removes
+// anything.
 import { existsSync } from 'node:fs';
 import { lstat, readFile, readdir, rm } from 'node:fs/promises';
-import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { NOT_PLATFORMS, isPost, parsePosted as parseRecord } from '../../content-backlog/scripts/lib/posted.mjs';
+import { LIMITS, parseStatusFile } from '../../content-backlog/scripts/lib/status-file.mjs';
 
 const USAGE = 'usage: node clean_versions.mjs "<Content>/Final" [--dry-run]';
 const SCRATCH_DIRS = [/^cuts$/, /^sheets$/, /^character/];
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp)$/i;
 const VERSION_SUFFIX = /-V(\d+)$/;
 
 function fail(message) {
@@ -31,6 +42,73 @@ function fail(message) {
 function stop(message) {
   console.log(`clean_versions: ${message} Nothing removed.`);
   process.exit(0);
+}
+
+/** The status file of a piece folder (any letter case), or null. Refused when it is a link or not a file. */
+async function statusEntryOf(pieceDir) {
+  const entry = (await readdir(pieceDir, { withFileTypes: true })).find((e) => e.name.toLowerCase() === 'status.md');
+  if (!entry) return null;
+  if (!entry.isFile()) fail(`${join(pieceDir, entry.name)} is a link or not a file, so it is not read.`);
+  return join(pieceDir, entry.name);
+}
+
+/** The front matter of a status file, read as strictly as the tools read it: UTF-8, at most 1 MiB, in the subset. */
+async function readFront(file) {
+  const bytes = await readFile(file);
+  if (bytes.length > LIMITS.fileBytes) fail(`${file} is over 1 MiB, so it is not read.`);
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    fail(`${file} is not valid UTF-8, so it is not read.`);
+  }
+  const parsed = parseStatusFile(text);
+  if (!parsed.ok) fail(`${file}: ${parsed.reason}${parsed.line ? ` (line ${parsed.line})` : ''}`);
+  return parsed.fm;
+}
+
+/** The accounts with a post in a status file's `posts:` (the last value of a key, a `scheduled` plan and `skipped` never count). */
+function postedAccounts(posts) {
+  return Object.entries(posts ?? {}).filter(([key, value]) => !NOT_PLATFORMS.has(key) && isPost(unmark(value))).map(([key]) => key);
+}
+
+/** A path named in a status file, as an absolute path that must lie inside Final/ (never outside, never Final/ itself). */
+function insideFinal(pieceDir, finalDir, named, what) {
+  const target = resolve(pieceDir, named);
+  const inside = relative(finalDir, target);
+  if (inside === '' || inside.startsWith('..') || isAbsolute(inside)) fail(`status.md names ${what} "${named}", which is not a file inside ${finalDir}.`);
+  return target;
+}
+
+/** The image names in a folder that are other versions of one slide (slide-01, slide-01-V2, ...), but not the kept one. */
+function otherSlideVersions(names, base, keptVersion) {
+  const pattern = new RegExp(`^${escapeRegExp(base)}(-V(\\d+))?\\.(png|jpe?g|webp)$`, 'i');
+  const versions = names.map((name) => ({ name, match: name.match(pattern) })).filter((e) => e.match).map((e) => ({ name: e.name, version: e.match[2] ? Number(e.match[2]) : 1 }));
+  return versions.some((v) => v.version === keptVersion) ? versions.filter((v) => v.version !== keptVersion).map((v) => v.name) : [];
+}
+
+/** Final/ and its size folders (the folders directly inside it; a link is not entered). */
+async function slideFolders(finalDir) {
+  const entries = await readdir(finalDir, { withFileTypes: true });
+  return [finalDir, ...entries.filter((e) => e.isDirectory()).map((e) => join(finalDir, e.name))];
+}
+
+/** What to remove for a carousel: the other versions of each slide `slides:` names, in Final/ and its size folders. */
+async function carouselTargets(pieceDir, finalDir, slides) {
+  if (!Array.isArray(slides) || slides.length === 0) return { kept: [], targets: [] };
+  const kept = slides.map((named) => {
+    const target = insideFinal(pieceDir, finalDir, named, 'a slide');
+    if (!IMAGE_EXTENSIONS.test(target)) fail(`status.md names a slide "${named}" that is not an image.`);
+    const { base, version } = splitVersion(basename(target, extname(target)));
+    return { name: basename(target), base, version, target };
+  });
+  for (const slide of kept) if (!existsSync(slide.target)) fail(`status.md names the slide "${slide.name}", which isn't there. Nothing removed.`);
+  const targets = [];
+  for (const folder of await slideFolders(finalDir)) {
+    const names = (await readdir(folder, { withFileTypes: true })).filter((e) => e.isFile()).map((e) => e.name);
+    for (const { base, version } of kept) targets.push(...otherSlideVersions(names, base, version).map((name) => join(folder, name)));
+  }
+  return { kept: kept.map((slide) => slide.name), targets: [...new Set(targets)] };
 }
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -105,6 +183,45 @@ function formatSize(bytes) {
   return `${Math.round(bytes / 1e3)} KB`;
 }
 
+/** The plan for a folder with a posted.txt (as it always was): the video its `Reel:` line names, and what is older. */
+async function planFromPostedTxt(finalDir, contentDir) {
+  const postedFile = join(finalDir, 'posted.txt');
+  if (!existsSync(postedFile)) stop('no posted.txt yet; versions are only cleaned up once the video is posted.');
+  const { reel, posted } = readPostedFile(await readFile(postedFile, 'utf8'));
+  if (!reel) stop('posted.txt has no "Reel:" line, so it is unclear which video was posted.');
+  if (posted.length === 0) stop('no platform has a post yet (only "skipped" or "scheduled"), so there is no final version to keep.');
+  const names = (await readdir(finalDir, { withFileTypes: true })).filter((e) => e.isFile()).map((e) => e.name);
+  if (!names.includes(reel)) fail(`posted.txt names "${reel}", which isn't in ${finalDir}. Fix its Reel: line first.`);
+  return {
+    kept: [reel],
+    posted,
+    targets: [...[...oldRenders(names, reel), ...oldThumbnails(names, reel)].map((name) => join(finalDir, name)), ...(await scratchFolders(join(contentDir, '.quickvid')))],
+  };
+}
+
+/** The plan for a piece with a status.md: the video `video:` names (a reel), or the slides `slides:` names (a carousel). */
+async function planFromStatus(statusFile, pieceDir, finalDir) {
+  const front = await readFront(statusFile);
+  const posted = postedAccounts(front.posts);
+  if (posted.length === 0) stop('no platform has a post yet (only "skipped" or "scheduled"), so there is no final version to keep.');
+  if (front.kind === 'carousel') {
+    const { kept, targets } = await carouselTargets(pieceDir, finalDir, front.slides);
+    if (kept.length === 0) stop('status.md names no slides, so it is unclear which version to keep.');
+    return { kept, posted, targets };
+  }
+  if (!front.video) stop('status.md has no video:, so it is unclear which video was posted.');
+  const video = insideFinal(pieceDir, finalDir, front.video, 'the video');
+  if (dirname(video) !== finalDir) fail(`status.md names the video "${front.video}", which is not directly in ${finalDir}.`);
+  const names = (await readdir(finalDir, { withFileTypes: true })).filter((e) => e.isFile()).map((e) => e.name);
+  const reel = basename(video);
+  if (!names.includes(reel)) fail(`status.md names "${reel}", which isn't in ${finalDir}. Fix its video: line first.`);
+  return {
+    kept: [reel],
+    posted,
+    targets: [...[...oldRenders(names, reel), ...oldThumbnails(names, reel)].map((name) => join(finalDir, name)), ...(await scratchFolders(join(pieceDir, '.quickvid')))],
+  };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
@@ -113,23 +230,11 @@ async function main() {
 
   const finalDir = resolve(target);
   if (!existsSync(finalDir)) fail(`${finalDir} not found.`);
-  const postedFile = join(finalDir, 'posted.txt');
-  if (!existsSync(postedFile)) stop('no posted.txt yet; versions are only cleaned up once the video is posted.');
-
-  const { reel, posted } = readPostedFile(await readFile(postedFile, 'utf8'));
-  if (!reel) stop('posted.txt has no "Reel:" line, so it is unclear which video was posted.');
-  if (posted.length === 0) stop('no platform has a post yet (only "skipped" or "scheduled"), so there is no final version to keep.');
-
-  const names = (await readdir(finalDir, { withFileTypes: true })).filter((e) => e.isFile()).map((e) => e.name);
-  if (!names.includes(reel)) fail(`posted.txt names "${reel}", which isn't in ${finalDir}. Fix its Reel: line first.`);
-
   const contentDir = dirname(finalDir);
-  const targets = [
-    ...[...oldRenders(names, reel), ...oldThumbnails(names, reel)].map((name) => join(finalDir, name)),
-    ...(await scratchFolders(join(contentDir, '.quickvid'))),
-  ];
+  const statusFile = await statusEntryOf(contentDir);
+  const { kept, posted, targets } = statusFile ? await planFromStatus(statusFile, contentDir, finalDir) : await planFromPostedTxt(finalDir, contentDir);
   if (targets.length === 0) {
-    console.log(`clean_versions: already clean; kept ${reel}.`);
+    console.log(`clean_versions: already clean; kept ${kept.join(', ')}.`);
     return;
   }
 
@@ -139,7 +244,7 @@ async function main() {
     console.log(`${dryRun ? 'would remove' : 'removed'}  ${formatSize(size).padStart(9)}  ${relative(contentDir, path)}`);
   }
   const total = sized.reduce((sum, { size }) => sum + size, 0);
-  console.log(`clean_versions: kept ${reel} (posted to ${posted.join(', ')}); ${dryRun ? 'would free' : 'freed'} ${formatSize(total)}.`);
+  console.log(`clean_versions: kept ${kept.join(', ')} (posted to ${posted.join(', ')}); ${dryRun ? 'would free' : 'freed'} ${formatSize(total)}.`);
 }
 
 main().catch((error) => fail(error.message));

@@ -82,8 +82,9 @@ the older files and save missing settings there: `~/.nexus-local/makerworld.json
 `platforms`, `profiles`, `format`, `handle`, `character`; its `models_root` is the MakerWorld brand's root), and
 `~/.nexus-local/tech-tips.json` (`videos_root`, `accent`, `channel_name`, `handle`, `cta`, `platforms`, `profiles`,
 `research`, `voice`, `demo_accounts`, `format`). Once the app has created the brand, `scripts/migrate_settings.mjs`
-copies those settings into its `video` object: run it without options first (a dry run that writes nothing), then
-with `--apply`; it keeps a backup and never deletes the old files.
+copies those settings into its `video` object (it finds a brand in the new format through its `modelsRoot`, and one in the
+older format through its `contentRoot`): run it without options first (a dry run that writes nothing), then with `--apply`;
+it keeps a backup and never deletes the old files.
 
 Checks: `node`, `ffmpeg`, `ffprobe`, `uv`. Blender at `model.blender` in `makerworld.json` (only for a promo's assembly
 animation). Software capture (tech-tip, and a tutorial's screen recording) needs macOS and Screen Recording
