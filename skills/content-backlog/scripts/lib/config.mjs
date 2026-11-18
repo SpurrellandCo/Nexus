@@ -134,6 +134,18 @@ function scanAccount(a) {
 }
 
 /**
+ * Whether makerworld.json's `models_root` is this brand's: its models folder in a v2 brand (V2-15), else its content root.
+ * @param {BrandInput} brand
+ * @param {string} root the brand's content root
+ * @param {unknown} modelsRootSetting `models_root` of makerworld.json
+ */
+function ignoreRootMatches(brand, root, modelsRootSetting) {
+  if (typeof modelsRootSetting !== 'string' || modelsRootSetting === '') return false;
+  const own = brand.itemLayout === 2 ? brand.modelsRoot : root;
+  return typeof own === 'string' && own !== '' && sameRoot(own, modelsRootSetting);
+}
+
+/**
  * Build the scan configuration from a makerworld.json-shaped settings object, and optionally one brand
  * (accounts.json). With no brand it is the MakerWorld brand of makerworld.json, as the CLI has always scanned.
  * @param {{ settings?: any, root?: string | null, days?: number, settingsFile?: string, brand?: BrandInput }} input
@@ -168,9 +180,10 @@ export function resolveConfig({ settings = {}, root: rootArg = null, days = DEFA
     platforms,
     accounts,
     hasListings: accounts.some((a) => a.accepts === 'listing' && !a.archived),
-    // makerworld.json's backlog.ignore belongs to the brand at models_root (D-005); a brand's own list always applies.
+    // makerworld.json's backlog.ignore belongs to the brand at models_root (D-005; V2-15: the brand's modelsRoot in a
+    // v2 brand, its content root in a legacy one); a brand's own list always applies.
     ignore: new Set([
-      ...(!brand || (settings.models_root && sameRoot(root, settings.models_root)) ? settings.backlog?.ignore || [] : []),
+      ...(!brand || ignoreRootMatches(brand, root, settings.models_root) ? settings.backlog?.ignore || [] : []),
       ...(brand?.ignore || []),
     ].map(normalizeRel)),
     assetFolders: new Set([contentFolder, uploadFolder, ...modelFolders, 'final', 'scans', 'images']

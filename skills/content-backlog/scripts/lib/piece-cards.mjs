@@ -5,6 +5,7 @@
 // stale when a sibling changes. The card is plain JSON: it is what the scan cache stores.
 import path from 'node:path';
 import { cardId } from './card-id.mjs';
+import { normalizeRel } from './config.mjs';
 import { parsePublishMd } from './publish-md.mjs';
 import { resolveModel } from './models.mjs';
 import { KINDS } from './status-file.mjs';
@@ -28,6 +29,27 @@ const TITLE_SEPARATOR = ' · ';
 
 /** @param {string} text */
 const fold = (text) => text.normalize('NFC').toLowerCase();
+
+/** A path as the ignore list compares it (V2-15): NFC, each segment trimmed, any letter case. @param {string} p */
+const ignoreKey = (p) => normalizeRel(p.normalize('NFC'));
+
+/**
+ * The brand's ignore list as v2 compares it (V2-15). `cfg.ignore` holds the entries trimmed and lower case; this adds NFC,
+ * so an entry typed in one Unicode form matches a folder the share spells in the other.
+ * @param {ScanConfig} cfg
+ * @returns {Set<string>}
+ */
+export const ignoreSetOf = (cfg) => new Set([...cfg.ignore].map(ignoreKey));
+
+/**
+ * Whether a path, or any folder above it, is in the ignore list.
+ * @param {Set<string>} ignore from `ignoreSetOf`
+ * @param {string} rel a path relative to a root, `/`-separated
+ */
+export function isIgnoredPath(ignore, rel) {
+  const parts = ignoreKey(rel).split('/').filter(Boolean);
+  return parts.some((_, i) => ignore.has(parts.slice(0, i + 1).join('/')));
+}
 
 /**
  * Which kind of card a piece gives (V2-10). A reel with `format: tutorial` is a tutorial card; any other reel is a
@@ -75,14 +97,20 @@ export function modelFacts(io, cfg, link) {
 
 /**
  * The raw card of one piece.
+ * A piece is `ignored` (V2-15) when its project or its own folder is in the brand's ignore list, or the model its link
+ * resolves to is, or a folder above that model.
  * @param {Pick<import('./fs-io.mjs').Io, 'listDir'>} io the io the model link is resolved through
  * @param {ScanConfig} cfg
  * @param {PieceFacts} facts
+ * @param {Set<string>} [ignore] `ignoreSetOf(cfg)`, when the caller has it already
  */
-export function pieceCard(io, cfg, facts) {
+export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
   const { project, piece, status, front, work } = facts;
   const type = pieceCardType(facts);
   const kind = front.kind;
+  const model = modelFacts(io, cfg, front.model);
+  const ignored = isIgnoredPath(ignore, piece.path)
+    || (model.path !== null && cfg.modelsRoot !== null && isIgnoredPath(ignore, path.relative(cfg.modelsRoot, model.path)));
   return {
     id: cardId(cfg.brandId, type, piece.path),
     brandId: cfg.brandId,
@@ -91,7 +119,7 @@ export function pieceCard(io, cfg, facts) {
     root: /** @type {const} */ ('content'),
     title: pieceTitle(facts),
     folder: piece.path,
-    ignored: false,
+    ignored,
     project: { name: project.name, path: project.path },
     piece: { name: piece.name, path: piece.path, kind, format: front.format, declaredStatus: front.status, created: front.created ?? null },
     video: null,
@@ -103,7 +131,7 @@ export function pieceCard(io, cfg, facts) {
       statusVideo: kind === 'reel' ? front.video ?? null : null,
       statusSlides: kind === 'carousel' ? [...(front.slides ?? [])] : [],
     },
-    model: modelFacts(io, cfg, front.model),
+    model,
     rawFlags: /** @type {Array<{ code: string, params: Record<string, string> }>} */ ([]),
     dependency: { mentionsMakerWorld: work.publishText === null ? false : parsePublishMd(work.publishText).mentionsMakerWorld },
     created: front.created ?? null,
