@@ -12,18 +12,23 @@ the specifics below.
 
 ## 1. Find the model and its material
 
-Take the model folder from the hand-off or the user's request. Use:
+Take the model folder from the hand-off or the user's request, and the piece to make (reel's section 0, "The piece": the
+`Reel` piece of the project that links the model, asking when several do, or a new piece made with `status.mjs create`).
+Use:
 
-- `<model>/<content_folder>/`: the footage (real photos, clips, screen recordings, renders, demo GIFs or MP4s). This is `<Content>` in the shared guide.
-- `<model>/<upload_folder>/`: `listing.md`, `description.html`, `measurements.json`, and `published.txt` (the model's
+- `<project>/<content_folder>/`: the footage (real photos, clips, screen recordings, renders, demo GIFs or MP4s). This is `<Content>` in the shared guide: the project's footage folder, not the piece folder. If the project has no footage yet, tell the user to put it there and stop.
+- `<model>/<upload_folder>/`, found through the piece's `model:`: `listing.md`, `description.html`, `measurements.json`, and `published.txt` (the model's
   MakerWorld link, once published). These are the **only** source of claims.
-- `<model>/brief.md` for anything else (who it's for, how it works).
+- `<model>/brief.md` (or the project's `brief.md`) for anything else (who it's for, how it works).
 
-Run quickvid's inventory on the content folder and read the contact sheets:
+Run quickvid's inventory on the footage folder, writing its working files in the piece folder, and read the contact sheets:
 
 ```
-node $NEXUS_HOME/skills/quickvid/scripts/inventory.mjs "<content folder>"
+node $NEXUS_HOME/skills/quickvid/scripts/inventory.mjs "<project>/<content folder>" --out "<piece folder>"
 ```
+
+The working files (`.quickvid/`, including `publish.md`) and the videos (`Final/`) are in the piece folder from here on; the
+render commands take the same footage folder and `--out "<piece folder>"`.
 
 ## 2. Research: what's working, and what's trending this week
 
@@ -71,4 +76,5 @@ at posting in the research's "So, for this video".
 - **Before posting** (hand-off): the MakerWorld link in each bio, a pinned comment with the search phrase, and the
   trending sound to add in each app (from `publish.md`). Trends move weekly: if the research is more than 7 days old
   when the user posts, check the sound and format are still rising (research step 3b) before they post.
-- **After posting:** record the posts and the format used, then clear out the old versions (reel's section 3).
+- **Piece status:** `scripted` when the script is approved, `made` with `video:` when the render is done (reel's section 1).
+- **After posting:** record the posts through `status.mjs post` and the format used as `style:`, then clear out the old versions (reel's section 3).

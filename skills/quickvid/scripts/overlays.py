@@ -1,8 +1,9 @@
 """Narration overlays, composited over a finished reel and timed to the spoken words.
 
-Usage: python overlays.py <footage folder> <in.mp4> <out.mp4>
+Usage: python overlays.py <footage folder> <in.mp4> <out.mp4> [--out <piece folder>]
 
-Reads <folder>/.quickvid/timing.json (from prep_voice.py) and <folder>/.quickvid/overlays.json, draws the
+Reads <piece>/.quickvid/timing.json (from prep_voice.py) and <piece>/.quickvid/overlays.json, where <piece> is the --out piece folder (the
+footage folder itself when there is none), draws the
 overlays with Pillow on a transparent 1080x1920 layer, and lays it over the reel with ffmpeg's overlay filter.
 The audio is copied untouched. Needs no drawtext.
 
@@ -140,11 +141,12 @@ def draw(d, o, t, accent):
 
 def main():
     if len(sys.argv) < 4:
-        sys.exit("usage: overlays.py <footage folder> <in.mp4> <out.mp4>")
+        sys.exit("usage: overlays.py <footage folder> <in.mp4> <out.mp4> [--out <piece folder>]")
     folder, src, out = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+    piece = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv[4:] and sys.argv.index("--out") + 1 < len(sys.argv) else folder
     if Path(out).exists():
         sys.exit(f"overlays: {out} already exists; pick the next version name")
-    work = folder / ".quickvid"
+    work = piece / ".quickvid"
     timing = json.loads((work / "timing.json").read_text())
     spec = json.loads((work / "overlays.json").read_text())
     accent = ms.hex_rgb(spec.get("accent", "#3ddc84"))

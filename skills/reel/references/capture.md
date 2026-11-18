@@ -2,7 +2,7 @@
 
 Written for section 4a of the reel skill's tech-tip format (`tech-tip.md`), and a tutorial's screen recording: the agent drives the app, one recording per script step, every click
 logged, so `screen_zoom.py` can follow the action. Tools are in `$NEXUS_HOME/skills/quickvid/scripts/`; below,
-`QV` stands for that folder and `<Content>` for the video's content folder.
+`QV` stands for that folder, `<Content>` for the project's footage folder and `<piece folder>` for the piece the video is made in (a brand in the older format has one folder for both: leave `--out` out).
 
 ## Before the first recording: setup checklist
 
@@ -44,23 +44,23 @@ The clip name is the script line's number: line 3 is `--clip 03`.
 1. **Start recording, in the background:**
 
    ```
-   uv run --no-project --with pyobjc-framework-Quartz python QV/record_screen.py record "<Content>" --clip 03 --region X,Y,W,H
+   uv run --no-project --with pyobjc-framework-Quartz python QV/record_screen.py record "<Content>" --out "<piece folder>" --clip 03 --region X,Y,W,H
    ```
 
-   Wait until `<Content>/.quickvid/capture/03.json` says `"recording": true` (the command also prints `recording`).
+   Wait until `<piece folder>/.quickvid/capture/03.json` says `"recording": true` (the command also prints `recording`).
 2. **Web app:** run quickvid's `references/click-listener.js` in the page (it answers `installed`).
 3. **Do the step**, nothing more: the clicks and typing for this one line, at a calm pace, ending on the visible
    result (the setting switched on, the panel open). Hold on the result for a second.
    - A click that will **navigate the page away** loses the listener's log. Read the log first (step 4), then log
      the click as a mark just before making it:
-     `python QV/record_screen.py mark "<Content>" --clip 03 --x <screen x> --y <screen y>`, where the screen point
+     `python QV/record_screen.py mark "<Content>" --out "<piece folder>" --clip 03 --x <screen x> --y <screen y>`, where the screen point
      of a page position is `screenX + (outerWidth - innerWidth) / 2 + clientX` and
      `screenY + outerHeight - innerHeight + clientY`. Re-install the listener on the new page.
    - Clicks inside an embedded frame aren't seen by the listener either; mark them the same way.
 4. **Web app:** read the log with `JSON.stringify(window.__qvEvents || [])` and keep the text.
-5. **Stop:** `python QV/record_screen.py stop "<Content>" --clip 03`
-6. **Web app:** add the log: `python QV/record_screen.py add-clicks "<Content>" --clip 03 --json '<the log>'`
-7. **Look:** `python QV/record_screen.py still "<Content>" --clip 03` writes the last frame to a PNG; open it and
+5. **Stop:** `python QV/record_screen.py stop "<Content>" --out "<piece folder>" --clip 03`
+6. **Web app:** add the log: `python QV/record_screen.py add-clicks "<Content>" --out "<piece folder>" --clip 03 --json '<the log>'`
+7. **Look:** `python QV/record_screen.py still "<Content>" --out "<piece folder>" --clip 03` writes the last frame to a PNG; open it and
    check the result is visible and nothing private is on screen. The sidecar's `events` should list one entry per
    click; an empty list means the zoom has nothing to follow (fix with marks, or redo the step).
 

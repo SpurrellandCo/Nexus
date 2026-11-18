@@ -1,14 +1,16 @@
 # Tutorial format
 
 Written for the reel skill's tutorial format: a how-to or explainer video (Bambu Studio settings, printer how-tos, a
-model's customiser) from a tutorial folder made by makerworld-idea's route D,
-`<content root>/<tutorials folder>/<Tutorial Name>/`. Follow the shared guide's steps 1 to 8, with these specifics.
+model's customiser) from a tutorial project made by makerworld-idea's route D,
+`<content root>/<Tutorial Name>/`: its `brief.md` and `sources.md`, its footage folder (`content/`), and the piece
+`Reel/status.md` (`format: tutorial`). The unit is that `Reel/` piece: the working files and the videos are written in it
+(reel's section 0, "The piece"). Follow the shared guide's steps 1 to 8, with these specifics.
 
 **Material and claims.** Read `brief.md` (the approved plan) and `sources.md`. Claims come **only** from
 `sources.md`, plus the linked model's listing for anything about that model. If the script needs a fact that isn't
 there, add it from an official source first (the Bambu Lab Wiki, Bambu Studio's tooltips or source code, as in
-`$NEXUS_HOME/skills/makerworld-idea/references/tutorial-guide.md`), or drop the line. `<Content>` is the tutorial's
-footage folder. Run the research step, with its trend check, for the way people search the topic ("bambu studio
+`$NEXUS_HOME/skills/makerworld-idea/references/tutorial-guide.md`), or drop the line. `<Content>` is the tutorial
+project's footage folder. Run the research step, with its trend check, for the way people search the topic ("bambu studio
 support settings"). A trending structure ("3 settings you've got wrong", a POV line) is welcome, but the brief's
 teaching order and the sources come first; drop a trend that would bend either.
 
@@ -42,8 +44,8 @@ the video is official.
 description links the wiki pages from `sources.md`, then the linked model and any matching affiliate links (as in the
 promo format). For a series, number the titles ("Support settings explained 1/3").
 
-**Before posting** (hand-off): a pinned comment with the wiki link or the next part, and update the brief's
-**Status** to `made`.
+**Before posting** (hand-off): a pinned comment with the wiki link or the next part. The piece is `status: made`, with
+`video:` set, once the video is done (reel's section 1); nothing is written to the brief.
 
-**After posting:** record the posts and clear out the old versions (reel's section 3), and set the brief's **Status**
-to `posted`.
+**After posting:** record the posts through `status.mjs post` and clear out the old versions (reel's section 3). The piece
+becomes `posted` when no account is left owed.

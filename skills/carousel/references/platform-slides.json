@@ -1,0 +1,80 @@
+{
+  "about": "How many slides a carousel may have on each platform, and the image ratio the skill renders for it. One entry for each platform key of accounts.json. An entry with a max takes carousels; one without takes none (an X, YouTube, YouTube Shorts or MakerWorld account is skipped). The slide count of a carousel runs from the largest min to the smallest max among the accounts it is owed to. min is this skill's floor of 2 where a platform states none. ratios[0] is the ratio the skill renders; sizes says what that ratio is in pixels and where the files go.",
+  "checked": "2026-11-17",
+  "sizes": {
+    "4:5": { "width": 1080, "height": 1350, "folder": "Final" },
+    "9:16": { "width": 1080, "height": 1920, "folder": "Final/9x16" },
+    "2:3": { "width": 1000, "height": 1500, "folder": "Final/2x3" }
+  },
+  "platforms": {
+    "instagram": {
+      "min": 2,
+      "max": 20,
+      "ratios": ["4:5"],
+      "checked": "2026-11-17",
+      "source": "Instagram Help Center, \"Share a post with multiple photos or videos on Instagram\" and \"Image resolution of photos you share on Instagram\"; Meta, Instagram Platform content publishing.",
+      "notes": "Up to 20 photos and videos in one post. Every slide is cropped to one ratio; 4:5 is inside the app's range and is the shared master size. The API takes JPEG only."
+    },
+    "tiktok": {
+      "min": 2,
+      "max": 35,
+      "ratios": ["9:16"],
+      "checked": "2026-11-17",
+      "source": "TikTok for Developers, Content Posting API photo post reference.",
+      "notes": "Up to 35. No ratio or file limit is stated for photos; the skill uses 9:16 at 1080x1920."
+    },
+    "facebook": {
+      "min": 2,
+      "max": 10,
+      "maxAssumed": true,
+      "ratios": ["4:5"],
+      "checked": "2026-11-17",
+      "source": "Facebook Help, \"How to share photos\"; Meta, Pages API \"Posts\". Neither publishes a maximum.",
+      "notes": "Facebook states no maximum and no ratio. 10 is an assumption: confirm it on the first real post."
+    },
+    "threads": {
+      "min": 2,
+      "max": 20,
+      "ratios": ["4:5"],
+      "checked": "2026-11-17",
+      "source": "Meta, Threads API, posts.",
+      "notes": "2 to 20. JPEG or PNG, 8 MB each, ratio at most 10:1, sRGB, at least 320 px wide."
+    },
+    "linkedin": {
+      "min": 2,
+      "max": 20,
+      "ratios": ["4:5"],
+      "checked": "2026-11-17",
+      "source": "Microsoft Learn, LinkedIn Marketing API, MultiImage; LinkedIn Help, \"Upload and share documents on LinkedIn\".",
+      "notes": "2 to 20 images, JPG, PNG or GIF under 36,152,320 pixels each, no ratio limit stated. A document post (one PDF) is the other route."
+    },
+    "pinterest": {
+      "min": 2,
+      "max": 5,
+      "ratios": ["2:3"],
+      "checked": "2026-11-17",
+      "source": "Pinterest Help, \"Create a carousel\".",
+      "notes": "2 to 5. 1:1 or 2:3 only, static images, made on desktop only; the skill uses 2:3 at 1000x1500."
+    },
+    "x": {
+      "checked": "2026-11-17",
+      "source": "X Developer docs, media best practices.",
+      "notes": "Takes no carousel here: up to 4 photos shown as a grid. JPG, PNG, GIF or WEBP, 5 MB each."
+    },
+    "youtube": {
+      "checked": "2026-11-17",
+      "source": "YouTube Help, \"Create a post\".",
+      "notes": "Takes no carousel here: an image post of up to 10 images made from the channel's Posts tab, not a video upload."
+    },
+    "youtube shorts": {
+      "checked": "2026-11-17",
+      "source": "YouTube Help: searched, no image post type found.",
+      "notes": "Takes no carousel: video only."
+    },
+    "makerworld": {
+      "checked": "2026-11-17",
+      "source": "The Content Board app's own preset.",
+      "notes": "Takes no carousel: a listing account (accepts: listing)."
+    }
+  }
+}

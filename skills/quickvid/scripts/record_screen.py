@@ -8,11 +8,13 @@ Usage (run `record` in the background; it records until `stop` or --max seconds)
       [--region X,Y,W,H] [--screen 0] [--fps 30] [--max 300]
   python record_screen.py stop <folder> --clip 03
   python record_screen.py mark <folder> --clip 03 --x X --y Y          (while recording)
+  (every action also takes --out <piece folder>: where .quickvid/capture/ is kept, for a piece of a brand in the new format whose
+   footage is <folder>; with no --out it is <folder> itself, as it always was)
   python record_screen.py add-clicks <folder> --clip 03 --json '<entries>'   (after stop)
   python record_screen.py still <folder> --clip 03 [--at SECONDS]   (writes <clip>-still.png to look at; default: last frame)
   python record_screen.py window "<App process name>"      (prints the front window's region, for --region)
 
-<folder> is the video's content folder. The recording goes to <folder>/.quickvid/capture/<clip>.mp4 with a sidecar
+<folder> is the video's footage folder. The recording goes to <out or folder>/.quickvid/capture/<clip>.mp4 with a sidecar
 <clip>.json; both stay out of quickvid's inventory, because only the zoomed clip from screen_zoom.py is used in the
 edit. An existing <clip>.mp4 is kept as <clip>-take<N>.mp4, so a redo never loses the earlier take.
 
@@ -318,7 +320,7 @@ def main():
     actions = {"record": record, "stop": stop, "add-clicks": add_clicks, "mark": mark, "still": still}
     if action not in actions:
         sys.exit(f"record_screen: unknown action {action!r}")
-    actions[action](folder, clip)
+    actions[action](opt("--out") or folder, clip)  # the work goes in the piece folder when there is one
 
 
 if __name__ == "__main__":

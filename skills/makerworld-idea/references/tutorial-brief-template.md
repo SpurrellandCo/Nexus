@@ -1,11 +1,11 @@
 # <Tutorial Name>
 
-- **Status:** idea | approved | scripted | made | posted | shelved
 - **Kind:** settings explainer | how-to | troubleshooting | model how-to
 - **Series:** <series name, part N of M> | none
 - **Printer and app:** <printer from the settings>; Bambu Studio <version>
 - **Created:** <YYYY-MM-DD>
-- **Linked model:** <model folder path, if the tutorial is about or shows one of the user's models> | none
+
+The tutorial's status, and the model it is about or shows (one of the user's models, else none), are not written here: they live in the piece's `status.md` (`Reel/status.md`: `status:` and `model:`).
 
 ## What it teaches
 
@@ -47,3 +47,10 @@ Demand, visual payoff, fits the length, ties, effort: each out of 5, with one li
 ## Open questions
 
 Anything not yet confirmed from an official source, or still to decide.
+
+## Older brands (itemLayout 1)
+
+In a brand in the older format the brief holds its own status and model link. Add these two lines under the title and keep them up to date:
+
+- **Status:** idea | approved | scripted | made | posted | shelved
+- **Linked model:** <model folder path, if the tutorial is about or shows one of the user's models> | none

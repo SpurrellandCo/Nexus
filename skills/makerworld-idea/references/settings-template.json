@@ -3,5 +3,10 @@
     "ideas_folder": "_Ideas",
     "tutorials_folder": "_Tutorials",
     "commission_access": null
+  },
+  "_about": {
+    "models_root": "The folder your model folders live in. It is matched against the brands' modelsRoot in ~/.nexus-local/accounts.json to find the brand; accounts.json is written by the Content Board app, never by this skill.",
+    "content_folder": "The footage folder of a project: inside each project folder in a brand with itemLayout 2, inside each model folder in a brand with itemLayout 1. A brand's own contentFolder in accounts.json wins over it.",
+    "ideas_and_tutorials": "idea.ideas_folder and idea.tutorials_folder are legacy only: used for a brand with itemLayout 1 (the older format). A brand with itemLayout 2 keeps ideas and tutorials as project folders in its content root and never reads them."
   }
 }

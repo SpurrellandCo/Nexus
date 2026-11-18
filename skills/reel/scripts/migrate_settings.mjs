@@ -7,8 +7,9 @@
 //   --dir <folder>                         settings folder (default ~/.nexus-local)
 //   --force                                apply even while the Content Board app is running
 //
-// Sources: the `reel` section of makerworld.json (for the brand whose content root is its models_root)
-// and tech-tips.json (for the brand whose content root is its videos_root).
+// Sources: the `reel` section of makerworld.json (for the brand whose models folder, `modelsRoot`, is its models_root: a brand in
+// the new format, itemLayout 2; else the brand in the older format whose content root is its models_root, so the script works
+// before and after the migration) and tech-tips.json (for the brand whose content root is its videos_root).
 // Rules:
 //   - Only brands that already exist in accounts.json are filled; the Content Board app creates brands.
 //   - A value already set on the brand is kept (accounts.json wins) and reported; an empty one is filled.
@@ -58,10 +59,30 @@ function isEmpty(value) {
 }
 
 /**
- * @typedef {{ source: string, root: string, map: Readonly<Record<string, string>>, notCopied: readonly string[], values: Record<string, unknown> }} Source
+ * @typedef {{ source: string, root: string, byModelsRoot?: boolean, map: Readonly<Record<string, string>>, notCopied: readonly string[], values: Record<string, unknown> }} Source
  * @typedef {{ brandId: string, brandName: string, source: string, field: string, from: string, value: unknown }} Change
  * @typedef {{ brandId: string, brandName: string, source: string, field: string, kept: unknown, offered: unknown }} Conflict
  */
+
+/** @param {unknown} value @param {string} root */
+const sameRoot = (value, root) => typeof value === 'string' && value !== '' && normalizeRoot(value) === normalizeRoot(root);
+
+/**
+ * The brand a source belongs to. The makerworld.json source goes to the brand whose `modelsRoot` is its models_root (a brand in the
+ * new format); when none is, to a brand in the older format (no itemLayout 2) whose content root is. Any other source goes to the
+ * brand whose content root is its root. Archived brands never match.
+ * @param {any[]} brands
+ * @param {Source} src
+ */
+function brandIndexFor(brands, src) {
+  const active = (/** @type {any} */ b) => !b.archived;
+  if (src.byModelsRoot) {
+    const byModels = brands.findIndex((b) => active(b) && sameRoot(b.modelsRoot, src.root));
+    if (byModels !== -1) return byModels;
+    return brands.findIndex((b) => active(b) && b.itemLayout !== 2 && sameRoot(b.contentRoot, src.root));
+  }
+  return brands.findIndex((b) => active(b) && sameRoot(b.contentRoot, src.root));
+}
 
 /**
  * Work out what the migration would do. Pure: returns a new accounts object, never mutates its input.
@@ -71,7 +92,7 @@ export function planMigration({ accounts, makerworld, techTips }) {
   /** @type {Source[]} */
   const sources = [];
   if (makerworld?.models_root && makerworld.reel) {
-    sources.push({ source: 'makerworld.json reel', root: makerworld.models_root, map: FROM_MAKERWORLD, notCopied: MAKERWORLD_NOT_COPIED.map((k) => `reel.${k}`), values: makerworld.reel });
+    sources.push({ source: 'makerworld.json reel', root: makerworld.models_root, byModelsRoot: true, map: FROM_MAKERWORLD, notCopied: MAKERWORLD_NOT_COPIED.map((k) => `reel.${k}`), values: makerworld.reel });
   }
   if (techTips?.videos_root) {
     sources.push({ source: 'tech-tips.json', root: techTips.videos_root, map: FROM_TECH_TIPS, notCopied: TECH_TIPS_NOT_COPIED, values: techTips });
@@ -85,7 +106,7 @@ export function planMigration({ accounts, makerworld, techTips }) {
   const nextBrands = brands.map((b) => ({ ...b, video: b.video ? { ...b.video } : undefined }));
 
   for (const src of sources) {
-    const index = nextBrands.findIndex((b) => !b.archived && typeof b.contentRoot === 'string' && normalizeRoot(b.contentRoot) === normalizeRoot(src.root));
+    const index = brandIndexFor(nextBrands, src);
     if (index === -1) {
       unmatched.push({ source: src.source, root: src.root });
       continue;

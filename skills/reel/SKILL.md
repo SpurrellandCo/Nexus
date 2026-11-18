@@ -1,6 +1,6 @@
 ---
 name: reel
-description: Make a short vertical video (Instagram Reel, TikTok, YouTube Short) for any of the user's brands, then write the title, caption or description and tags for each platform and make the thumbnails. Three formats - promo (a product or a published MakerWorld model, from its model folder and listing), tutorial (a how-to or explainer such as Bambu Studio settings, from a tutorial folder made by makerworld-idea, with claims from official sources only) and tech-tip (finds ranked tech-tip ideas, then a software walkthrough screen-recorded step by step with auto-zoom, or hardware the user films). Works out the brand from the folder (or the one the user names) and reads that brand's settings and accounts. Checks which formats and sounds are trending that week, writes the script, the user records the voice-over line by line, and the video is built with the quickvid tools; then records where it was posted and clears out the old render versions. Use when the user asks for a reel, short, TikTok or promo video, a tutorial or how-to video, a tech tip, ideas for their tech channel, a walkthrough of an app or setting, after makerworld-publish, or when makerworld-idea hands off a tutorial.
+description: Make a short vertical video (Instagram Reel, TikTok, YouTube Short) for any of the user's brands, then write the title, caption or description and tags for each platform and make the thumbnails. Three formats - promo (a product or a published MakerWorld model, from its model folder and listing), tutorial (a how-to or explainer such as Bambu Studio settings, from a tutorial project made by makerworld-idea, with claims from official sources only) and tech-tip (finds ranked tech-tip ideas, then a software walkthrough screen-recorded step by step with auto-zoom, or hardware the user films). Works out the brand from the folder (or the one the user names) and reads that brand's settings and accounts. Checks which formats and sounds are trending that week, writes the script, the user records the voice-over line by line, and the video is built with the quickvid tools; then records where it was posted and clears out the old render versions. Use when the user asks for a reel, short, TikTok or promo video, a tutorial or how-to video, a tech tip, ideas for their tech channel, a walkthrough of an app or setting, after makerworld-publish, or when makerworld-idea hands off a tutorial.
 ---
 
 # Reel
@@ -11,19 +11,19 @@ specifics are in one reference file, read only when that format is used:
 | Format | For | Read |
 |---|---|---|
 | promo | a product or a published MakerWorld model, from its model folder | `references/promo.md` |
-| tutorial | a how-to or explainer, from a tutorial folder (makerworld-idea's route D) | `references/tutorial.md` |
+| tutorial | a how-to or explainer, from a tutorial project (makerworld-idea's route D) | `references/tutorial.md` |
 | tech-tip | ideas, then a software walkthrough (screen capture, auto-zoom) or hardware the user films | `references/tech-tip.md` |
 
-Pick from the request and the folder: a MakerWorld model folder is promo; `_Tutorials/<Name>/` is tutorial; a
-tech-tip request ("a tip about Teams", "tech tip ideas", "walk through this setting") or a folder in a brand with the
-`videos` layout is tech-tip. Ask when it's still unclear.
+Pick from the request and the folder: a MakerWorld model folder is promo; a piece whose `format` is `tutorial` is
+tutorial; a tech-tip request ("a tip about Teams", "tech tip ideas", "walk through this setting") or a piece whose
+`format` is `tech-tip` is tech-tip. Ask when it's still unclear.
 
 The build itself is shared with every short-video format: read
 `$NEXUS_HOME/skills/quickvid/references/short-format.md` once and follow its steps 1 to 8 where the format file says
 so. Its default format (hook, steps, one CTA, about 20 to 35 s) is a starting point; the user's own request for the
-video always wins, and a standing preference goes in the brand's `format` setting. Once the video is posted, record
-where (section 3) so content-backlog stops listing it, and clear out the draft versions so only the posted video is
-left.
+video always wins, and a standing preference goes in the brand's `format` setting. Keep the piece's status file right as
+you go (section 1), and once the video is posted, record where (section 3) so content-backlog stops listing it, and clear
+out the draft versions so only the posted video is left.
 
 ## 0. Brand, settings and checks
 
@@ -48,8 +48,34 @@ only when no brand matches or more than one does. Archived brands and accounts a
 - `demoAccounts`: per app, which test account or demo tenant to record in (never a password)
 
 The brand's platforms are its non-archived accounts that accept video, in order (their `platform` keys); handles and
-profile links are those accounts' `handle` and `profileUrl`. The content root is the brand's `contentRoot`, with its
-`contentFolder` (`<Content>` in the shared guide) and, for MakerWorld brands, `uploadFolder`.
+profile links are those accounts' `handle` and `profileUrl`. Each account takes the piece kinds its platform takes
+(a reel, a carousel): a reel is owed to the accounts that take reels. The content root is the brand's `contentRoot`,
+with its `contentFolder` and, for MakerWorld brands, its `modelsRoot` and `uploadFolder`.
+
+**The format of the brand.** The brand's `itemLayout` in `accounts.json` says which records to write. With `itemLayout: 2` a
+content root holds projects (one per model or topic), each project has a footage folder (`content/`, the brand's
+`contentFolder`: `<Content>` in the shared guide) and one folder for each piece (`Reel/`, `Carousel/`, `Reel 2/`), and
+each piece has a `status.md`, which you change only with `node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs`
+(`$NEXUS_HOME/skills/content-backlog/references/status-file.md` describes the file and the command). Where this file says
+"the piece", it means that folder. With `itemLayout` absent or `1`, or no accounts file, use "Older brands (itemLayout 1)"
+at the end. A skill never writes both formats, and never converts a folder. If the user hands over a folder of old records
+(a video folder with a `Content/Final/` of old records, or an old idea file) inside a brand in the new format, say so, point
+at the migration (`npm run migrate:v2` in the Content Board app, with the app closed) and stop.
+
+**The piece.** The piece folder is the unit: footage is read from the project's `content/` folder, and `.quickvid/` (working
+files, `publish.md`) and `Final/` (the videos) are written in the piece folder. Pass the quickvid tools the footage folder as
+their folder and `--out "<piece folder>"` (`screen_zoom.py` takes `--piece` instead; the tools' `--help` and
+`$NEXUS_HOME/skills/quickvid/SKILL.md` say how). Which piece:
+
+- **From a tutorial or tech-tip project, or a piece the user names:** that piece.
+- **From a model folder** (the hand-off from makerworld-publish): find the project whose pieces link the model (`status.mjs pieces
+  "<project folder>"` for each project in the content root; a piece links it when its `model` is the model folder's path under
+  `modelsRoot`). One project: use its `Reel` piece. Several projects: ask which. A project that holds only a carousel: add a piece
+  to it with `status.mjs create "<Project Name>/Reel" --brand <brand id> --format promo --kind reel --status approved` (it copies
+  `model:` from the sibling). No project: create the project and its piece the same way, with `--model "<model path under modelsRoot>"`,
+  and tell the user to put the footage in the project's `content/` folder.
+- **A second video of the same model** is another piece (`Reel 2`, or a name the user gives), made with `status.mjs create`; it
+  never overwrites the first.
 
 The Content Board app owns `accounts.json`: never write it. If a setting is missing, ask once and tell the user to
 set it on the brand in the app. Until `accounts.json` exists, or when it has no brand for this folder, fall back to
@@ -57,8 +83,9 @@ the older files and save missing settings there: `~/.nexus-local/makerworld.json
 `platforms`, `profiles`, `format`, `handle`, `character`; its `models_root` is the MakerWorld brand's root), and
 `~/.nexus-local/tech-tips.json` (`videos_root`, `accent`, `channel_name`, `handle`, `cta`, `platforms`, `profiles`,
 `research`, `voice`, `demo_accounts`, `format`). Once the app has created the brand, `scripts/migrate_settings.mjs`
-copies those settings into its `video` object: run it without options first (a dry run that writes nothing), then
-with `--apply`; it keeps a backup and never deletes the old files.
+copies those settings into its `video` object (it finds a brand in the new format through its `modelsRoot`, and one in the
+older format through its `contentRoot`): run it without options first (a dry run that writes nothing), then with `--apply`;
+it keeps a backup and never deletes the old files.
 
 Checks: `node`, `ffmpeg`, `ffprobe`, `uv`. Blender at `model.blender` in `makerworld.json` (only for a promo's assembly
 animation). Software capture (tech-tip, and a tutorial's screen recording) needs macOS and Screen Recording
@@ -66,7 +93,18 @@ permission for the app running the tools; the first recording shows the system p
 
 ## 1. Make it
 
-Read the format's reference file and follow it, with the shared guide's steps where it says so.
+Read the format's reference file and follow it, with the shared guide's steps where it says so. Keep the piece's status
+true to what exists (a brand in the new format):
+
+- When the user approves the script: `node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" status scripted`.
+- When the render is done: set `video:` to the file `publish.md`'s `Video:` line names, relative to the piece folder, then the status:
+
+  ```
+  node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" video "Final/<video file>"
+  node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" status made
+  ```
+
+  This is the same for a promo, a tutorial and a tech tip. Never set `made` before the video is there.
 
 ## 2. Hand-off
 
@@ -75,8 +113,60 @@ posted. Links are welcome but optional: "it's posted" is enough, so never hold t
 
 ## 3. Recording posts
 
-Until it's recorded, content-backlog lists the video as unposted. Record the post in `posted.txt` next to the video,
-in `<Content>/Final/`:
+Until it's recorded, content-backlog lists the video as unposted. Record each post in the piece's status file with
+`status.mjs post`, one call for each account the brand posts video to (the accounts that take reels; section 0):
+
+```
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" instagram "https://www.instagram.com/p/EXAMPLE1/ (2026-11-11)"
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" tiktok "posted, no link (2026-11-11)"
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" youtube skipped
+```
+
+`post` writes the line under `posts:`, sets `video:` to the posted video's path, and steps `status` by itself: `posted` when
+no account is left owed or scheduled, `made` otherwise (a script-approved piece becomes `made` at its first post). Each value
+is one of:
+
+- **A post** (counts as done): `<link> (<YYYY-MM-DD>)` if the user gave a link, else `posted, no link (<YYYY-MM-DD>)`. A post
+  the user scheduled in the platform's own app is a post too: use the date it goes live.
+- **`skipped`**: an account they chose to leave out. A video skipped on every account counts as not used.
+- **A plan** (not done): `scheduled <YYYY-MM-DD>`, or with a time `scheduled <YYYY-MM-DDTHH:MM>` (24-hour local time, no
+  zone). The Content Board app writes these when the user drags a video onto its calendar or queues it. A plan is not a post:
+  content-backlog lists the video as scheduled.
+
+Run `post` again for an account whenever its record changes (a link added, a plan that went out: replace its `scheduled ...`
+line with the post or `skipped`); it replaces that account's line and leaves the others. Use `--dry-run` to show the user the
+change first. If it says the posts belong to another video (a newer render is named now), ask the user, then run it again with
+`--replace-record`: the old file is kept as `status.previous.md` and the new record starts with this post. The format used
+goes in `style:` (`status.mjs set "<piece folder>" style "<video format>"`), so later research can see which formats this audience
+responds to (`references/trend-formats.md`); a `Note:` goes in the notes below the front matter only when the user asks for one.
+
+**Then clear out the old versions.** Every render, character pass, overlay pass and thumbnail is saved as a new
+version (`-V2`, `-V3`...), so `Final/` fills up with drafts. As soon as the status file names the video and at least one
+account has a post, run this from this skill's folder:
+
+```
+node scripts/clean_versions.mjs "<piece folder>/Final"
+```
+
+It keeps the posted video (the one `video:` names), its captions, and the newest cover and thumbnails. It deletes every
+other version of that video in `Final/`, and the scratch that quickvid rebuilds when needed in `.quickvid/` (`cuts/`,
+`sheets/` and the `character*/` frame folders). Other videos, the footage and the `.quickvid` records (script, research,
+plan, overlays, timing, narration, posting copy) stay, so the video can still be re-rendered. The script removes nothing
+before a post is recorded (a `scheduled` plan is not a post, so a video that is only scheduled keeps every version), or
+for a video skipped on every account, and stops if the video isn't there. This is the standing rule for every posted
+video, so it needs no extra confirmation: tell the user what was removed and how much space it freed. Run it right after
+the new render is posted, never before: it stops with nothing removed when the piece's `publish.md` names a different video
+than `video:` does (the posts then may belong to either render; set `video:` or post again with `--replace-record` first), it
+takes exactly one folder and no option but `--dry-run` (anything else is a usage error and removes nothing), and it counts as
+a post only a value `status.mjs post` could have written. It's safe to repeat on a piece that is already clean.
+
+## Older brands (itemLayout 1)
+
+For a brand whose `itemLayout` is absent or `1` (or with no accounts file) this skill works as it always did. The unit is a
+model or video folder with its content folder (`<Content>`), whose `.quickvid/` and `Final/` hold the work and the videos,
+and tutorials and tech-tip ideas are in the brand's tutorials folder (`_Tutorials/<Name>/`) and ideas folder (`_Ideas/`).
+
+**Recording posts.** Record the post in `posted.txt` next to the video, in `<Content>/Final/`:
 
 ```
 Reel: <file name of the video that was posted>
@@ -86,41 +176,17 @@ tiktok: <post link> (<YYYY-MM-DD>)
 youtube: skipped
 ```
 
-The `format:` line lets later research see which formats this audience responds to (`references/trend-formats.md`).
-Write one line for each platform the brand posts video to (its accounts that accept video; section 0). Each value is
-one of:
+The `format:` line lets later research see which formats this audience responds to. Write one line for each platform the
+brand posts video to. Each value is a post (the link, else `posted, no link (<YYYY-MM-DD>)`; the older
+`scheduled, no link (<YYYY-MM-DD>)` still counts as posted, but write the `posted` form), `skipped`, or a plan
+(`scheduled <YYYY-MM-DD>` or `scheduled <YYYY-MM-DDTHH:MM>`, which is not a post). If the file already exists, add the new
+lines or replace that platform's line; don't replace the file. When a scheduled video went out, replace each platform's
+`scheduled ...` line with its post (or `skipped`). The `Reel:` line ties the record to one video: a newer render under
+another name shows as unposted until it's posted and the `Reel:` line and links are updated.
 
-- **A post** (counts as done): the link if the user gave one, else `posted, no link (<YYYY-MM-DD>)`. A post the user
-  scheduled in the platform's own app is a post too: use the date it goes live. Older records wrote these as
-  `scheduled, no link (<YYYY-MM-DD>)` (with the comma), which still counts as posted; write the `posted` form now.
-- **`skipped`**: a platform they chose to leave out. A video skipped on every platform counts as not used.
-- **A plan** (not done): `scheduled <YYYY-MM-DD>`, or with a time `scheduled <YYYY-MM-DDTHH:MM>` (24-hour local time,
-  no zone; a space or a lowercase `t` instead of the `T` reads the same). The Content Board app writes these when the
-  user drags a video onto its calendar or queues it, with every platform of that video on the same date and time.
-  content-backlog lists the video as scheduled, not posted. Anything else starting with `scheduled` and no comma
-  counts as not posted.
-
-If the file already exists (posting a day apart, say), add the new lines or replace that platform's line; don't
-replace the file. When the user says a scheduled video went out, replace each platform's `scheduled ...` line with
-its post (or `skipped`), leaving the other lines as they are. The `Reel:` line ties the record to one video: a newer
-render under another name shows as unposted until it's posted and the `Reel:` line and links are updated.
-
-**Then clear out the old versions.** Every render, character pass, overlay pass and thumbnail is saved as a new
-version (`-V2`, `-V3`...), so `Final/` fills up with drafts. As soon as `posted.txt` names the video and at least one
-platform has a post, run this from this skill's folder:
-
-```
-node scripts/clean_versions.mjs "<Content>/Final"
-```
-
-It keeps the posted video (the `Reel:` line), its captions, and the newest cover and thumbnails. It deletes every other
-version of that video in `Final/`, and the scratch that quickvid rebuilds when needed in `.quickvid/` (`cuts/`,
-`sheets/` and the `character*/` frame folders). Other videos, the footage and the `.quickvid` records (script, research,
-plan, overlays, timing, narration, posting copy) stay, so the video can still be re-rendered. The script removes nothing
-before a post is recorded (a `scheduled` plan is not a post, so a video that is only scheduled keeps every version),
-or for a video skipped on every platform, and stops if the `Reel:` file isn't there. This is
-the standing rule for every posted video, so it needs no extra confirmation: tell the user what was removed and how
-much space it freed. Run it again whenever the `Reel:` line moves to a newer render (it's safe to repeat).
+Then clear out the old versions with `node scripts/clean_versions.mjs "<Content>/Final"`, as above: it reads `posted.txt`,
+keeps the video its `Reel:` line names and removes nothing before a post is recorded. For a tutorial, set its brief's
+**Status** to `made` when the video is done and `posted` after posting.
 
 ## Tool-specific notes
 

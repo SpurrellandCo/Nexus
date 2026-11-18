@@ -2,9 +2,10 @@
 
 Usage:
   uv run --no-project --with pillow python screen_zoom.py <folder> --clip 03 --out "<folder>/Step 03 - Open settings.mp4" \
-      [--fit 4.6] [--accent #2F8CFF] [--magnify 2.2] [--no-tighten] [--no-cursor] [--trim 1.5,12]
+      [--piece <piece folder>] [--fit 4.6] [--accent #2F8CFF] [--magnify 2.2] [--no-tighten] [--no-cursor] [--trim 1.5,12]
 
-Reads <folder>/.quickvid/capture/<clip>.mp4 and its sidecar from record_screen.py and, from the logged events:
+Reads <piece>/.quickvid/capture/<clip>.mp4 and its sidecar from record_screen.py (<piece> is --piece, a piece folder of a brand in the
+new format, else <folder> itself; `--out` here is the zoomed clip, so the piece folder has its own name) and, from the logged events:
 
   tighten  Keeps real time around each click or burst of typing (0.9 s before, at least 1.2 s after, and on until the
            screen settles), and fast-forwards everything between to at most 0.35 s. When an agent drives the app there
@@ -62,6 +63,7 @@ def parse_args():
     p.add_argument("folder")
     p.add_argument("--clip", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--piece", help="the piece folder that holds .quickvid/capture (default: <folder>)")
     p.add_argument("--fit", type=float)
     p.add_argument("--accent", default="#3ddc84")
     p.add_argument("--magnify", type=float, default=2.2)
@@ -416,7 +418,7 @@ def load(folder, clip):
 
 def main():
     a = parse_args()
-    meta, source = load(Path(a.folder), a.clip)
+    meta, source = load(Path(a.piece or a.folder), a.clip)
     out = Path(a.out)
     if out.exists():
         sys.exit(f"screen_zoom: {out} already exists; pick a new name")

@@ -1,6 +1,7 @@
 // Lane and stage of a card (Content Board MASTER Section 7, FR 3, FR 5): a pure function of the card's
 // records, the brand's accounts and the current time, so the app can re-derive it from the cache whenever
 // accounts change (D-016). First matching row wins, as in the PRD's stage table.
+import { placeCardV2 } from './stages-v2.mjs';
 import { deriveStatuses } from './status.mjs';
 
 export const LANES = Object.freeze(['Ideas', 'In progress', 'Made', 'Ready to post', 'Posted']);
@@ -103,6 +104,7 @@ function placeVideo(card, accounts, now) {
  * @returns {Placement}
  */
 export function placeCard(card, accounts, now) {
+  if (card.itemLayout === 2) return placeCardV2(card);
   const placement = card.type === 'idea' ? placeIdea(card)
     : card.type === 'listing' ? placeListing(card)
       : placeVideo(card, accounts, now);

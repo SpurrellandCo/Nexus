@@ -16,7 +16,7 @@ import { readPublishMd } from './publish-md.mjs';
 import { SKIP_FOLDER, childCI, dateIn, firstUrl, isIgnored, rel, statusOf, visible } from './scan.mjs';
 import { placeCard } from './stages.mjs';
 
-const DISCOVERY_DEPTH = 2;
+export const DISCOVERY_DEPTH = 2;
 const MP4 = /\.mp4$/i;
 const MD = /\.md$/i;
 
@@ -44,7 +44,7 @@ const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
  * @param {Ctx} ctx
  * @param {string} dir
  */
-function folderFacts(ctx, dir) {
+export function folderFacts(ctx, dir) {
   const { cfg, io } = ctx;
   ctx.foldersRead += 1;
   ctx.onProgress(ctx.foldersRead);
@@ -164,7 +164,7 @@ function videoCard(ctx, type, dir, facts, ignored) {
  * @param {Facts} facts
  * @param {boolean} ignored
  */
-function listingCard(ctx, dir, facts, ignored) {
+export function listingCard(ctx, dir, facts, ignored) {
   const { cfg, io } = ctx;
   const brief = readBrief(ctx, dir, facts);
   const up = facts.uploadDir;
@@ -258,7 +258,7 @@ function ideaCards(ctx) {
  * @param {boolean} ignoredAbove
  * @returns {{ pieces: Array<{ dir: string, facts: Facts, ignored: boolean }>, untracked: string[], covered: boolean }}
  */
-function discoverModels(ctx, dir, depth, ignoredAbove) {
+export function discoverModels(ctx, dir, depth, ignoredAbove) {
   const { cfg } = ctx;
   const selfIgnored = isIgnored(cfg, dir);
   if (selfIgnored && !ignoredAbove) ctx.ignoredFound.push(relPosix(cfg, dir));
@@ -328,7 +328,7 @@ function finish(ctx, cards) {
  * @param {ScanConfig} cfg
  * @param {{ now: number, fs?: typeof import('node:fs'), shouldStop?: () => boolean, onProgress?: (n: number) => void }} options
  */
-function makeContext(cfg, { now, fs, shouldStop = () => false, onProgress = () => {} }) {
+export function makeContext(cfg, { now, fs, shouldStop = () => false, onProgress = () => {} }) {
   /** @type {string[]} */
   const warnings = [];
   /** @param {string} message */

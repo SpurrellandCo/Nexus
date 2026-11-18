@@ -1,11 +1,11 @@
 ---
 name: makerworld-model
-description: Build a 3D-printable model from an approved MakerWorld brief. Picks up a brief from makerworld-idea (handed off, given as a path, or chosen from the ideas backlog), asks only what the brief leaves open, copies the user's project template folder, designs around any Maker's Supply parts using their published dimensions, builds the model parametrically in Autodesk Fusion through the Fusion MCP server, exports and checks the STL, makes a Bambu Studio 3MF, renders three product and three lifestyle photos in Blender, and offers to hand off to makerworld-publish. Use when the user wants to build, model or design an idea for MakerWorld, or says "build it" after makerworld-idea.
+description: Build a 3D-printable model from an approved MakerWorld brief. Picks up a brief from makerworld-idea (handed off, given as a path, or chosen from the brand's projects), asks only what the brief leaves open, copies the user's project template folder, designs around any Maker's Supply parts using their published dimensions, builds the model parametrically in Autodesk Fusion through the Fusion MCP server, exports and checks the STL, makes a Bambu Studio 3MF, renders three product and three lifestyle photos in Blender, and offers to hand off to makerworld-publish. Use when the user wants to build, model or design an idea for MakerWorld, or says "build it" after makerworld-idea.
 ---
 
 # MakerWorld model
 
-Brief in, finished model folder out: the Fusion design, STL, 3MF and rendered photos in place, laid out like the user's project template. The user prints it and adds real photos. This skill never publishes.
+Brief in, finished model folder out: the Fusion design, STL and 3MF in place, laid out like the user's project template, and the rendered photos in the idea's project folder. The user prints it and adds real photos. This skill never publishes.
 
 ```
 makerworld-idea  ──brief──▶  makerworld-model  ──model folder──▶  makerworld-publish  ──listing──▶  reel
@@ -13,13 +13,15 @@ makerworld-idea  ──brief──▶  makerworld-model  ──model folder─�
 
 ## 0. Settings and checks
 
-All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.json`, kept on the user's machine and never in this skill (the skill is shared publicly). This skill uses `models_root` and `content_folder` (top level), plus the `model` section:
+All three MakerWorld skills share one settings file, `~/.nexus-local/makerworld.json`, kept on the user's machine and never in this skill (the skill is shared publicly). This skill uses `models_root` and `content_folder` (top level), plus the `model` section. `models_root` is matched against the `modelsRoot` of the brands in `~/.nexus-local/accounts.json` to find the brand and its format; `content_folder` names the footage folder inside each project folder.
 
 - `model.template_folder`: copied for every new model.
-- `model.folders`: names of the template's Fusion, STL, Bambu and Blender subfolders. Photos and renders go in the content folder (top-level `content_folder`, matched in any capitalisation against the template's subfolders).
+- `model.folders`: names of the template's Fusion, STL, Bambu and Blender subfolders. A template's own content folder (named like the top-level `content_folder`, in any capitalisation) is not copied: photos and renders go in the project's content folder.
 - `model.bambu`: Bambu Studio printer, process, filament and plate presets.
 - `model.ams`: whether the user can print multi-colour.
 - `model.blender`: path to the Blender executable.
+
+The brand's `itemLayout` in `accounts.json` says which format to write. With `itemLayout: 2` this skill's main text applies (a model folder, and a project with a piece that links it). With `itemLayout` absent or `1`, or no accounts file, use "Older brands (itemLayout 1)" at the end. Never write `accounts.json`, and never convert a folder between the formats. An old idea file, or a folder of old records, inside a brand in the new format that the user hands over as the thing to build: say so, point at the migration (`npm run migrate:v2` in the Content Board app, with the app closed) and stop.
 
 If the file or the `model` section is missing, run "First-time setup" at the end of this file. If a value still looks like a template placeholder (`<...>`) or `ams` is `null`, ask only about those, save, and carry on.
 
@@ -32,31 +34,49 @@ Before building, check these and say plainly what's missing:
 
 ## 1. Get the brief
 
-- **Handed off from makerworld-idea:** use that brief.
-- **The user gives a path:** read it.
-- **Neither:** list the briefs in `<models_root>/<idea.ideas_folder>` with Status `approved` (then `idea`), newest first, each with its one-line pitch, and ask which to build.
+The idea lives in a project folder in the brand's content root: `<contentRoot>/<Idea Name>/` with `brief.md` and the piece `Reel/status.md` (made by makerworld-idea).
+
+- **Handed off from makerworld-idea:** use that project.
+- **The user gives a path:** a project folder, or a brief file; read it.
+- **Neither:** list the brand's projects whose piece has `status: approved` (then `idea`) and no `model:` (`node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs pieces "<project folder>"` for each project), newest first, each with its one-line pitch, and ask which to build.
 - **The user has only an idea and no brief:** say the brief is what keeps the build on target. Then follow makerworld-idea's own-idea route (route A) to write one, and come back here.
 
 Read the whole brief. Then, in one message, ask about everything under "Open questions" and every dimension marked "to measure". The fit of anything that holds or attaches to a real object must be a real measurement or a spec sheet, never a guess. For a contest, restate the deadline and the days left. Don't re-ask anything the brief already answers.
 
 ## 2. Create the model folder
 
-1. The model name is the brief's name, so confirm it with the user. Match how the existing folders in `models_root` are named: plain words, title case, no dates.
+1. The model name is the project's name (the brief's name), so confirm it with the user. Match how the existing folders in `models_root` are named: plain words, title case, no dates.
 2. If `<models_root>/<Model Name>` already exists, show what's in it and ask whether to use it, pick another name, or stop. Never overwrite it.
-3. Copy `template_folder` to `<models_root>/<Model Name>`, keeping every subfolder, even ones this skill doesn't use. Skip `.DS_Store` and similar system files.
-4. Move the brief into the model folder as `brief.md` (move it, so it leaves the backlog). Set **Status: building** and fill in **Model folder**.
+3. Copy `template_folder` to `<models_root>/<Model Name>`, keeping every subfolder, even ones this skill doesn't use, **except the template's content folder** (a folder named like `content_folder`, in any letter case): the photos and renders belong to the project, not the model. Skip `.DS_Store` and similar system files.
+4. Move the project's `brief.md` into the model folder as `brief.md` (move it, so it is in one place). No status and no model-folder line is set in it.
+5. Link the idea's piece to the model and mark it being built. The piece is the one of the project with no `model:` and `status` of `idea` or `approved` (the `Reel` piece makerworld-idea made):
 
-Every file this skill makes goes inside that folder:
+   ```
+   node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<project folder>/Reel" model "<Model Name>"
+   node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<project folder>/Reel" status building
+   ```
+
+   The value of `model` is the new folder's path relative to `models_root` (just the name, or `Category/Model Name` when it lives in a category folder). If the project has another piece (a carousel) it keeps its own status; `status.mjs set "<project folder>" model "<Model Name>"` writes `model:` to every piece of the project when they should agree.
+6. With **no idea project** (the user came straight here): make the project and its piece at this point, and no later than the first time this skill saves renders:
+
+   ```
+   node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name>/Reel" --brand <brand id> --format promo --kind reel --status building --model "<Model Name>"
+   ```
+
+   then make the project's footage folder (`<contentRoot>/<Project Name>/<content_folder>`). The project is named like the model; the command refuses a name that is taken, starts with `.`, `_` or `z.`, or is over 80 characters.
+
+Every file this skill makes goes inside the model folder or the project:
 
 | What | Where |
 |---|---|
-| The brief, kept up to date | `brief.md` |
-| Fusion design (`.f3d`) | `<folders.fusion>/<Model Name>.f3d` |
-| Reference models of bought parts | `<folders.fusion>/parts/` |
-| STL, one per printed part | `<folders.stl>/<Model Name>.stl`, or `<Model Name> - <part>.stl` for several parts |
-| Bambu Studio project | `<folders.bambu>/<Model Name>.3mf` |
-| Rendered photos | `<content folder>/<Model Name> product 1-3.jpg` and `<Model Name> lifestyle 1-3.jpg` |
-| Blender scenes, for tweaking renders later | `<folders.blender>/<Model Name> product.blend` and `... lifestyle.blend` |
+| The brief, kept up to date | `<model>/brief.md` |
+| Fusion design (`.f3d`) | `<model>/<folders.fusion>/<Model Name>.f3d` |
+| Reference models of bought parts | `<model>/<folders.fusion>/parts/` |
+| STL, one per printed part | `<model>/<folders.stl>/<Model Name>.stl`, or `<Model Name> - <part>.stl` for several parts |
+| Bambu Studio project | `<model>/<folders.bambu>/<Model Name>.3mf` |
+| Rendered photos | `<project>/<content folder>/<Model Name> product 1-3.jpg` and `<Model Name> lifestyle 1-3.jpg` |
+| Assembly animation | `<project>/<content folder>/<Model Name> assembly animation.mp4` |
+| Blender scenes, for tweaking renders later | `<model>/<folders.blender>/<Model Name> product.blend` and `... lifestyle.blend` |
 
 ## 3. Pin down the bought parts
 
@@ -117,7 +137,7 @@ Fetch the scene assets once (free CC0 HDRIs and surface textures from Poly Haven
 ```
 uv run --no-project python scripts/fetch_assets.py
 "<blender>" -b --factory-startup -P scripts/render_photos.py -- \
-  --stl "<stl>" [--stl "<stl 2>"] --out "<model>/<content folder>" --name "<Model Name>" \
+  --stl "<stl>" [--stl "<stl 2>"] --out "<project>/<content folder>" --name "<Model Name>" \
   --blend-dir "<model>/<folders.blender>" --scenes desk,desk,counter \
   --color "#hex"[,"#hex2"] --finish basic --layer 0.2
 ```
@@ -134,22 +154,26 @@ Look at all six images before showing them. Re-render with adjustments if:
 
 Tell the user these are renders. MakerWorld counts only real photos of a printed model toward the required photos, and some contests restrict renders altogether. The renders go after the real photos in a listing.
 
-**Multi-part models: an assembly animation.** When the model prints as several parts that fit together (tiles, a lid and box, a kit), render a short clip of them sliding together on a lifestyle tabletop with `scripts/assemble_anim.py` (instructions in its header), saved as `<content folder>/<Model Name> assembly animation.mp4`. It goes in the listing's video slot and gives reel its "how it fits together" shot. Test at low quality first, and check that nothing hangs off the table.
+**Multi-part models: an assembly animation.** When the model prints as several parts that fit together (tiles, a lid and box, a kit), render a short clip of them sliding together on a lifestyle tabletop with `scripts/assemble_anim.py` (instructions in its header), saved as `<project>/<content folder>/<Model Name> assembly animation.mp4`. It goes in the listing's video slot and gives reel its "how it fits together" shot. Test at low quality first, and check that nothing hangs off the table.
 
 ## 7. Update the brief, wrap up and offer the hand-off
 
-Update `brief.md`: set **Status: built**, replace estimates with the real overall size, update the parts list to what the design actually uses (with codes and quantities), add print notes (orientation, supports, rough time and filament from the 3MF), and tick off the requirements. makerworld-publish writes the listing from this file, so it must match the model.
+Update `<model>/brief.md`: replace estimates with the real overall size, update the parts list to what the design actually uses (with codes and quantities), add print notes (orientation, supports, rough time and filament from the 3MF), and tick off the requirements. makerworld-publish writes the listing from this file, so it must match the model. Then mark the piece built, and write nothing about status in the brief:
+
+```
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<project folder>/Reel" status built
+```
 
 Report:
-- the folder path and what's in it;
+- the model folder path and what's in it, and the project folder with the renders;
 - the model's size and print notes;
 - the rendered images;
 - the contest deadline and days left, if any;
-- what's left for the user: open the 3MF in Bambu Studio, check and slice it, save it, print it, fit the parts, and add at least three real photos to the content folder.
+- what's left for the user: open the 3MF in Bambu Studio, check and slice it, save it, print it, fit the parts, and add at least three real photos to the project's content folder.
 
 Then ask: **"Hand off to makerworld-publish now?"**
 
-- **Yes:** follow the makerworld-publish skill with this model folder. It reads `brief.md` for the description, parts list and contest. If the real photos aren't there yet, say so and stop at that point instead.
+- **Yes:** follow the makerworld-publish skill with this model folder. It finds the project through the pieces' `model:` and reads `brief.md` for the description, parts list and contest. If the real photos aren't there yet, say so and stop at that point instead.
 - **No:** stop. The folder is ready for whenever the user runs makerworld-publish.
 
 ## First-time setup
@@ -165,6 +189,15 @@ Run once, when the `model` section doesn't exist. Tell the user it's a one-time 
    5. Can you print multi-colour (AMS)?
    6. Where is Blender? (Look for it first. If it isn't installed, say the renders need it and ask before installing.)
 3. Check that the Bambu presets exist in Bambu Studio's system preset folder: `machine/`, `process/` and `filament/` under the BBL folder. Start from `references/settings-template.json`, fill it in, merge it into `~/.nexus-local/makerworld.json` without touching the other sections, and show the user what was saved.
+
+## Older brands (itemLayout 1)
+
+For a brand whose `itemLayout` is absent or `1` (or with no accounts file) this skill works as it always did: the idea is a single brief file in the ideas folder, the model folder carries its own content folder, and the brief holds the status.
+
+- **Get the brief:** if there is no handed-off brief or path, list the briefs in `<models_root>/<idea.ideas_folder>` with Status `approved` (then `idea`), newest first, each with its one-line pitch, and ask which to build.
+- **Create the model folder:** copy `template_folder` to `<models_root>/<Model Name>` keeping every subfolder, content folder included. Move the brief into the model folder as `brief.md` (move it, so it leaves the backlog), set **Status: building** and fill in **Model folder**.
+- **Where the photos go:** rendered photos and the assembly animation go in the model's own content folder, `<model>/<content folder>/`; the render and animation commands take that folder as `--out`.
+- **Wrap up:** set **Status: built** in `brief.md`, and tell the user to add the real photos to the model's content folder. The hand-off to makerworld-publish passes the model folder.
 
 ## Tool-specific notes
 

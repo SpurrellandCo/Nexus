@@ -2,10 +2,12 @@
 // Pure functions: the current time is passed in, dates are `YYYY-MM-DD` strings and times `HH:MM`
 // (D-019), and nothing here depends on Temporal.
 import { localDate } from './dates.mjs';
+import { OTHER_MEDIA_FLAGS, isConfirmedSlides } from './media.mjs';
+import { accountKinds } from './presets.mjs';
 import { isScheduledValue, isSkipped, parseScheduledValue, postedDateOf, postedUrlOf } from './posted.mjs';
 
 /**
- * @typedef {{ key: string, label?: string, accepts: 'video' | 'listing', startDate: string | null, archived?: boolean }} ScanAccount
+ * @typedef {{ key: string, label?: string, accepts: 'video' | 'listing', startDate: string | null, archived?: boolean, kinds?: string[] }} ScanAccount
  * @typedef {'upcoming' | 'due-today' | 'overdue'} DueState
  * @typedef {{ accountKey: string, status: 'posted' | 'scheduled' | 'skipped' | 'owed' | 'n/a',
  *             date?: string | null, time?: string | null, url?: string | null, due?: DueState, warning?: string }} AccountStatus
@@ -18,6 +20,18 @@ import { isScheduledValue, isSkipped, parseScheduledValue, postedDateOf, postedU
  */
 export function activeVideoAccounts(accounts) {
   return accounts.filter((a) => !a.archived && a.accepts === 'video');
+}
+
+/**
+ * The accounts a piece of `kind` is owed to (V2-76): not archived, and taking the kind. An account that carries no `kinds`
+ * (a list not built by `brandInput`) takes what its platform takes, else `reel` when it accepts video, as `accountKinds` says,
+ * so every v1 file still gives its video accounts the reel kind.
+ * @param {ScanAccount[]} accounts
+ * @param {string} kind
+ * @returns {ScanAccount[]}
+ */
+export function activeAccountsFor(accounts, kind) {
+  return accounts.filter((a) => !a.archived && (a.kinds ?? accountKinds({ platform: a.key, accepts: a.accepts })).includes(kind));
 }
 
 /**
@@ -49,8 +63,33 @@ export function dueState(slot, now) {
  * @returns {AccountStatus[]}
  */
 export function deriveStatuses(platformLines, videoDate, accounts, now) {
+  return statusesOf(platformLines, videoDate, activeVideoAccounts(accounts), now);
+}
+
+/**
+ * The statuses of a piece of `kind` (V2-7): one per active account that takes the kind, in account order, derived as
+ * `deriveStatuses` derives them. `mediaDate` is the video's date, or the newest named slide's.
+ * @param {Array<{ key: string, value: string }>} platformLines the raw `posts:` pairs
+ * @param {string | null} mediaDate `YYYY-MM-DD`, or null when unknown (no cut-off)
+ * @param {ScanAccount[]} accounts
+ * @param {string} kind
+ * @param {number} now ms
+ * @returns {AccountStatus[]}
+ */
+export function deriveStatusesFor(platformLines, mediaDate, accounts, kind, now) {
+  return statusesOf(platformLines, mediaDate, activeAccountsFor(accounts, kind), now);
+}
+
+/**
+ * @param {Array<{ key: string, value: string }>} platformLines
+ * @param {string | null} videoDate
+ * @param {ScanAccount[]} active the accounts to ask, already chosen
+ * @param {number} now
+ * @returns {AccountStatus[]}
+ */
+function statusesOf(platformLines, videoDate, active, now) {
   const last = new Map(platformLines.map((l) => [l.key, l.value]));
-  return activeVideoAccounts(accounts).map((account) => {
+  return active.map((account) => {
     const accountKey = account.key;
     const value = last.get(accountKey);
     if (value === undefined) {
@@ -111,4 +150,56 @@ export function postedDays(statuses) {
   return [...days.entries()]
     .map(([date, accountKeys]) => ({ date, accountKeys }))
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+}
+
+/**
+ * Posted statuses grouped by the day they were posted, for the calendar and the card (V2-9, FR 18): a post with no date
+ * (a bare link, or `posted`) sits on the local date of the record file's modified time and is marked approximate.
+ * Dated and approximate posts on one day stay separate groups; the days are in date order, exact before approximate.
+ * @param {AccountStatus[]} statuses
+ * @param {number} recordMtimeMs the modified time of the file the posts are written in (status.md)
+ * @returns {Array<{ date: string, approximate: boolean, accountKeys: string[] }>}
+ */
+export function postedDaysApprox(statuses, recordMtimeMs) {
+  const fallback = localDate(recordMtimeMs);
+  /** @type {Map<string, { date: string, approximate: boolean, accountKeys: string[] }>} */
+  const days = new Map();
+  for (const s of statuses) {
+    if (s.status !== 'posted') continue;
+    const approximate = !s.date;
+    const date = s.date || fallback;
+    const key = `${date}|${approximate}`;
+    const day = days.get(key) ?? { date, approximate, accountKeys: [] };
+    days.set(key, { ...day, accountKeys: [...day.accountKeys, s.accountKey] });
+  }
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date) || Number(a.approximate) - Number(b.approximate));
+}
+
+/** The flags that say the posts of a piece are for other media than the piece's own (V2-8, V2-74). */
+
+/**
+ * The `posts:` pairs that count for a piece: none when they are for other media (`posts-other-video`,
+ * `posts-other-slides`), so every account is owed, as v1 does with a record that belongs to another video (FR 7).
+ * @param {{ record: { posts: Array<{ key: string, value: string }> }, rawFlags?: Array<{ code: string }> }} card a raw piece card
+ * @returns {Array<{ key: string, value: string }>}
+ */
+export function effectivePosts(card) {
+  return (card.rawFlags ?? []).some((f) => OTHER_MEDIA_FLAGS.includes(f.code)) ? [] : card.record.posts;
+}
+
+/**
+ * The statuses of a raw piece card, one per active account that takes its kind (V2-6, V2-7, V2-76). None until the piece has
+ * media that is named and there: a video named and present (a reel), or slides all named and present (a carousel).
+ * Derived from the cached raw pairs, the media's date, the accounts and the time, with no read of the share.
+ * @param {any} card a raw piece card (`piece.kind`, `video`, `slides`, `record.posts`, `rawFlags`)
+ * @param {ScanAccount[]} accounts the brand's scan accounts
+ * @param {number} now ms
+ * @returns {AccountStatus[]}
+ */
+export function pieceStatuses(card, accounts, now) {
+  const kind = card.piece.kind;
+  const media = kind === 'carousel' ? card.slides : card.video;
+  const named = kind === 'carousel' ? isConfirmedSlides(media) : media?.name && !media.missing;
+  if (!named) return [];
+  return deriveStatusesFor(effectivePosts(card), media.date, accounts, kind, now);
 }
