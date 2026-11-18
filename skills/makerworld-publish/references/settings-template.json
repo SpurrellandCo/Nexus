@@ -9,5 +9,9 @@
     "tag": "<your Amazon Associates tracking tag, or set amazon to null>",
     "disclosure": "As an Amazon Associate I earn from qualifying purchases."
   },
-  "affiliate_links": []
+  "affiliate_links": [],
+  "_about": {
+    "models_root": "The folder your model folders usually live in. It is matched against the brands' modelsRoot in ~/.nexus-local/accounts.json to find the brand; accounts.json is written by the Content Board app, never by this skill.",
+    "content_folder": "The folder with your real print photos: inside each project folder in a brand with itemLayout 2 (the project whose pieces link the model), inside each model folder in a brand with itemLayout 1."
+  }
 }

@@ -17,8 +17,8 @@ The user's settings live in `~/.nexus-local/makerworld.json` on their own machin
 
 Fields:
 
-- `models_root`: where model folders usually live, only used to suggest paths (`null` if there's no usual place)
-- `content_folder`: name of the subfolder holding the real photos and videos in each model folder (default `photos`)
+- `models_root`: where model folders usually live, used to suggest paths and matched against the `modelsRoot` of the brands in `~/.nexus-local/accounts.json` to find the brand (`null` if there's no usual place)
+- `content_folder`: name of the subfolder holding the real photos and videos: inside each project folder for a brand in the new format (`itemLayout: 2`), inside each model folder for a brand in the older format (default `photos`)
 - `upload_folder`: name of the folder this skill creates inside each model folder for everything it generates (default `makerworld upload`). See "Upload info folder" below.
 - `printer`: the user's printer and nozzle, for the print-settings text
 - `exclusive`: `"Exclusive Model"` (the default), `"14-Day Exclusive Launch Model"` or `null` (don't join)
@@ -35,7 +35,7 @@ Run this once, when the settings file doesn't exist. Tell the user it's a one-ti
    - Filling in the MakerWorld form needs a browser-automation tool attached to the user's own browser, signed in to MakerWorld. If there isn't one, say the skill still does everything else (measurements, cleaned photos, covers, listing text) and the user pastes the result in through Bambu Studio's Publish button. Never sign in for the user.
 2. **Ask these in one message,** with the default in brackets so the user can just accept it:
    1. Where do your model folders usually live? (optional, only used to suggest paths)
-   2. In each model folder, what's the subfolder with your real print photos and videos called? [photos]
+   2. What's the subfolder with your real print photos and videos called? It sits in each project folder (in each model folder for a brand in the older format). [photos]
    3. What should the folder this skill creates for its generated files be called? [makerworld upload]
    4. Which printer and nozzle do you print with? (for example "Bambu Lab A1, 0.4 mm nozzle")
    5. Join MakerWorld's Exclusive Model Program by default: **Exclusive Model** (permanent, larger bonus), **14-Day Exclusive Launch Model**, or **no**? [Exclusive Model] (You still approve it for each model.)
@@ -43,7 +43,7 @@ Run this once, when the settings file doesn't exist. Tell the user it's a one-ti
    7. Do you use Amazon Associates links? If yes, what's your tracking tag, and what disclosure line should end each description? [As an Amazon Associate I earn from qualifying purchases.]
    8. Any affiliate links you want saved now? (optional; you can add them while publishing)
 3. **Check any links** from question 8 the same way as step 4 (where it really goes, and whether the tag matches), and fill in `resolves_to`.
-4. **Save the settings.** Start from `references/settings-template.json`, fill in the answers, and use `null` for a skipped `models_root` or `amazon`, and `[]` for no links. `exclusive` is `"Exclusive Model"` unless the user picks the 14-day option or says no (then `null`). Create the `~/.nexus-local/` folder if it doesn't exist. If the file already exists with other sections, merge into it rather than replacing it. Show the user what was saved and tell them they can change any of it later by asking or by editing the file.
+4. **Save the settings.** Start from `references/settings-template.json` (leave out its `_about` notes), fill in the answers, and use `null` for a skipped `models_root` or `amazon`, and `[]` for no links. `exclusive` is `"Exclusive Model"` unless the user picks the 14-day option or says no (then `null`). Create the `~/.nexus-local/` folder if it doesn't exist. If the file already exists with other sections, merge into it rather than replacing it. Show the user what was saved and tell them they can change any of it later by asking or by editing the file.
 
 ## 1. Ask for the asset folder and a quick description (always first)
 
@@ -55,6 +55,15 @@ Once settings are in place, and before doing anything else, ask both of these in
 Both are required, so don't go on until you have them. If the user's request already describes the model clearly, quote it back and ask them to confirm or add to it rather than asking again. If the model folder has a `brief.md` (written by makerworld-idea and kept up to date by makerworld-model), read it, quote its "What it is" back as the description, and ask the user to confirm it. Its parts list, contest section and listing draft feed steps 4 and 5. If the description is too thin to write a listing from (for example just "an insert"), ask one follow-up question.
 
 The user's description is the starting point for the name, intro line, category and tags, and for working out what the measured openings hold in step 2. Never contradict it. If the measurements seem to disagree with it, ask.
+
+**Find the brand and the photos.** Read `~/.nexus-local/accounts.json` (never write it) and find the brand whose `modelsRoot` is, or holds, the model folder (the most specific root wins; skip archived brands; two matching brands: ask which). If its `itemLayout` is `2`, the real photos, the renders and the listing clip are in the `<content_folder>` folder of the project whose pieces link this model, so find that project without asking which folder:
+
+- List the project folders in the brand's `contentRoot`, and for each run `node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs pieces "<project folder>"`. A project links the model when one of its pieces has `model` equal to the model folder's path under `modelsRoot` (`Example Bin`, or `Category/Example Bin`).
+- **One project:** use its content folder, and say which project it is.
+- **Several projects link the model:** say so (it is a warning, not an error) and ask which holds the photos, listing each project with its pieces, how many photos its content folder holds and when it last changed.
+- **None, or a brand in the older format** (`itemLayout` absent or `1`, or no accounts file): use the model folder's own content folder as "Older brands (itemLayout 1)" says, and if there is none, ask for a folder.
+
+Whatever the format, everything this skill generates goes in `<model folder>/<upload_folder>/`, and the original photos are never modified or moved.
 
 Once you have the path, create the upload info folder (`<model folder>/<upload_folder>/`) and save the user's description, word for word, as `description.md`. If the folder already exists from an earlier upload, show the user what's in it and ask whether this is an update of that listing or a new one. Never overwrite those files silently.
 
@@ -69,7 +78,7 @@ What the skill looks for in the model folder (subfolder names other than the con
 
 - If the path doesn't exist (for example a network drive isn't mounted), say so and stop.
 - Find every `.3mf` in the folder tree. If there is more than one, list them with modified date and size and ask which one to publish. Note the chosen file's modified time and size.
-- Find the content folder (matching `content_folder`, any capitalisation). If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further. Images named `<model name> product N.jpg` or `<model name> lifestyle N.jpg` are renders made by the makerworld-model skill: don't count them as real photos, but offer them as extra images after the real ones.
+- Find the content folder (matching `content_folder`, any capitalisation) as above. If there isn't one, list the folders that hold photos and ask which has the real print photos. MakerWorld needs at least 3 real photos of the printed model, and renders don't count. If there are fewer, tell the user before going further. Images named `<model name> product N.jpg` or `<model name> lifestyle N.jpg` are renders made by the makerworld-model skill: don't count them as real photos, but offer them as extra images after the real ones.
 
 ## 2. Measure the model
 
@@ -141,7 +150,7 @@ This needs a browser-automation tool attached to the user's own signed-in browse
 
 Report the draft link, what was filled in, anything you changed or couldn't do, and what's left (tick the guidelines box, then Publish).
 
-Before finishing, make sure the upload info folder matches what actually went onto MakerWorld. If anything changed on the page (wording, links, the 3MF, unticked printers), update `listing.md` and the HTML files. Once the user has published, save the model's MakerWorld link in `<upload folder>/published.txt`, and if there's a `brief.md`, set its **Status: published** and add the link.
+Before finishing, make sure the upload info folder matches what actually went onto MakerWorld. If anything changed on the page (wording, links, the 3MF, unticked printers), update `listing.md` and the HTML files. Once the user has published, save the model's MakerWorld link in `<upload folder>/published.txt` (never overwrite an existing one), and write nothing else: the brief is not changed.
 
 Then offer the last step of the pipeline: **"Make a promo reel for Instagram, TikTok and YouTube Shorts with reel?"** On yes, follow the reel skill's promo format with this model folder.
 
@@ -161,6 +170,10 @@ Everything this skill generates for a listing goes into `<model folder>/<upload_
 | `published.txt` | The model's MakerWorld link, once published (step 7) |
 
 The source files (3MF, STL, CAD, original photos) are never modified or moved.
+
+## Older brands (itemLayout 1)
+
+For a brand whose `itemLayout` is absent or `1` (or with no accounts file) this skill works as it always did. The real photos are in the model folder's own content folder (`<model folder>/<content_folder>`, matched in any capitalisation), found as step 1 describes. When the user has published, save the link in `<upload folder>/published.txt` and, if there's a `brief.md`, set its **Status: published** and add the link to it.
 
 ## Tool-specific notes
 
