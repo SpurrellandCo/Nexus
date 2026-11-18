@@ -187,6 +187,69 @@ the edge, and the text is readable over the photo. Fix the page, not the picture
 slide that exists: a re-render writes `slide-NN-V2.png` (then `-V3`) beside it, and `--only 2,3` re-renders just those
 slides. The command prints the newest slides in order; the piece's `slides:` names those (section 5).
 
+## 5. The piece's files and the posting kit
+
+A carousel is a piece of its project (`<Project>/Carousel/`, then `Carousel 2`). It holds:
+
+| Where | What |
+|---|---|
+| `status.md` | `brand`, `format` (the project's other pieces' format, or `promo`), `kind: carousel`, `status`, `created`, `model:` (copied from a sibling piece by `create`) and `slides:` |
+| `Final/` | the master set `slide-01.png`, `slide-02.png`, ... and, when TikTok or Pinterest are owed, `Final/9x16/` and `Final/2x3/` |
+| `.carousel/copy.md` | the approved copy (section 3) |
+| `.carousel/slides/` | the slide pages (section 4) |
+| `.carousel/assets/` | the cleaned copies of the photos (section 4) |
+| `.carousel/publish.md` | the posting kit |
+
+**Set the piece once the slides are rendered and you have looked at them.** `slides:` is the master set in posting order, the
+newest version of each slide, as `render_slides.mjs` printed it; the status becomes `made` only when at least 2 of those files
+are in `Final/`, never before:
+
+```
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" slides <slides in posting order>
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" status made
+```
+
+**Write the posting kit** to `.carousel/publish.md` in the shape of `references/publish-carousel.md`: a `Slides:` line, a section
+for each account the carousel is made for (not the ones left out) with its caption, hashtags and, where the platform has one, alt
+text, and a closing `## Before posting` list. The captions say what the approved copy says and nothing more. Count the characters
+with a tool. A field over its limit gets `[OVER LIMIT <n>/<limit>]` after its label and is never truncated: the user decides what
+to trim. The `Slides:` line and `slides:` name the same files in the same order; after a re-render, change both.
+
+**Hand-off.** End with the slides (`Final/`) and the posting kit, and ask the user to say when each is posted ("it's posted" is
+enough, links are welcome but optional). The user posts by hand in each app: this skill posts nothing and calls no API.
+
+## 6. Recording posts and clearing up
+
+Until a post is recorded, content-backlog lists the carousel as not posted. Record each post with `status.mjs post`, one call for
+each of the accounts that take carousels (section 0), and for no other; it is the only thing that writes `posts:`, so never
+edit `status.md` by hand:
+
+```
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" instagram "https://www.instagram.com/p/EXAMPLE1/ (2026-11-11)"
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" tiktok "posted, no link (2026-11-11)"
+node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs post "<piece folder>" pinterest skipped
+```
+
+Each value is one of: a post, `<link> (<YYYY-MM-DD>)` or, without a link, `posted, no link (<YYYY-MM-DD>)`; `skipped`, for an
+account the user chose to leave out, and for a platform left out of this carousel in the copy (record it skipped, so the piece can
+reach `posted`); or a plan, `scheduled <YYYY-MM-DD>` (or with `T<HH:MM>`), which is not a post. `post` sets `slides:` to the media
+the piece has, and steps `status` by itself: `posted` when no account is left owed or scheduled, `made` otherwise. Run it again for
+an account when its record changes. `--dry-run` shows the change first. If it says the posts belong to other slides (a newer render
+is named now), ask the user, then run it again with `--replace-record`: the old file is kept as `status.previous.md`.
+
+**Then offer to clear out the superseded slides.** Every re-render keeps the first set (`-V2`, `-V3`), so `Final/` fills up. Once a
+post is recorded, offer to remove every version of a slide except the one `slides:` names, in `Final/` and its size folders,
+starting with a dry run that shows what would go:
+
+```
+node $NEXUS_HOME/skills/reel/scripts/clean_versions.mjs "<piece folder>/Final" --dry-run
+```
+
+It lists only superseded slide versions (nothing else in `Final/`, nothing in `.carousel/`, and nothing at all before a post is
+recorded). Show the user the list; with the user's yes, run it again without `--dry-run`, then tell them what was removed. Run it
+right after the new set is posted: it stops, removing nothing, when the `Slides:` line of `publish.md` differs from `slides:`
+(set both to the same files first).
+
 ## Older brands (itemLayout 1)
 
 This skill has no older format. For a brand whose `itemLayout` is absent or `1`, or a folder of old records with no piece,
