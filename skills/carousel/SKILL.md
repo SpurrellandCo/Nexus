@@ -139,6 +139,54 @@ node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name
 the approved copy to `<piece folder>/.carousel/copy.md` in the shape of `references/copy-template.md`, and check it once more
 with `--project`. The piece is now `scripted`.
 
+## 4. Render the slides
+
+Only after the user has approved the copy and the piece exists (section 3). The slides are drawn as web pages and exported to
+pictures on this machine: no paid or online design service, no image generator and no network. Take from the `design` skill only
+its export step and its size table (`$NEXUS_HOME/skills/design/references/social-photos-design.md`, Step 5); its export is at 2x
+and this one is not.
+
+**1. Check the render works here**, once on a machine and again after Chrome or these scripts change:
+
+```
+node $NEXUS_HOME/skills/carousel/scripts/selftest.mjs
+```
+
+It needs Chrome (found through `CHROME_PATH`, else the macOS install paths; with neither it says so and how to fix it) and `uv`.
+It renders a fixture with the real Chrome, reads every picture's size back, and prints one PASS or FAIL line for each check and
+the Chrome version. Do not render slides on a machine where it fails; tell the user what it says.
+
+**2. Copy the photos the slides use** (the ones `copy.md` names), with every kind of metadata removed:
+
+```
+uv run --no-project --with pillow python $NEXUS_HOME/skills/carousel/scripts/prep_assets.py "<project folder>/content" "<piece folder>/.carousel/assets" <photo> <photo>
+```
+
+The copies in `.carousel/assets/` are upright, downscaled and carry no Exif, no GPS and no profile; the originals are never
+modified or moved, and a photo it cannot read stops the run with nothing written. Add `--with pillow-heif` when a photo is HEIC.
+A slide with no photo that suits is a type-and-colour slide.
+
+**3. Write one page for each slide** in `<piece folder>/.carousel/slides/` (`slide-01.html`, `slide-02.html`, ...) as
+`references/slide-html.md` says: one page that fills the window, so the same page renders in every size, with the photos from
+`../assets/`, the brand's colours and fonts, and the words of `copy.md` exactly.
+
+**4. Render**, for the accounts the carousel is made for (not the ones left out):
+
+```
+node $NEXUS_HOME/skills/carousel/scripts/render_slides.mjs render --piece "<piece folder>" --platforms instagram,tiktok,pinterest
+```
+
+It makes the master set, 4:5 at 1080x1350, in `Final/`, and a set of its own for an account that takes another ratio: TikTok 9:16
+at 1080x1920 in `Final/9x16/`, Pinterest 2:3 at 1000x1500 in `Final/2x3/` (`render_slides.mjs plan --platforms ...` shows the sets
+first). The export is at device scale 1, because 2x would give 2160x2700 files. Each picture's size is read back from its PNG
+header and has to be the set's size or the render fails; a window frame is measured once per run (calibrated) and corrected by
+changing the window size, never by resampling. A page that asks for the network is refused before Chrome runs.
+
+**5. Look at the slides** before telling the user they are done: view each picture, and check the type fits, nothing runs off
+the edge, and the text is readable over the photo. Fix the page, not the picture, and render again. The render never replaces a
+slide that exists: a re-render writes `slide-NN-V2.png` (then `-V3`) beside it, and `--only 2,3` re-renders just those
+slides. The command prints the newest slides in order; the piece's `slides:` names those (section 5).
+
 ## Older brands (itemLayout 1)
 
 This skill has no older format. For a brand whose `itemLayout` is absent or `1`, or a folder of old records with no piece,
