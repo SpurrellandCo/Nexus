@@ -1,6 +1,7 @@
 // The one reader and editor of a piece's status.md (Content Board v2: V2-2 to V2-5, V2-71, V2-73;
-// decisions D-032 and D-040). Pure text in, text out: no imports, no io, no module state, so the scanner,
-// the app's record writer and the command-line tools all read the same grammar from here.
+// decisions D-032 and D-040). Pure text in, text out: no io and no module state, and one import, the
+// dependency-free status-file-text.mjs (scalar, quoting, name and path rules). The scanner, the app's
+// record writer and the command-line tools all read the same grammar from here.
 //
 // The front matter is a small subset of YAML, read by hand (never by a YAML library):
 //   ---                                   first line, exactly three dashes (a BOM may precede it)
@@ -13,6 +14,16 @@
 // A plain value is read only if the writer would have written it plain (`isPlainSafe`, one predicate for
 // both sides), and inside double quotes only `\\` and `\"` are escapes. Anything outside the subset makes the
 // file invalid, with the line that is wrong, and the editor refuses to write to it.
+// Callers read the file from disk with new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }), so a
+// byte that is not UTF-8 is an error and the BOM stays in the text, and refuse a file whose bytes do not
+// round-trip (encode what was decoded and compare); then a write-back changes no byte outside the edit.
+
+import {
+  FORBIDDEN_KEYS, describe, hasControlChar, hasLineBreak, invalidValue, isModelLink, isPieceRelPath, isPlatformKey, isRealDate,
+  plainProblem, renderScalar, textProblem,
+} from './status-file-text.mjs';
+
+export { isModelLink, isPieceRelPath, isPlainSafe, isPlatformKey, needsQuotes, quoteScalar } from './status-file-text.mjs';
 
 const FENCE = '---';
 const LF = '\n';
@@ -41,80 +52,14 @@ export const LIMITS = Object.freeze({ frontMatterBytes: 16384, fileBytes: 104857
 const KEY_ORDER = Object.freeze(['brand', 'format', 'kind', 'status', 'created', 'model', 'video', 'slides', 'style', 'posts']);
 const REQUIRED_KEYS = Object.freeze(['brand', 'format', 'kind', 'status']);
 const CONTAINERS = Object.freeze(['posts', 'slides']);
-const FORBIDDEN_KEYS = Object.freeze(['__proto__', 'constructor', 'prototype']);
-const RESERVED_PLATFORMS = Object.freeze(['reel', 'format', 'note']);
-const PLATFORM_MAX = 40;
-const SLASH = '/';
+const MAX_EDITS = 16;
 const CHILD_INDENT = ' '.repeat(INDENT);
 
 const TOP_KEY = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 const FORMAT_WORD = /^[a-z][a-z0-9-]*$/;
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const PLATFORM = /^[a-z]+(?:[ -][a-z]+)*$/;
 const ALL_SPACES = /^ *$/;
-const LINE_BREAK = /[\r\n\u0085\u2028\u2029]/;
-/** Characters a plain value may not start with: they open a quote, a flow collection, an anchor, a tag or a block. */
-const PLAIN_LEADERS = Object.freeze(new Set([...'"\'[{*&!|>%@`']));
 
 /** @typedef {{ ok: false, reason: string, line?: number }} Refusal */
-
-// --- Predicates shared by the reader and the editor (one definition each, so they cannot drift) ---
-
-/**
- * Why `value` cannot be written as a plain scalar, or null when it can. The reader refuses a plain value
- * for which this returns a reason, and the writer quotes it: one rule for both sides (D-032).
- * @param {string} value
- * @returns {string | null}
- */
-function plainProblem(value) {
-  if (value === '') return 'has no value';
-  if (value.startsWith(' ') || value.endsWith(' ')) return 'has a leading or trailing space; put the value in double quotes';
-  const first = value[0];
-  if (first === '{' || first === '[') return 'uses flow style ({} or []), which this file does not support';
-  if (first === '&' || first === '*') return 'uses an anchor or alias (&name or *name), which this file does not support';
-  if (first === '!') return 'uses a tag (!name), which this file does not support';
-  if (first === '|' || first === '>') return `has a multi-line block value (${first}), which this file does not support`;
-  if (first === "'") return 'starts with a single quote; use double quotes';
-  if (PLAIN_LEADERS.has(first)) return `starts with ${first}; put the value in double quotes`;
-  if (value.includes(': ')) return 'contains ": "; put the value in double quotes';
-  if (value.includes(' #')) return 'contains " #"; put the value in double quotes';
-  return null;
-}
-
-/** Whether `value` is safe as a plain scalar (D-032): see `plainProblem`. @param {unknown} value */
-export const isPlainSafe = (value) => typeof value === 'string' && plainProblem(value) === null;
-
-/** The writer's quoting predicate, which is also the reader's plain-scalar rule. @param {unknown} value */
-export const needsQuotes = (value) => !isPlainSafe(value);
-
-/** A platform key (FR 51): lowercase words joined by single spaces or hyphens, at most 40 characters, not reel, format, note or a prototype name. @param {unknown} key */
-export const isPlatformKey = (key) => typeof key === 'string' && key.length <= PLATFORM_MAX && PLATFORM.test(key)
-  && !RESERVED_PLATFORMS.includes(key) && !FORBIDDEN_KEYS.includes(key);
-
-/** @param {string} segment */
-const isPlainSegment = (segment) => segment !== '' && segment !== '.' && segment !== '..';
-
-/** The lexical part of a model link (V2-20): one to three `/`-separated names, none empty, `.` or `..` or holding a backslash. @param {unknown} value */
-export function isModelLink(value) {
-  if (typeof value !== 'string' || value.includes('\\')) return false;
-  const parts = value.split(SLASH);
-  return parts.length <= 3 && parts.every(isPlainSegment);
-}
-
-/** The lexical part of a path named inside a piece (V2-8, V2-74): relative, no empty, `.` or `..` segment, no backslash. @param {unknown} value */
-export function isPieceRelPath(value) {
-  if (typeof value !== 'string' || value.includes('\\')) return false;
-  return value.split(SLASH).every(isPlainSegment);
-}
-
-/** @param {string} date YYYY-MM-DD */
-function isRealDate(date) {
-  const m = ISO_DATE.exec(date);
-  if (!m) return false;
-  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const real = new Date(Date.UTC(year, month - 1, day));
-  return real.getUTCFullYear() === year && real.getUTCMonth() === month - 1 && real.getUTCDate() === day;
-}
 
 const isKind = (/** @type {unknown} */ kind) => typeof kind === 'string' && Object.hasOwn(KINDS, kind);
 
@@ -127,8 +72,8 @@ const SET_RULES = Object.freeze({
   status: [(v) => STATUSES.includes(v), `one of ${STATUSES.join(', ')}`],
   kind: [isKind, `one of ${Object.keys(KINDS).join(', ')}`],
   created: [(v) => typeof v === 'string' && isRealDate(v), 'a real date (YYYY-MM-DD)'],
-  video: [isPieceRelPath, 'a path relative to the piece folder (no leading /, no .. and no backslash)'],
-  model: [isModelLink, 'one to three folder names joined with / (none empty, . or ..)'],
+  video: [isPieceRelPath, 'a path relative to the piece folder (no leading /, no .. or colon in a segment, no backslash or control character)'],
+  model: [isModelLink, 'one to three folder names joined with / (none empty, . or .., no backslash or control character)'],
   style: [(v) => typeof v === 'string', 'text'],
 });
 /** @type {Readonly<Record<string, FieldRule>>} */
@@ -148,7 +93,7 @@ const CHECKED_KEYS = Object.freeze(['brand', 'format', 'kind', 'status', 'create
 function fieldProblem(key, value) {
   const [test, expected] = FIELD_RULES[key];
   if (test(value)) return null;
-  const found = typeof value === 'string' && value.length <= 40 ? ` (found "${value}")` : '';
+  const found = typeof value === 'string' ? ` (found ${describe(value)})` : '';
   return `${key} must be ${expected}${found}`;
 }
 
@@ -167,15 +112,6 @@ const utf8Length = (text) => encoder.encode(text).length;
 function exceedsBytes(text, limit) {
   if (text.length > limit) return true;
   return text.length * 3 > limit && utf8Length(text) > limit;
-}
-
-/** @param {string} text */
-function hasControlChar(text) {
-  for (let i = 0; i < text.length; i += 1) {
-    const code = text.charCodeAt(i);
-    if (code < 0x20 || code === 0x7f || code === 0x85 || code === 0x2028 || code === 0x2029) return true;
-  }
-  return false;
 }
 
 /**
@@ -274,7 +210,8 @@ function classifyLine(content) {
   if (ALL_SPACES.test(content)) return { type: 'blank' };
   if (/^ *\t/.test(content)) return lineError('uses tab indentation; indent with two spaces');
   if (hasControlChar(content)) return lineError('contains a control character');
-  const indent = content.length - content.trimStart().length;
+  let indent = 0;
+  while (content.charCodeAt(indent) === 32) indent += 1;
   const rest = content.slice(indent);
   if (rest[0] === '#' && (indent === 0 || indent === INDENT)) return { type: 'comment' };
   if (indent !== 0 && indent !== INDENT) return lineError(`is indented by ${indent} space${indent === 1 ? '' : 's'}; only two spaces are allowed, under posts: or slides:`);
@@ -344,8 +281,8 @@ const emptyBody = () => ({ values: nullMap(), valueLines: nullMap(), posts: null
  * @param {Record<string, any>[]} seen the maps of keys read so far
  */
 function keyProblem(key, seen) {
-  if (FORBIDDEN_KEYS.includes(key)) return `has the key "${key}", which is not allowed`;
-  return seen.some((map) => key in map) ? `has a duplicate key "${key}"` : null;
+  if (FORBIDDEN_KEYS.includes(key)) return `has the key ${describe(key)}, which is not allowed`;
+  return seen.some((map) => key in map) ? `has a duplicate key ${describe(key)}` : null;
 }
 
 /**
@@ -377,7 +314,7 @@ function acceptKey(body, step, line) {
   body.roles.push({ type: 'key', key: step.key });
   if (CONTAINERS.includes(step.key)) return openContainer(body, step, line);
   const scalar = readScalar(step.raw);
-  if ('problem' in scalar) return `"${step.key}" ${scalar.problem}`;
+  if ('problem' in scalar) return `${describe(step.key)} ${scalar.problem}`;
   body.values[step.key] = scalar.value;
   body.valueLines[step.key] = line;
   return null;
@@ -393,10 +330,10 @@ function acceptPost(body, step) {
   if (step.type !== 'entry') return 'is not "key: value"';
   const problem = keyProblem(step.key, [body.posts]);
   if (problem) return problem;
-  if (!isPlatformKey(step.key)) return `"${step.key}" is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`;
+  if (!isPlatformKey(step.key)) return `${describe(step.key)} is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`;
   if (Object.keys(body.posts).length >= LIMITS.posts) return `lists more than ${LIMITS.posts} posts`;
   const scalar = readScalar(step.raw);
-  if ('problem' in scalar) return `"${step.key}" ${scalar.problem}`;
+  if ('problem' in scalar) return `${describe(step.key)} ${scalar.problem}`;
   body.posts[step.key] = scalar.value;
   body.roles.push({ type: 'child', parent: 'posts', key: step.key });
   return null;
@@ -534,41 +471,19 @@ export function parseStatusFile(text) {
 
 /** @typedef {{ ok: false, code: 'STATUS_FILE_INVALID', reason: string }} Invalid */
 
-/** @param {string} message @returns {Error & { code: 'INVALID_VALUE' }} */
-const invalidValue = (message) => Object.assign(new Error(message), { code: /** @type {const} */ ('INVALID_VALUE') });
-
-/** A value that cannot be written at all: not text, or holding a line break. @param {unknown} value */
-function assertWritable(value) {
-  if (typeof value !== 'string') throw invalidValue('a value to write must be text');
-  if (LINE_BREAK.test(value)) throw invalidValue('a value to write cannot contain a line break');
-}
-
-/**
- * Double-quote a value: `\` becomes `\\` and `"` becomes `\"`, nothing else is escaped. Throws
- * INVALID_VALUE for a value with a line break (a line editor cannot hold one).
- * @param {string} value
- * @returns {string}
- */
-export function quoteScalar(value) {
-  assertWritable(value);
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-}
-
-/** The text of a value as it goes after "key: ": quoted exactly when the reader would refuse it plain. @param {string} value */
-function renderScalar(value) {
-  assertWritable(value);
-  return needsQuotes(value) ? quoteScalar(value) : value;
-}
-
 /** @param {unknown} key */
-const postKeyProblem = (key) => (isPlatformKey(key) ? null : `"${String(key)}" is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`);
+const postKeyProblem = (key) => (isPlatformKey(key) ? null : `${describe(key)} is not a platform key (lowercase letters, spaces and hyphens; not reel, format or note)`);
 
 /** @param {unknown} slides */
 function slidesProblem(slides) {
   if (!Array.isArray(slides)) return 'slides must be a list of paths';
   if (slides.length > LIMITS.slides) return `slides lists more than ${LIMITS.slides}`;
+  for (const slide of slides) {
+    const problem = textProblem('a slide path', slide);
+    if (problem) return problem;
+  }
   const bad = slides.find((path) => !isPieceRelPath(path));
-  return bad === undefined ? null : `each slide must be a path relative to the piece folder; "${String(bad)}" is not`;
+  return bad === undefined ? null : `each slide must be a path relative to the piece folder; ${describe(bad)} is not`;
 }
 
 /**
@@ -578,19 +493,24 @@ function slidesProblem(slides) {
  */
 function editProblem(edit) {
   if (edit === null || typeof edit !== 'object') return 'an edit must be an object';
-  switch (edit.op) {
-    case 'set': return Object.hasOwn(SET_RULES, edit.key) ? fieldProblem(edit.key, edit.value) : `"${String(edit.key)}" cannot be set; the editor sets ${Object.keys(SET_RULES).join(', ')}`;
+  const { op, key } = edit;
+  switch (op) {
+    case 'set':
+      if (typeof key !== 'string' || !Object.hasOwn(SET_RULES, key)) return `${describe(key)} cannot be set; the editor sets ${Object.keys(SET_RULES).join(', ')}`;
+      return textProblem(key, edit.value) ?? fieldProblem(key, edit.value);
     case 'setSlides': return slidesProblem(edit.slides);
-    case 'setPost': return postKeyProblem(edit.key) ?? (typeof edit.value === 'string' ? null : 'a post value must be text');
-    case 'removePost': return postKeyProblem(edit.key);
-    default: return `unknown edit op "${String(edit.op)}"`;
+    case 'setPost': return postKeyProblem(key) ?? (typeof edit.value === 'string' ? textProblem(`the ${describe(key)} value`, edit.value) : 'a post value must be text');
+    case 'removePost': return postKeyProblem(key);
+    default: return `unknown edit op ${describe(op)}`;
   }
 }
 
-/** Every piece of text an edit would write. @param {any} edit @returns {string[]} */
-const textsOf = (edit) => (edit && typeof edit === 'object'
-  ? [edit.key, edit.value, ...(Array.isArray(edit.slides) ? edit.slides : [])].filter((x) => typeof x === 'string')
-  : []);
+/** Every piece of text an edit would write; a slides list over the limit is not walked, it is refused. @param {any} edit @returns {string[]} */
+function textsOf(edit) {
+  if (edit === null || typeof edit !== 'object') return [];
+  const slides = Array.isArray(edit.slides) && edit.slides.length <= LIMITS.slides ? edit.slides : [];
+  return [edit.key, edit.value, ...slides].filter((x) => typeof x === 'string');
+}
 
 /** @param {Scan} scan @param {string} content */
 const newLine = (scan, content) => ({ content, eol: scan.eol, line: 0 });
@@ -607,17 +527,20 @@ const splice = (lines, start, remove, add) => [...lines.slice(0, start), ...add,
 /** The index a new top-level line goes at: after the last key, child or item, before trailing comments. @param {Scan} scan */
 const appendAt = (scan) => lastIndexWhere(scan.roles, isContent) + 1;
 
-/** @param {Scan} scan @param {string} key @param {string} content */
-function setKeyLine(scan, key, content) {
+/** A line that already holds the value (as data) is left as it is, hand-written quoting and all. @param {Scan} scan @param {string} key @param {string} value */
+function setKeyLine(scan, key, value) {
   const at = keyIndex(scan.roles, key);
+  if (at >= 0 && scan.values[key] === value) return scan.body;
+  const content = `${key}: ${renderScalar(value)}`;
   if (at < 0) return splice(scan.body, appendAt(scan), 0, [newLine(scan, content)]);
   return splice(scan.body, at, 1, [{ ...scan.body[at], content }]);
 }
 
 /** The `slides:` list as one unit: its items go, the new ones come in where the first old item was. @param {Scan} scan @param {string[]} slides */
 function setSlidesLines(scan, slides) {
-  const items = slides.map((slide) => newLine(scan, `${CHILD_INDENT}- ${renderScalar(slide)}`));
   const opener = keyIndex(scan.roles, 'slides');
+  if (opener >= 0 && JSON.stringify(scan.slides) === JSON.stringify(slides)) return scan.body;
+  const items = slides.map((slide) => newLine(scan, `${CHILD_INDENT}- ${renderScalar(slide)}`));
   if (opener < 0) return items.length === 0 ? scan.body : splice(scan.body, appendAt(scan), 0, [newLine(scan, 'slides:'), ...items]);
   const old = scan.roles.flatMap((role, i) => (role.type === 'item' ? [i] : []));
   const kept = scan.body.filter((_, i) => !old.includes(i));
@@ -626,6 +549,7 @@ function setSlidesLines(scan, slides) {
 
 /** @param {Scan} scan @param {string} key @param {string} value */
 function setPostLines(scan, key, value) {
+  if (scan.posts[key] === value) return scan.body;
   const content = `${CHILD_INDENT}${key}: ${renderScalar(value)}`;
   const at = scan.roles.findIndex((r) => r.type === 'child' && r.key === key);
   if (at >= 0) return splice(scan.body, at, 1, [{ ...scan.body[at], content }]);
@@ -644,7 +568,7 @@ function removePostLines(scan, key) {
 /** The front-matter lines after one (already checked) edit. @param {Scan} scan @param {any} edit @returns {BodyLine[]} */
 function applyEdit(scan, edit) {
   switch (edit.op) {
-    case 'set': return setKeyLine(scan, edit.key, `${edit.key}: ${renderScalar(edit.value)}`);
+    case 'set': return setKeyLine(scan, edit.key, edit.value);
     case 'setSlides': return setSlidesLines(scan, edit.slides);
     case 'setPost': return setPostLines(scan, edit.key, edit.value);
     default: return removePostLines(scan, edit.key);
@@ -670,7 +594,8 @@ const reasonOf = (/** @type {Refusal} */ refusal) => `${refusal.reason}${refusal
  * key or child goes after the last one, nothing is re-serialised. Nothing from the closing fence on is
  * ever touched; the BOM, the line ending and the trailing-newline state stay. A file outside the subset,
  * an unsafe value, or a result that could not be read back is refused as STATUS_FILE_INVALID with nothing
- * written. The one throw is a value holding a line break (INVALID_VALUE).
+ * written. The one throw is a value holding a line break (INVALID_VALUE). A line that already holds the
+ * value being set is left byte for byte as it is.
  *   { op: 'set', key: 'status' | 'kind' | 'created' | 'video' | 'model' | 'style', value }
  *   { op: 'setSlides', slides }              replaces the whole list
  *   { op: 'setPost', key, value }            replaces the child, or adds one after the last
@@ -681,7 +606,8 @@ const reasonOf = (/** @type {Refusal} */ refusal) => `${refusal.reason}${refusal
  */
 export function editStatusFile(text, edits) {
   if (!Array.isArray(edits)) return invalidFile('edits must be a list');
-  if (edits.some((edit) => textsOf(edit).some((value) => LINE_BREAK.test(value)))) throw invalidValue('a value to write cannot contain a line break');
+  if (edits.length > MAX_EDITS) return invalidFile(`at most ${MAX_EDITS} edits can be applied at a time`);
+  if (edits.some((edit) => textsOf(edit).some(hasLineBreak))) throw invalidValue('a value to write cannot contain a line break');
   let scan = scanFront(text);
   if (!scan.ok) return invalidFile(`the front matter cannot be read: ${reasonOf(scan)}`);
   let current = text;
