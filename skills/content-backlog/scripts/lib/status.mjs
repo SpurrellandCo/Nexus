@@ -112,3 +112,26 @@ export function postedDays(statuses) {
     .map(([date, accountKeys]) => ({ date, accountKeys }))
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
 }
+
+/**
+ * Posted statuses grouped by the day they were posted, for the calendar and the card (V2-9, FR 18): a post with no date
+ * (a bare link, or `posted`) sits on the local date of the record file's modified time and is marked approximate.
+ * Dated and approximate posts on one day stay separate groups; the days are in date order, exact before approximate.
+ * @param {AccountStatus[]} statuses
+ * @param {number} recordMtimeMs the modified time of the file the posts are written in (status.md)
+ * @returns {Array<{ date: string, approximate: boolean, accountKeys: string[] }>}
+ */
+export function postedDaysApprox(statuses, recordMtimeMs) {
+  const fallback = localDate(recordMtimeMs);
+  /** @type {Map<string, { date: string, approximate: boolean, accountKeys: string[] }>} */
+  const days = new Map();
+  for (const s of statuses) {
+    if (s.status !== 'posted') continue;
+    const approximate = !s.date;
+    const date = s.date || fallback;
+    const key = `${date}|${approximate}`;
+    const day = days.get(key) ?? { date, approximate, accountKeys: [] };
+    days.set(key, { ...day, accountKeys: [...day.accountKeys, s.accountKey] });
+  }
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date) || Number(a.approximate) - Number(b.approximate));
+}

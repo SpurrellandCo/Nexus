@@ -4,20 +4,20 @@
 // would accept a wrong spelling. Letter case, trailing spaces and double spaces all count. A link is never
 // matched by prefix, similarity or the model's title.
 //
-// The io is injected and used through two members only: `listDir` (every function) and `readText`
-// (`projectsLinkedTo`, to read each piece's status file). Nothing here calls `stat`, `lstat`, `exists` or
+// The io is injected and used through two members only: `listDir` (every function) and `readCapped`
+// (`projectsLinkedTo`, to read each piece's status file, up to the size cap and never through a link). Nothing here calls `stat`, `lstat`, `exists` or
 // `mtime`, and there is no module state: `memoListDir` keeps its listings in the io it returns.
 // `accounts.mjs` re-exports the three functions below.
 import path from 'node:path';
 import { DEFAULTS, modelsRootOf } from './config.mjs';
 import { pieceNames, projectNames, statusEntryIn } from './pieces.mjs';
-import { isModelLink, parseStatusFile } from './status-file.mjs';
+import { LIMITS, isModelLink, parseStatusFile } from './status-file.mjs';
 import { clip } from './status-file-text.mjs';
 
 /**
  * @typedef {import('./fs-io.mjs').Io} Io
  * @typedef {Pick<Io, 'listDir'>} ListingIo
- * @typedef {Pick<Io, 'listDir' | 'readText'>} ReadingIo
+ * @typedef {Pick<Io, 'listDir' | 'readCapped'>} ReadingIo
  * @typedef {{ state: 'ok' | 'not-found' | 'no-folder', path: string | null, suggestion: string | null, reason: string | null }} ModelResolution
  * @typedef {{ name: string, kind: string, status: string }} LinkedPiece
  * @typedef {{ project: string, dir: string, pieces: LinkedPiece[] }} LinkedProject
@@ -213,9 +213,9 @@ function relativeToRoot(root, target) {
 function pieceLinkedTo(io, dir, name, link) {
   const entry = statusEntryIn(io.listDir(dir));
   if (entry === null || !entry.isFile()) return null;
-  const text = io.readText(path.join(dir, entry.name));
-  if (text === null) return null;
-  const parsed = parseStatusFile(text);
+  const read = io.readCapped(path.join(dir, entry.name), LIMITS.fileBytes);
+  if (read === null || 'tooLarge' in read) return null;
+  const parsed = parseStatusFile(read.text);
   if (!parsed.ok || typeof parsed.fm.model !== 'string' || nfc(parsed.fm.model) !== nfc(link)) return null;
   return { name, kind: parsed.fm.kind, status: parsed.fm.status };
 }

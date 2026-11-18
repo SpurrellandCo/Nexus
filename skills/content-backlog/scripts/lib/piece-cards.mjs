@@ -6,7 +6,8 @@
 import path from 'node:path';
 import { cardId } from './card-id.mjs';
 import { normalizeRel } from './config.mjs';
-import { parsePublishMd } from './publish-md.mjs';
+import { isImageName, isMp4Name, readMedia } from './media.mjs';
+import { mentionsMakerWorld } from './publish-md.mjs';
 import { resolveModel } from './models.mjs';
 import { KINDS } from './status-file.mjs';
 
@@ -18,9 +19,6 @@ import { KINDS } from './status-file.mjs';
  *             suggestion: string | null, listingCardId: string | null }} ModelFacts
  */
 
-const MP4 = /\.mp4$/i;
-/** The image files that count as slides (V2-74). */
-const IMAGE = /\.(png|jpe?g|webp)$/i;
 /** A carousel with no copy file is a carousel card once it holds this many images directly in `Final/` (V2-74). */
 export const MIN_SLIDE_IMAGES = 2;
 /** The statuses a listing card carries for a piece that links its model (V2-10): the piece has no card of its own. */
@@ -61,10 +59,10 @@ export function isIgnoredPath(ignore, rel) {
  */
 export function pieceCardType({ front, final, work }) {
   if (front.kind === 'carousel') {
-    return work.hasDraft || final.files.filter((name) => IMAGE.test(name)).length >= MIN_SLIDE_IMAGES ? 'carousel' : 'idea';
+    return work.hasDraft || final.files.filter(isImageName).length >= MIN_SLIDE_IMAGES ? 'carousel' : 'idea';
   }
   if (front.format === 'tutorial') return 'tutorial';
-  return work.hasDraft || final.files.some((name) => MP4.test(name)) ? 'reel' : 'idea';
+  return work.hasDraft || final.files.some(isMp4Name) ? 'reel' : 'idea';
 }
 
 /**
@@ -99,7 +97,7 @@ export function modelFacts(io, cfg, link) {
  * The raw card of one piece.
  * A piece is `ignored` (V2-15) when its project or its own folder is in the brand's ignore list, or the model its link
  * resolves to is, or a folder above that model.
- * @param {Pick<import('./fs-io.mjs').Io, 'listDir'>} io the io the model link is resolved through
+ * @param {Pick<import('./fs-io.mjs').Io, 'listDir' | 'lstat'>} io the io the model link and the media are read through
  * @param {ScanConfig} cfg
  * @param {PieceFacts} facts
  * @param {Set<string>} [ignore] `ignoreSetOf(cfg)`, when the caller has it already
@@ -109,6 +107,7 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
   const type = pieceCardType(facts);
   const kind = front.kind;
   const model = modelFacts(io, cfg, front.model);
+  const media = readMedia(io, facts);
   const ignored = isIgnoredPath(ignore, piece.path)
     || (model.path !== null && cfg.modelsRoot !== null && isIgnoredPath(ignore, path.relative(cfg.modelsRoot, model.path)));
   return {
@@ -122,8 +121,8 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
     ignored,
     project: { name: project.name, path: project.path },
     piece: { name: piece.name, path: piece.path, kind, format: front.format, declaredStatus: front.status, created: front.created ?? null },
-    video: null,
-    slides: null,
+    video: media.video,
+    slides: media.slides,
     files: { publishMd: work.hasPublish, scriptOrCopy: work.hasDraft },
     record: {
       posts: Object.entries(front.posts ?? {}).map(([key, value]) => ({ key, value })),
@@ -132,11 +131,11 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
       statusSlides: kind === 'carousel' ? [...(front.slides ?? [])] : [],
     },
     model,
-    rawFlags: /** @type {Array<{ code: string, params: Record<string, string> }>} */ ([]),
-    dependency: { mentionsMakerWorld: work.publishText === null ? false : parsePublishMd(work.publishText).mentionsMakerWorld },
+    rawFlags: media.flags,
+    dependency: { mentionsMakerWorld: work.publishText === null ? false : mentionsMakerWorld(work.publishText) },
     created: front.created ?? null,
-    lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs),
-    warnings: /** @type {string[]} */ ([]),
+    lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs, media.changedMs),
+    warnings: work.publishTooLarge ? [`${work.name ?? kind}/publish.md is over 1 MiB, so it is not read`] : /** @type {string[]} */ ([]),
   };
 }
 

@@ -5,22 +5,23 @@
 // (models.mjs) cannot disagree about what a piece is.
 //
 // Everything is read through the injected io, and only by listing and reading: each folder is listed once, the
-// status file and publish.md are the only files opened, and nothing is looked for with a stat of a joined path.
+// status file and publish.md are the only files opened (each through a capped read that never follows a link), and
+// nothing is looked for with a stat of a joined path.
 // No module state; a folder that cannot be read is the io's warning, never an exception here.
 import { Buffer } from 'node:buffer';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { KINDS, parseStatusFile } from './status-file.mjs';
+import { KINDS, LIMITS, parseStatusFile } from './status-file.mjs';
 
 /**
  * @typedef {import('./config.mjs').ScanConfig} ScanConfig
- * @typedef {Pick<import('./fs-io.mjs').Io, 'listDir' | 'readText' | 'mtime'>} PieceIo
+ * @typedef {Pick<import('./fs-io.mjs').Io, 'listDir' | 'readCapped' | 'lstat'>} PieceIo
  * @typedef {import('node:fs').Dirent} Dirent
  * @typedef {{ name: string, path: string, dir: string }} FolderRef  `path` is relative to the content root, `/`-separated
  * @typedef {{ name: string, path: string, size: number, mtimeMs: number, sha1: string }} FileRef
  * @typedef {{ project: FolderRef, piece: FolderRef, status: FileRef, front: import('./status-file.mjs').StatusFront,
  *             extra: Record<string, string>, final: { name: string | null, files: string[] },
- *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishMtimeMs: number } }} PieceFacts
+ *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishTooLarge: boolean, publishMtimeMs: number } }} PieceFacts
  * @typedef {{ pieces: PieceFacts[], warnings: string[], legacyFolders: number, foldersRead: number, stopped: boolean }} Discovery
  */
 
@@ -118,8 +119,10 @@ export function readPiece(io, cfg, project, name) {
   const statusPath = posix([project.name, name, entry.name]);
   if (!entry.isFile()) return { invalid: `${statusPath}: is a link, not a file; the tools do not read or write through links` };
   const file = path.join(piece.dir, entry.name);
-  const text = io.readText(file);
-  if (text === null) return null;
+  const read = io.readCapped(file, LIMITS.fileBytes);
+  if (read === null) return null;
+  if ('tooLarge' in read) return { invalid: `${statusPath}: is over 1 MiB, so it is not read` };
+  const text = read.text;
   const parsed = parseStatusFile(text);
   if (!parsed.ok) return { invalid: `${statusPath}: ${parsed.reason}${parsed.line === undefined ? '' : ` (line ${parsed.line})`}` };
 
@@ -130,11 +133,12 @@ export function readPiece(io, cfg, project, name) {
   const workEntries = workName === null ? [] : io.listDir(path.join(piece.dir, workName));
   const publishName = fileNamed(workEntries, kind.publish);
   const publishFile = publishName === null ? null : path.join(piece.dir, /** @type {string} */ (workName), publishName);
+  const publish = publishFile === null ? null : io.readCapped(publishFile, LIMITS.fileBytes);
   return {
     piece: {
       project,
       piece,
-      status: { name: entry.name, path: statusPath, size: Buffer.byteLength(text, 'utf8'), mtimeMs: io.mtime(file), sha1: crypto.createHash('sha1').update(text).digest('hex') },
+      status: { name: entry.name, path: statusPath, size: Buffer.byteLength(text, 'utf8'), mtimeMs: io.lstat(file)?.mtimeMs ?? 0, sha1: crypto.createHash('sha1').update(text).digest('hex') },
       front: parsed.fm,
       extra: parsed.extra,
       final: { name: finalName, files: finalEntries.filter((e) => e.isFile()).map((e) => e.name).sort() },
@@ -142,8 +146,9 @@ export function readPiece(io, cfg, project, name) {
         name: workName,
         hasDraft: fileNamed(workEntries, kind.draft) !== null,
         hasPublish: publishName !== null,
-        publishText: publishFile === null ? null : io.readText(publishFile),
-        publishMtimeMs: publishFile === null ? 0 : io.mtime(publishFile),
+        publishText: publish !== null && 'text' in publish ? publish.text : null,
+        publishTooLarge: publish !== null && 'tooLarge' in publish,
+        publishMtimeMs: publishFile === null ? 0 : io.lstat(publishFile)?.mtimeMs ?? 0,
       },
     },
   };
