@@ -21,10 +21,12 @@ Use it. List its pieces to see what is there and what the model link is:
 node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs pieces "<project folder>"
 ```
 
-The listing gives each piece's kind, status and `model`. The carousel's `status.md` copies `model:` from a sibling piece by
-itself (`status.mjs create` does it), and takes the siblings' `format`, or `promo` when there is none to follow. If the
-project has no `content/` folder or it holds no photos, tell the user: the slides will be type and colour only, and photos
-the user adds to `content/` can be used.
+The listing gives each piece's kind, status and `model`, and nothing else: not its format. `status.mjs create` copies `model:`
+from a sibling piece by itself and copies `model:` only, so read a sibling's format with
+`status.mjs show "<sibling piece folder>"` and pass it to `create` as `--format` (`promo` when the project has no other piece);
+`set` cannot change a format later. If the project has no footage folder (the brand's `contentFolder`, `content` by default,
+found by name in any letter case) or it holds no photos, tell the user: the slides will be type and colour only, and photos
+the user adds to it can be used.
 
 ## A model folder
 
@@ -45,21 +47,22 @@ and listing and write the copy first; with no project there are no photos, so th
 When the user has approved the copy in words, propose the project: its name is the model folder's leaf name with leading
 and trailing spaces removed and runs of spaces collapsed to one (the rule the migration uses). If a project of that name is
 already in the content root and does not link this model, use `<parent folder> - <leaf>`, then `<leaf> (2)`. Say that the
-project's photos belong in its `content/` folder, that the carousel goes on with type-and-colour slides only if the user
-agrees, and ask whether to make it.
+project's photos belong in its footage folder (the brand's `contentFolder`, `content` by default), that the carousel goes on
+with type-and-colour slides only if the user agrees, and ask whether to make it.
 
-- **A yes:** `status.mjs create` never makes `content/`, so make the folder yourself, then the piece with the model link (the
-  piece is the project's first, so there is no sibling to copy `model:` from):
+- **A yes:** make the piece first, with the model link (the piece is the project's first, so there is no sibling to copy
+  `model:` from, and there is no sibling format either: `promo`), then the footage folder. `status.mjs create` never makes the
+  footage folder, and it refuses a name that is taken, so a refused name leaves nothing on disk:
 
   ```
-  mkdir -p "<content root>/<Project Name>/content"
   node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name>/Carousel" --brand <brand id> --format promo --kind carousel --status scripted --model "<model folder path under models_root>"
+  mkdir -p "<content root>/<Project Name>/<contentFolder>"
   ```
 
-  `create` makes the project folder and the piece folder and writes the piece's `status.md`; then write `.carousel/copy.md`
-  (SKILL.md section 3). If the user adds photos to `content/`, read them (SKILL.md section 2) and show which slide takes
-  which photo before rendering.
-- **A no:** a no leaves nothing on disk: no project, no `content/` and no piece. Say so and stop.
+  `create` makes the project folder and the piece folder and writes the piece's `status.md`; the `mkdir` makes the footage
+  folder; then write `.carousel/copy.md` (SKILL.md section 3). If the user adds photos to it, read them (SKILL.md section 2) and
+  show which slide takes which photo before rendering.
+- **A no:** a no leaves nothing on disk: no project, no footage folder and no piece. Say so and stop.
 
 ## An idea project
 
@@ -71,9 +74,10 @@ copy, like any other:
 node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Idea Project>/Carousel" --brand <brand id> --format promo --kind carousel --status scripted
 ```
 
-Give the idea's own `format` instead of `promo` when it has one (`tech-tip`, for instance). The skill never changes the idea
-piece: its status, its kind and its files stay as they were, so the reel can still be made from it. The new piece copies
-`model:` from the idea piece when that has one.
+Read the idea's own format with `status.mjs show "<sibling piece folder>"` (the idea piece's folder) and pass it as `--format`
+instead of `promo` when it has one (`tech-tip`, for instance): `create` copies `model:` only, never the format. The skill never
+changes the idea piece: its status, its kind and its files stay as they were, so the reel can still be made from it. The new
+piece copies `model:` from the idea piece when that has one.
 
 ## The piece's name
 

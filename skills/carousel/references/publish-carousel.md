@@ -30,8 +30,12 @@ brand's order. The heading starts with the platform's name as the user knows it 
 `## Facebook`, `## Threads`, `## Pinterest`): the scanner gives the section to the account whose platform name starts the heading.
 Each section holds:
 
-- `Caption (<n> / <limit>):` and the text, ready to paste. Count characters with a tool, not by eye
-  (`printf %s "<caption>" | wc -m`).
+- `Caption (<n> / <limit>):` and the text, ready to paste. Count characters with a tool, not by eye. This counts code points, so
+  an emoji is one, as the platforms count a caption (a shell's word-count tool can count bytes instead):
+
+  ```
+  node -e 'console.log([...process.argv[1]].length)' "<caption>"
+  ```
 - `Hashtags:` a few that fit (Instagram up to 30 but 3 to 8 reads better, TikTok 3 to 6, the others 3 to 5).
 - `Alt text:` where the platform has a field for it: one line for each slide, `Slide <n>: <what it shows>`, from the `Alt:` lines
   of `copy.md`. TikTok's photo post has none, so its section has none.

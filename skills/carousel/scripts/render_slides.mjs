@@ -259,6 +259,14 @@ function slidePages(piece) {
 }
 
 /**
+ * Paths as the words of a shell command: joined with spaces, each one quoted only when a shell would split or expand it. What
+ * `status.mjs set <piece> slides` takes after `slides`.
+ * @param {string[]} paths
+ * @returns {string}
+ */
+export const shellWords = (paths) => paths.map((word) => (/^[A-Za-z0-9._/@%+=:,-]+$/.test(word) ? word : `'${word.replace(/'/g, `'\\''`)}'`)).join(' ');
+
+/**
  * Render every slide of a piece into the sets its owed platforms need. Everything is checked before Chrome runs or a folder is made: the
  * platforms, the slide pages and their count, and that no page asks for the network.
  * @param {{ piece: string, platforms: string[], data: any, chrome: string, run?: (args: string[]) => { status: number, stderr: string }, only?: number[] | null, delta?: { dw: number, dh: number } }} job
@@ -294,7 +302,8 @@ export async function renderPiece({ piece, platforms, data, chrome, run = makeRu
       }
       written.push({ ...set, files });
     }
-    return { piece, chrome, delta: frame, sets: written, readBack, latest: Object.fromEntries(sets.map((set) => [set.name, latestSlides(piece, set, pages.length)])) };
+    const latest = Object.fromEntries(sets.map((set) => [set.name, latestSlides(piece, set, pages.length)]));
+    return { piece, chrome, delta: frame, sets: written, readBack, latest, slidesArgs: shellWords(latest.master) };
   } finally {
     rmSync(profile, { recursive: true, force: true });
   }
@@ -344,7 +353,7 @@ async function run(argv) {
     const summary = await renderPiece({ piece: path.resolve(given['--piece']), platforms: given['--platforms'].split(','), data: JSON.parse(readFileSync(DATA_FILE, 'utf8')), chrome: found.path, only });
     if (given['--json']) return { code: 0, out: `${JSON.stringify(summary)}\n` };
     const lines = summary.readBack.map((entry) => `${entry.file} ${entry.width}x${entry.height}`);
-    return { code: 0, out: `${lines.join('\n')}\nrender_slides: ${summary.readBack.length} pictures, every size read back and right (window frame ${summary.delta.dw}x${summary.delta.dh}). Slides for status.md: ${summary.latest.master.join(', ')}\n` };
+    return { code: 0, out: `${lines.join('\n')}\nrender_slides: ${summary.readBack.length} pictures, every size read back and right (window frame ${summary.delta.dw}x${summary.delta.dh}).\nslides ${summary.slidesArgs}\n` };
   }
   throw new UsageError(command === undefined ? 'No command given.' : `Unknown command ${command}.`);
 }

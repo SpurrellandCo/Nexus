@@ -11,7 +11,10 @@ for every set, so it is laid out against the window, not against one fixed size.
   `--u: calc(100vw / 1080)`, and write every length as `calc(N * var(--u))`, so type and spacing scale together in each set.
   Do not scale the page with `transform`, `zoom` or a fixed pixel size.
 - **Local files only.** Photos come from `../assets/<file>` (the copies `prep_assets.py` made, never the originals in
-  `content/`). Fonts are system fonts by name, or font files of the brand kit loaded with `@font-face` and a `file:///` address.
+  the footage folder). The file name is the `asset` value of `prep_assets.py`'s JSON summary for that photo, because the
+  copy's extension (and, in a subfolder, its path) can differ from the original's: a HEIC, WebP or `.JPG` photo is written as
+  `.jpg`. Write it percent-encoded in the page's address: a name with a space, `#`, `?` or `%` in it breaks as written (`#` and
+  `?` end the path, `%` starts an escape), so `a#b.jpg` is `../assets/a%23b.jpg`. Fonts are system fonts by name, or font files of the brand kit loaded with `@font-face` and a `file:///` address.
   Nothing from the network: no web fonts, no remote images, no stylesheet or script from a web address. The render refuses a
   page that names one, and Chrome cannot resolve a host name in any case.
 - **Brand.** Colours, fonts and logo rules come from the kit at `brandKit` when it is set; `accent` is the colour for highlights;

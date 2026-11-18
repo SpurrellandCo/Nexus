@@ -10,7 +10,7 @@ copy that does not fit these rules:
 - Each slide has a `Role:` (`hook`, `point` or `cta`), its `Text:` (it may run over several lines), a `Photo:` and an `Alt:`
   line. The first slide is the hook, the last is the one call to action, and the ones between are points. At least 2 slides,
   numbered from 1 with no gaps.
-- `Photo:` is a file in the project's `content/` folder (a relative path, no `..`) or `none` for a type-and-colour slide.
+- `Photo:` is a file in the project's footage folder (`content/` unless the brand's `contentFolder` says otherwise; a relative path, no `..`) or `none` for a type-and-colour slide.
   `Layout:` is an optional hint for how the slide is drawn.
 
 ## The template
@@ -24,19 +24,19 @@ Left out: <platform> (<N> slides; its maximum is <M>)
 ## Slide 1
 Role: hook
 Text: <a bold statement or a question>
-Photo: <a file in content/, or none>
+Photo: <a file in the footage folder, or none>
 Alt: <what the slide shows and says>
 
 ## Slide 2
 Role: point
 Text: <one point>
-Photo: <a file in content/, or none>
+Photo: <a file in the footage folder, or none>
 Alt: <what the slide shows and says>
 
 ## Slide <last>
 Role: cta
 Text: <a summary and one call to action>
-Photo: <a file in content/, or none>
+Photo: <a file in the footage folder, or none>
 Alt: <what the slide shows and says>
 ```
 
@@ -115,5 +115,5 @@ node $NEXUS_HOME/skills/carousel/scripts/copy_md.mjs check "<piece folder>/.caro
 ```
 
 The first prints `no problems` for the worked example above. It exits 1 with one `problem:` line for each thing wrong (a shape
-rule, a slide count over an owed platform's maximum, a number in none of the sources, a photo that is not in `content/`) and 2
+rule, a slide count over an owed platform's maximum, a number in none of the sources, a photo that is not in the footage folder) and 2
 for a bad argument. It writes nothing.

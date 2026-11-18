@@ -36,7 +36,7 @@ price and comparison, and "best", "strongest" or "first" as much as numbers.
 
 ## Photos
 
-- A slide uses one of the user's own photos or renders from the project's `content/` folder, named in its `Photo:` line. It
+- A slide uses one of the user's own photos or renders from the project's footage folder (`content/` unless the brand's `contentFolder` says otherwise), named in its `Photo:` line. It
   never uses another project's, and it never generates or alters a product image: the photo is placed, cropped to fit the
   slide and left as it is (no retouching, no composited objects, no invented scenes).
 - A slide with no photo that suits is a type-and-colour slide (`Photo: none`): type on the brand's colour, which is also the

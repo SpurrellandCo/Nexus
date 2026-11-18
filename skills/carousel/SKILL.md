@@ -59,6 +59,9 @@ A carousel is owed to the brand's active accounts that take carousels (the platf
 - An account that takes carousels through its own `kinds`, but whose platform has no entry in
   `references/platform-slides.json`, has no limits on file. Ask the user for its slide limits and image ratio, never guess
   them, and make nothing for that account until it has them.
+- An account whose own `kinds` name carousels on a platform that has an entry but no `max` in
+  `references/platform-slides.json` (YouTube, X, MakerWorld) takes no carousel here. Say so, ask the user to fix that
+  account's kinds in the Content Board app, and make nothing for it.
 
 Name the accounts, with their platforms, to the user. If none takes carousels, say "None of this brand's accounts takes
 carousels, so there is nothing to make", write nothing and stop. The way to change that is the account's kinds, set in the
@@ -76,8 +79,9 @@ name.
 
 Before writing a word, read, and tell the user which files you read (one line):
 
-- **The photos.** The originals in the project's `content/` folder, photos first and then renders and screenshots. Never
-  another project's `content/`. A video clip is not a slide image. Look at each photo you may use: what it shows, whether
+- **The photos.** The originals in the project's footage folder (the brand's `contentFolder`, `content` by default, found by
+  name in any letter case), photos first and then renders and screenshots. Never another project's footage folder. A video
+  clip is not a slide image. Look at each photo you may use: what it shows, whether
   it is upright and sharp, and which side has room for type.
 - **The brief.** The project's `brief.md`; for a model, the brief in the model folder.
 - **The listing**, for a model: the files in `<model folder>/<upload folder>/` (the brand's `uploadFolder`): `listing.md`,
@@ -125,11 +129,12 @@ node $NEXUS_HOME/skills/carousel/scripts/copy_md.mjs check - --source "<brief fi
 ```
 
 Give the draft on standard input (`-`) or as a file outside the project. The check also tests the slide count against the
-accounts the copy is made for, the shape of the file and, with `--project "<project folder>"`, that each photo is in the
-project's `content/` folder. It exits 1 and lists each problem; fix the copy, not the check, and never show copy that fails it.
+accounts the copy is made for, the shape of the file and, with `--project "<project folder>" --content-folder "<contentFolder>"`
+(the brand's `contentFolder`, `content` by default), that each photo is in the project's footage folder. It exits 1 and lists each problem; fix the copy, not the check, and never show copy that fails it.
 
-**After the yes**, create the piece and write the copy into it. The piece's `format` is the one the project's other pieces have
-(`status.mjs pieces` shows it), or `promo` when it has none:
+**After the yes**, create the piece and write the copy into it. The piece's `format` is the one the project's other pieces
+have: read it with `status.mjs show "<sibling piece folder>"` and pass it as `--format` (`promo` when the project has no
+other piece). `create` copies `model:` only, never the format, and `status.mjs set` cannot change a format later:
 
 ```
 node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name>/Carousel" --brand <brand id> --format promo --kind carousel --status scripted
@@ -137,12 +142,13 @@ node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs create "<Project Name
 
 (`references/finding-the-project.md` says how a model with no project gets one, and how a second carousel is named.) Then write
 the approved copy to `<piece folder>/.carousel/copy.md` in the shape of `references/copy-template.md`, and check it once more
-with `--project`. The piece is now `scripted`.
+with `--project` and `--content-folder`. The piece is now `scripted`.
 
 ## 4. Render the slides
 
 Only after the user has approved the copy and the piece exists (section 3). The slides are drawn as web pages and exported to
-pictures on this machine: no paid or online design service, no image generator and no network. Take from the `design` skill only
+pictures on this machine: no paid or online design service, no image generator and no network (apart from `uv` fetching
+Pillow the first time it runs). Take from the `design` skill only
 its export step and its size table (`$NEXUS_HOME/skills/design/references/social-photos-design.md`, Step 5); its export is at 2x
 and this one is not.
 
@@ -168,7 +174,9 @@ A slide with no photo that suits is a type-and-colour slide.
 
 **3. Write one page for each slide** in `<piece folder>/.carousel/slides/` (`slide-01.html`, `slide-02.html`, ...) as
 `references/slide-html.md` says: one page that fills the window, so the same page renders in every size, with the photos from
-`../assets/`, the brand's colours and fonts, and the words of `copy.md` exactly.
+`../assets/`, the brand's colours and fonts, and the words of `copy.md` exactly. A copy's name and extension can differ from
+the original's (a HEIC, WebP or `.JPG` photo is written as `.jpg`): use the `asset` value of `prep_assets.py`'s JSON summary
+for each photo, percent-encoded in the page's address (a name with `#`, `?` or `%` in it needs that too).
 
 **4. Render**, for the accounts the carousel is made for (not the ones left out):
 
@@ -185,7 +193,9 @@ changing the window size, never by resampling. A page that asks for the network 
 **5. Look at the slides** before telling the user they are done: view each picture, and check the type fits, nothing runs off
 the edge, and the text is readable over the photo. Fix the page, not the picture, and render again. The render never replaces a
 slide that exists: a re-render writes `slide-NN-V2.png` (then `-V3`) beside it, and `--only 2,3` re-renders just those
-slides. The command prints the newest slides in order; the piece's `slides:` names those (section 5).
+slides. If a render fails part-way, run it again with `--only <failed slides>`. Adding an account later renders the master set
+again as `-V2`, along with the new account's set. The command prints the newest slides in order, ready to paste after
+`slides` in section 5's command; the piece's `slides:` names those.
 
 ## 5. The piece's files and the posting kit
 

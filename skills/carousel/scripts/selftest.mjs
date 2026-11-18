@@ -11,7 +11,8 @@
 //   gps        no photo copy and no slide holds a GPS tag (read with the scanner's own image reader)
 //   originals  the original photos' sha256 are as they were
 //   re-render  a second render writes slide-NN-V2.png and leaves the first set as it was
-//   network    a page that asks for the network is refused, and Chrome resolves no host name
+//   network    the offline rule is on Chrome's command line, a page that names a host is refused before Chrome runs, and a page that
+//              names one still renders (an invented host never resolves, so this last part shows the render does not hang on one)
 // It also records the Chrome version and the window-frame calibration. With CHROME_PATH naming nothing, or no Chrome installed, it stops
 // at once with a plain message. Exit codes: 0 every check passed, 1 a check failed or Chrome or uv is missing, 2 bad arguments.
 // It writes only in the temporary folder, which it removes at the end (--keep leaves it and says where).
@@ -23,7 +24,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { IMAGE_META_READ_BYTES, readImageMeta } from '../../content-backlog/scripts/lib/image-meta.mjs';
-import { calibrate, chromeVersion, findChrome, networkReferences, readPngSize, renderPiece, renderSlide } from './render_slides.mjs';
+import { calibrate, chromeArgs, chromeVersion, findChrome, networkReferences, readPngSize, renderPiece, renderSlide } from './render_slides.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PREP_ASSETS = path.join(HERE, 'prep_assets.py');
@@ -132,7 +133,7 @@ async function main() {
 
     const delta = await calibrate(chrome);
     process.stdout.write(`calibration: window frame ${delta.dw}x${delta.dh} (${delta.dw === 0 && delta.dh === 0 ? 'no correction needed' : 'added to --window-size; nothing is resampled'})\n`);
-    process.stdout.write('network: off (Chrome resolves no host name, and a page that asks for the network is refused before it runs)\n');
+    process.stdout.write("network: offline rule (--host-resolver-rules=MAP * ~NOTFOUND goes on every Chrome command line this run builds, and a page that names a remote address is refused before Chrome runs)\n");
 
     // piece A: three slides, owed to Instagram, TikTok and Pinterest
     const pieceA = makePiece(work, 'Carousel', [{ photo: 'gps.jpg', text: 'A 42 mm gap', colour: '#14213d' }, { photo: 'p2.jpg', text: 'Prints in 2 hours', colour: '#1d3557' }, { photo: null, text: 'Free on MakerWorld', colour: '#2a6f4e' }]);
@@ -188,7 +189,8 @@ async function main() {
     const probeOut = path.join(work, 'probe-out.png');
     const profile = fs.mkdtempSync(path.join(work, 'profile-'));
     const probeSize = await renderSlide({ name: 'probe', width: 1080, height: 1350 }, probe, probeOut, { chrome, delta, profile }).catch(() => null);
-    check('network', refused && !chromeRan && networkReferences(fs.readFileSync(probe, 'utf8')).length > 0 && probeSize !== null, 'a page with a remote image is refused before Chrome runs, and a page that names a host still renders (the image is missing, nothing is fetched)');
+    const offlineRule = chromeArgs({ url: 'file:///x.html', out: '/x.png', width: 1080, height: 1350, delta, profile }).includes('--host-resolver-rules=MAP * ~NOTFOUND');
+    check('network', offlineRule && refused && !chromeRan && networkReferences(fs.readFileSync(probe, 'utf8')).length > 0 && probeSize !== null, "the offline rule (--host-resolver-rules=MAP * ~NOTFOUND) is on Chrome's command line; a page with a remote image is refused before Chrome runs; a page naming a host still renders (an invented host never resolves, so that shows the render does not hang, not that the rule works)");
   } finally {
     if (keep) process.stdout.write(`kept: ${work}\n`);
     else fs.rmSync(work, { recursive: true, force: true });
