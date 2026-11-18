@@ -83,6 +83,7 @@ export const modelsRootOf = (brand) => (typeof brand?.modelsRoot === 'string' &&
  * @property {string} ideasFolder
  * @property {string} tutorialsFolder
  * @property {string | null} modelsRoot   the brand's models folder (V2-21), null when none is set
+ * @property {1 | 2} itemLayout           the brand's item format (V2-33): 2 is scanned by the v2 scan (`index.mjs`), anything else by v1
  * @property {string[]} platforms         keys of the accounts that take video
  * @property {ScanAccount[]} accounts
  * @property {boolean} hasListings        the brand has an active MakerWorld (listing) account
@@ -177,6 +178,7 @@ export function resolveConfig({ settings = {}, root: rootArg = null, days = DEFA
     ideasFolder: brand?.ideasFolder || settings.idea?.ideas_folder || DEFAULTS.ideasFolder,
     tutorialsFolder: brand?.tutorialsFolder || settings.idea?.tutorials_folder || DEFAULTS.tutorialsFolder,
     modelsRoot: brand?.modelsRoot ?? null,
+    itemLayout: brand?.itemLayout === 2 ? 2 : 1,
     platforms,
     accounts,
     hasListings: accounts.some((a) => a.accepts === 'listing' && !a.archived),
