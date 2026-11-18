@@ -2,6 +2,7 @@
 // No file reads here: the CLI reads makerworld.json, the Content Board app builds settings from
 // accounts.json, and both hand the result to resolveConfig.
 import path from 'node:path';
+import { accountKinds } from './presets.mjs';
 
 export const DEFAULTS = Object.freeze({
   contentFolder: 'content',
@@ -50,9 +51,26 @@ export const sameRoot = (a, b) => normalizeRoot(a) === normalizeRoot(b);
 export const normalizeRel = (p) => p.split(/[\\/]/).map((s) => s.trim()).filter(Boolean).join('/').toLowerCase();
 
 /**
- * @typedef {{ key: string, label?: string, accepts: 'video' | 'listing', startDate: string | null, archived: boolean }} ScanAccount
+ * The brand's item format (V2-33): 2 means projects with status-file pieces; absent, 1 or anything else is
+ * the old format. Lenient, like every reader of accounts.json: a wrong type reads as absent.
+ * @param {any} brand an accounts.json brand
+ * @returns {1 | 2}
+ */
+export const itemLayoutOf = (brand) => (brand?.itemLayout === 2 ? 2 : 1);
+
+/**
+ * The brand's models folder (V2-21): the folder that holds its model folders, or null when none is set
+ * (a non-empty text is set; any other value reads as absent).
+ * @param {any} brand an accounts.json brand
+ * @returns {string | null}
+ */
+export const modelsRootOf = (brand) => (typeof brand?.modelsRoot === 'string' && brand.modelsRoot.trim() !== '' ? brand.modelsRoot : null);
+
+/**
+ * @typedef {{ key: string, label?: string, accepts: 'video' | 'listing', startDate: string | null, archived: boolean, kinds?: string[] }} ScanAccount
  * @typedef {{ id: string, layout?: 'models' | 'videos', accounts?: ScanAccount[], ignore?: string[],
- *             contentFolder?: string, uploadFolder?: string, ideasFolder?: string, tutorialsFolder?: string }} BrandInput
+ *             contentFolder?: string, uploadFolder?: string, ideasFolder?: string, tutorialsFolder?: string,
+ *             itemLayout?: 1 | 2, modelsRoot?: string | null }} BrandInput
  */
 
 /**
@@ -64,6 +82,7 @@ export const normalizeRel = (p) => p.split(/[\\/]/).map((s) => s.trim()).filter(
  * @property {string} uploadFolder
  * @property {string} ideasFolder
  * @property {string} tutorialsFolder
+ * @property {string | null} modelsRoot   the brand's models folder (V2-21), null when none is set
  * @property {string[]} platforms         keys of the accounts that take video
  * @property {ScanAccount[]} accounts
  * @property {boolean} hasListings        the brand has an active MakerWorld (listing) account
@@ -84,18 +103,33 @@ export function brandInput(brand) {
   return {
     id: String(brand.id),
     layout: brand.layout === 'videos' ? 'videos' : 'models',
-    accounts: (Array.isArray(brand.accounts) ? brand.accounts : []).map((/** @type {any} */ a) => ({
-      key: String(a.platform).toLowerCase(),
-      label: a.label,
-      accepts: a.accepts === 'listing' ? 'listing' : 'video',
-      startDate: typeof a.startDate === 'string' ? a.startDate : null,
-      archived: Boolean(a.archived),
-    })),
+    accounts: (Array.isArray(brand.accounts) ? brand.accounts : []).map(scanAccount),
     ignore: Array.isArray(brand.ignore) ? brand.ignore : [],
     contentFolder: brand.contentFolder,
     uploadFolder: brand.uploadFolder,
     ideasFolder: brand.ideasFolder,
     tutorialsFolder: brand.tutorialsFolder,
+    itemLayout: itemLayoutOf(brand),
+    modelsRoot: modelsRootOf(brand),
+  };
+}
+
+/**
+ * One accounts.json account as the scanner uses it. `kinds` is resolved here (V2-76): the account's own list,
+ * else its platform's preset, else `reel` for an account counted as video (as v1 counts any account that is not
+ * a listing account), so every v1 file still gives its video accounts the `reel` kind.
+ * @param {any} a
+ * @returns {ScanAccount}
+ */
+function scanAccount(a) {
+  const accepts = a.accepts === 'listing' ? 'listing' : 'video';
+  return {
+    key: String(a.platform).toLowerCase(),
+    label: a.label,
+    accepts,
+    startDate: typeof a.startDate === 'string' ? a.startDate : null,
+    archived: Boolean(a.archived),
+    kinds: accountKinds({ platform: a.platform, kinds: a.kinds, accepts }),
   };
 }
 
@@ -130,6 +164,7 @@ export function resolveConfig({ settings = {}, root: rootArg = null, days = DEFA
     uploadFolder,
     ideasFolder: brand?.ideasFolder || settings.idea?.ideas_folder || DEFAULTS.ideasFolder,
     tutorialsFolder: brand?.tutorialsFolder || settings.idea?.tutorials_folder || DEFAULTS.tutorialsFolder,
+    modelsRoot: brand?.modelsRoot ?? null,
     platforms,
     accounts,
     hasListings: accounts.some((a) => a.accepts === 'listing' && !a.archived),

@@ -5,9 +5,17 @@
 // settings files apply for one release: tech-tips.json's videos_root, then makerworld.json.
 // No file reads here: callers read the files and pass their text or parsed contents in.
 import path from 'node:path';
-import { normalizeRoot } from './config.mjs';
+import { itemLayoutOf, modelsRootOf, normalizeRoot } from './config.mjs';
 
 export const ACCOUNTS_VERSION = 1;
+
+// Content Board v2 (V2-42, V2-76, D-033, D-036): the kinds table and the model resolution live in their own
+// modules (presets.mjs is dependency-free, models.mjs reads folders through an injected io); this file keeps
+// them reachable from the one place the skills already import the accounts reader from. itemLayoutOf and
+// modelsRootOf are defined in config.mjs, which brandInput also uses, so there is one reading of each field.
+export { PRESET_KINDS, accountKinds, accountTakes } from './presets.mjs';
+export { memoListDir, projectsLinkedTo, resolveModel } from './models.mjs';
+export { itemLayoutOf, modelsRootOf };
 
 /**
  * @typedef {{ brands: any[] }} AccountsDoc
@@ -138,6 +146,27 @@ export function techTipsBrand(techTips) {
 
 /** @param {any[]} brands */
 const listNames = (brands) => brands.map((b) => b.name || b.id).join(', ');
+
+/**
+ * The brand whose models folder (`modelsRoot`) is `folder` or holds it, for a skill started in a model folder
+ * (V2-42). Same rules as the content-root match: the most specific root wins, archived brands are skipped,
+ * and two brands on one root are an error that asks for `--brand`. A brand with no usable `modelsRoot` never
+ * matches. Never throws; `brand` is null when nothing matches.
+ * @param {AccountsDoc | null} doc
+ * @param {string} folder
+ * @returns {{ brand: any | null, error?: string }}
+ */
+export function findBrandByModelsRoot(doc, folder) {
+  if (!Array.isArray(doc?.brands) || typeof folder !== 'string' || folder === '') return { brand: null };
+  const matches = doc.brands
+    .filter((b) => b && typeof b === 'object' && isActive(b) && modelsRootOf(b) !== null && isWithinRoot(folder, /** @type {string} */ (modelsRootOf(b))))
+    .sort((a, b) => normalizeRoot(/** @type {string} */ (modelsRootOf(b))).length - normalizeRoot(/** @type {string} */ (modelsRootOf(a))).length);
+  if (matches.length === 0) return { brand: null };
+  const top = normalizeRoot(/** @type {string} */ (modelsRootOf(matches[0])));
+  const tied = matches.filter((b) => normalizeRoot(/** @type {string} */ (modelsRootOf(b))) === top);
+  if (tied.length > 1) return { brand: null, error: `More than one brand uses this models folder: ${listNames(tied)}. Name one with --brand.` };
+  return { brand: matches[0] };
+}
 
 /**
  * Choose the brand for a scan of `folder` (FR 53, D-005, D-021): a brand named by the user, else the
