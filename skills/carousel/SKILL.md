@@ -38,13 +38,19 @@ carousel-specific needs a setting. It reads these four fields, each optional:
 | Setting | Used for |
 |---|---|
 | `accent` | The colour for headlines, highlights and shapes on the slides [`#3ddc84`] |
-| `brandKit` | Path to the brand's kit or guide; if set, take colours, fonts and logo rules from it (a brand system with identity and digital folders is an example) |
+| `brandKit` | Path to the brand's kit: a brand system folder (with identity and digital folders, for example) or a PDF, Markdown or HTML brand guide; if set, take colours, fonts and logo rules from it (see below) |
 | `channelName` | The name shown on the first and last slides |
 | `cta` | The call to action on the last slide when the project links no MakerWorld listing [`Follow for more`] |
 
+Reading the kit: a folder, read its README first, then its colour tokens (JSON or CSS), and render with its font files and
+logo files. A guide file, read its contents, then only the colour, type and logo pages (a long PDF a few pages at a time,
+never all of it); it holds no font or logo files, so render with the closest font installed and tell the user which. If
+the path isn't there (moved or renamed), tell the user, ask them to choose it again in the app (Settings, Edit brand, Look),
+and carry on with `accent` and the defaults.
+
 It ignores the video-only fields `voice`, `character`, `research` and `demoAccounts`. The Content Board app owns
 `accounts.json`: this skill never writes `accounts.json`. If a setting is missing, ask once and tell the user to set it on
-the brand in the app; carry on with the default meanwhile. With no accounts file, or no brand for this folder, say so and
+the brand in the app (Settings, Edit brand, Look); carry on with the default meanwhile. With no accounts file, or no brand for this folder, say so and
 stop: the brand's accounts decide how many slides and which sizes, and the app creates the brand.
 
 ### Which accounts it makes for

@@ -4,7 +4,9 @@
 import { placeCardV2 } from './stages-v2.mjs';
 import { deriveStatuses } from './status.mjs';
 
-export const LANES = Object.freeze(['Ideas', 'In progress', 'Made', 'Ready to post', 'Posted']);
+// Four lanes (Content Board D-047): a card with its media made but something still to do (posting copy, a missing or
+// unnamed file, a built model not yet listed) stays In progress; "Made" read as finished, the same as Ready to post.
+export const LANES = Object.freeze(['Ideas', 'In progress', 'Ready to post', 'Posted']);
 
 /**
  * @typedef {import('./config.mjs').ScanAccount} ScanAccount
@@ -59,7 +61,7 @@ function placeListing(card) {
   if (brief === 'shelved') return at('Ideas', 'Shelved', null, 'shelved');
   if (publishedTxt || brief === 'published') return at('Posted', 'Published', null);
   if (listingMd || uploadStarted) return at('Ready to post', 'Listing drafted', 'Finish the listing on MakerWorld (/makerworld-publish)');
-  if (brief === 'built') return at('Made', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
+  if (brief === 'built') return at('In progress', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
   if (brief === 'idea' || brief === 'approved') return at('Ideas', ideaStage(brief), 'Build it (/makerworld-model)');
   return at('In progress', 'Building', 'Carry on building it (/makerworld-model)');
 }
@@ -77,15 +79,15 @@ function placeVideo(card, accounts, now) {
   if (isTutorialLike && status === 'shelved') return at('Ideas', 'Shelved', null, 'shelved');
 
   if (card.video) {
-    if (card.video.source === 'unconfirmed') return at('Made', 'Made, video unconfirmed', "Name the final video on publish.md's Video: line (/reel)");
-    if (card.video.missing) return at('Made', 'Video missing', 'Render the video publish.md names, or fix its Video: line (/reel)');
+    if (card.video.source === 'unconfirmed') return at('In progress', 'Made, video unconfirmed', "Name the final video on publish.md's Video: line (/reel)");
+    if (card.video.missing) return at('In progress', 'Video missing', 'Render the video publish.md names, or fix its Video: line (/reel)');
     const statuses = cardStatuses(card, accounts, now);
     // "Every active account skipped" (MASTER Section 7): an account the video predates (n/a) isn't asked.
     const asked = statuses.filter((s) => s.status !== 'n/a');
     if (asked.length > 0 && asked.every((s) => s.status === 'skipped')) return at('Posted', 'Not used', null, 'not-used');
     const open = statuses.some((s) => s.status === 'owed' || s.status === 'scheduled');
     if (open && card.files.publishMd) return at('Ready to post', 'Ready to post', 'Post it, then mark it posted');
-    if (open) return at('Made', 'Made', 'Write the posting copy (/reel)');
+    if (open) return at('In progress', 'Made', 'Write the posting copy (/reel)');
     return at('Posted', 'Posted', null);
   }
 

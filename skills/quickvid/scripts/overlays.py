@@ -106,6 +106,10 @@ def draw(d, o, t, accent):
         tw = d.textlength(o["text"], font=f)
         extra = 90 * SS if o.get("tick") else 0
         pad = 24 * SS
+        room = W * SS - 2 * x0 - extra
+        if tw > room:  # a long setting name shrinks to fit rather than running off the frame
+            f = ms.font(max(36, int(64 * room / tw)))
+            tw = d.textlength(o["text"], font=f)
         d.rounded_rectangle([x0 - pad - slide, y - 52 * SS, x0 + tw + extra + pad - slide, y + 70 * SS],
                             radius=22 * SS, fill=(10, 11, 13, int(150 * a)))
         d.rectangle([x0, y + 46 * SS, x0 + (tw + extra) * ms.ease(since / 0.3), y + 54 * SS], fill=accent + (int(240 * a),))

@@ -70,7 +70,7 @@ function placeIdea(card) {
     case 'scripted':
     case 'made': return at('In progress', 'Scripted', `Record the voice-over and build it (${command})`);
     case 'building': return at('In progress', 'Building', 'Carry on building it (/makerworld-model)');
-    case 'built': return at('Made', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
+    case 'built': return at('In progress', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
     case 'approved': return at('Ideas', 'Approved', `Make it (${command})`);
     default: return at('Ideas', 'Idea', 'Approve or shelve it');
   }
@@ -105,15 +105,15 @@ export function placePiece(card, statuses = card.statuses ?? []) {
 
   const words = MEDIA_STAGES[kindOf(card)];
   const command = COMMAND[kindOf(card)];
-  if (media.unconfirmed) return at('Made', words.unconfirmed, `${words.nameIt} (${command})`);
-  if (media.missing) return at('Made', words.missing, `Render the file publish.md names, or fix its line (${command})`);
+  if (media.unconfirmed) return at('In progress', words.unconfirmed, `${words.nameIt} (${command})`);
+  if (media.missing) return at('In progress', words.missing, `Render the file publish.md names, or fix its line (${command})`);
   // With no active account at all, "every account skipped" and "nothing owed" would be vacuously true.
-  if (statuses.length === 0) return at('Made', 'Made', null);
+  if (statuses.length === 0) return at('In progress', 'Made', null);
   const asked = statuses.filter((s) => s.status !== 'n/a');
   if (asked.length > 0 && asked.every((s) => s.status === 'skipped')) return at('Posted', 'Not used', null, 'not-used');
   const open = statuses.some((s) => s.status === 'owed' || s.status === 'scheduled');
   if (open && card.files?.publishMd) return at('Ready to post', 'Ready to post', 'Post it, then mark it posted');
-  if (open) return at('Made', 'Made', `Write the posting copy (${command})`);
+  if (open) return at('In progress', 'Made', `Write the posting copy (${command})`);
   return at('Posted', 'Posted', null);
 }
 
@@ -160,7 +160,7 @@ export function placeListingV2(listing, linked = listing.linked ?? []) {
   if (published) return at('Posted', 'Published', null);
   if (listingMd || uploadStarted) return at('Ready to post', 'Listing drafted', 'Finish the listing on MakerWorld (/makerworld-publish)');
   const stage = buildStage(promo, brief);
-  if (stage === 'built') return at('Made', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
+  if (stage === 'built') return at('In progress', 'Built', 'Print it, add real photos, then list it (/makerworld-publish)');
   if (stage === 'idea') return at('Ideas', 'Idea', 'Build it (/makerworld-model)');
   if (stage === 'approved') return at('Ideas', 'Approved', 'Build it (/makerworld-model)');
   return at('In progress', 'Building', 'Carry on building it (/makerworld-model)');

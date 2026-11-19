@@ -40,7 +40,12 @@ only when no brand matches or more than one does. Archived brands and accounts a
 - `cta`: end-card wording for follow cards (tech-tip) [`Follow for more tech tips`]
 - `channelName`: shown on the end card
 - `research`: `"on"` (default) or `"off"`
-- `brandKit`: path to the brand's kit or guide; if set, take colours, fonts and logo rules from it
+- `brandKit`: path to the brand's kit: a brand system folder, or a PDF, Markdown or HTML brand guide. If set, take colours,
+  fonts and logo rules from it. A folder: read its README first, then its colour tokens (JSON or CSS), and use its font and
+  logo files. A guide file: read its contents, then only the colour, type and logo pages (a long PDF a few pages at a time,
+  never all of it); it holds no font or logo files, so use the closest font installed and say which one. If the path isn't
+  there (moved or renamed), tell the user, ask them to choose it again in the app (Settings, Edit brand, Look), and carry
+  on with `accent` and the defaults
 - `character`: an optional mascot or presenter drawn by the user's own director script, which stays private and
   outside Nexus: `{"director": "<path to the script>", "runner": "node"}`. The script takes
   `<cues.json> <outDir> frames|cta|probe` and writes transparent 1080x1920 frames (`f0000.png`...), single probe
@@ -78,7 +83,8 @@ their folder and `--out "<piece folder>"` (`screen_zoom.py` takes `--piece` inst
   never overwrites the first.
 
 The Content Board app owns `accounts.json`: never write it. If a setting is missing, ask once and tell the user to
-set it on the brand in the app. Until `accounts.json` exists, or when it has no brand for this folder, fall back to
+set it on the brand in the app (Settings, Edit brand, Look: brand kit, accent, end-card line, channel name and voice-over;
+`character`, `research`, `format` and `demoAccounts` have no field there yet). Until `accounts.json` exists, or when it has no brand for this folder, fall back to
 the older files and save missing settings there: `~/.nexus-local/makerworld.json`, section `reel` (`accent`, `voice`,
 `platforms`, `profiles`, `format`, `handle`, `character`; its `models_root` is the MakerWorld brand's root), and
 `~/.nexus-local/tech-tips.json` (`videos_root`, `accent`, `channel_name`, `handle`, `cta`, `platforms`, `profiles`,
