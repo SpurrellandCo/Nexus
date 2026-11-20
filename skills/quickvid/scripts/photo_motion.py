@@ -6,8 +6,9 @@ Usage:
 
 Use it when a line needs the product but there is no clip of it: the result goes into plan.json like any other
 clip, and overlays.py can put text on top. --darken helps text read over a busy photo. --focus picks the point
-the move centres on (fractions of width, height). --move none holds the whole image still, uncropped
-(for a finished card that a character or overlay is timed against).
+the move centres on (fractions of width, height). --move none holds the image still: a 9:16 card whole and
+uncropped (for a finished card that a character or overlay is timed against), any other shape cropped to fill.
+Every crop keeps the frame's 9:16 shape, so landscape and 3:4 photos are cropped, never squeezed.
 """
 import argparse
 import sys
@@ -51,7 +52,10 @@ def main():
             z = 1 / ROOM + (1.0 - 1 / ROOM) * t     # crop grows: pull out
         else:
             z = 0.9                                 # fixed framing, panning
-        cw, ch = big.width * z, big.height * z
+        # The crop keeps the frame's 9:16 shape, never the photo's: a landscape render or a 3:4 phone photo cropped to
+        # its own shape would be squeezed sideways when it's scaled into the vertical frame. `big` is at least
+        # W*ROOM x H*ROOM, so at z = 1 a 9:16 card is still shown whole.
+        cw, ch = min(big.width, W * ROOM * z), min(big.height, H * ROOM * z)
         cx, cy = fx * big.width, fy * big.height
         pan = 0.12 * (t - 0.5)
         if a.move == "left":

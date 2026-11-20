@@ -70,6 +70,12 @@ def life(o, t, fade=0.18):
     return ms.ease((t - o["t0"]) / 0.25) * (1 - ms.ease((t - (o["t1"] - fade)) / fade))
 
 
+def fit_size(d, text, size, room):
+    """`size`, or smaller so that `text` fits in `room` (supersampled px)."""
+    tw = d.textlength(text, font=ms.font(size))
+    return size if tw <= room else max(36, int(size * room / tw))
+
+
 def draw(d, o, t, accent):
     a = life(o, t)
     if a <= 0:
@@ -77,7 +83,8 @@ def draw(d, o, t, accent):
     k, x0, cx = o["kind"], 70 * SS, W * SS / 2
     since = t - o["t0"]
     if k == "hook":
-        f1, f2 = ms.font(84), ms.font(80)
+        room = W * SS - 2 * x0  # a long line shrinks to fit rather than running off the frame
+        f1, f2 = ms.font(fit_size(d, o["a"], 84, room)), ms.font(fit_size(d, o["b"], 80, room))
         rise = (1 - ms.ease(since / 0.35)) * 50 * SS
         y1, y2 = o.get("y", 470) * SS + rise, (o.get("y", 470) + 130) * SS + rise
         ms.shadow_text(d, (cx, y1), o["a"], f1, ms.WHITE, a, "mm")
@@ -128,7 +135,9 @@ def draw(d, o, t, accent):
         d.text((x, y), o["text"], font=f, fill=ms.INK + (int(255 * a),), anchor="mm")
     elif k == "center":
         s = ms.back(since / 0.3)
-        f = ms.font(120 * max(s, 0.05))
+        # Shrink to fit at full size (with room for the tick on the right), then pop in from that size.
+        room = W * SS - 2 * x0 - (2 * 110 * SS if o.get("tick") else 0)
+        f = ms.font(fit_size(d, o["text"], 120, room) * max(s, 0.05))
         y = o.get("y", 1500) * SS
         col = accent if o.get("style") == "accent" else ms.WHITE
         ms.shadow_text(d, (cx, y), o["text"], f, col, a, "mm")
