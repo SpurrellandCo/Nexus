@@ -1,11 +1,23 @@
 # Role Brief Template
-<!-- Output of Phase 1 — fill in after running customer-research + product-marketing-context -->
+<!-- Output of resume-builder phase 1, from the job posting when there is one -->
 
 ## Target Role
 - **Title:**
+- **Company (if known):**
 - **Industry / Sector:**
 - **Seniority level:**
 - **Company stage/size:**
+- **Source:** <!-- posting URL or file, or "target role, no posting" -->
+
+## Must-Have Qualifications
+<!-- Phase 2 marks each one covered / implied / missing against the career log -->
+-
+-
+-
+
+## Nice-to-Haves
+-
+-
 
 ## Top Keywords (ranked)
 1.

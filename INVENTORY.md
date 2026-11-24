@@ -1,6 +1,6 @@
 # Nexus - Claude Code Configuration Inventory
 
-This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-18 at 07:28:33.
+This is a reference of every agent, skill, slash command, and hook installed in the Nexus configuration (repo: `~/.nexus`, linked into `~/.claude`). The Agents, Skills, and Slash Commands sections are regenerated automatically by `scripts/generate-inventory.js` (Stop hook, daily sync, and `update.sh`) — do not hand-edit them. The Hooks section is hand-maintained and preserved as-is. Last generated: 2026-11-23 at 15:01:34.
 
 ## Agents
 
@@ -147,6 +147,24 @@ Skills are deep, actionable reference materials organized by topic. They provide
 | Skill | Description |
 |-------|-------------|
 | `industrial-brutalist-ui` | Raw mechanical interfaces fusing Swiss typographic print with military terminal aesthetics. Rigid grids, extreme type scale contrast, utilitarian color, analog degradation effects. For data-heavy dashboards, portfolios, or editorial sites that need to feel like declassified blueprints. |
+
+### career-interview
+
+| Skill | Description |
+|-------|-------------|
+| `career-interview` | Interview the user about their resume one bullet at a time, drawing out the detail a one-line bullet leaves out (the situation, exactly what they did, the scale, the result and how it was measured, the tools, who it helped, the hard part, and proof), and save every answer into their private career log. Starts with the current master resume (the baseline), newest role first, then asks what each role is missing from the resume, and picks up where the last session stopped. Use when the user says '/career-interview', 'probe me on my resume', 'ask me questions about my resume', 'quiz me on my experience', 'help me add detail to my career log', or after a new master resume is made. |
+
+### career-log
+
+| Skill | Description |
+|-------|-------------|
+| `career-log` | Capture a career entry (an achievement, goal, project, metric, praise, promotion, certification or new skill) in the user's private career log while it's fresh, so later resumes draw on real, dated facts instead of memory. Works out which role and type it belongs to, asks only for what's missing (the number, the user's own part, who it helped), and appends it to that role's file. Also opens a new role, closes a goal with its result, and on first use builds the log from the resume that got the user their current job. Use when the user says '/career-log', 'log a win', 'add this to my career log', 'I just shipped/launched/finished...', 'new goal at work', 'I got promoted', or 'remember this for my resume'. |
+
+### career-review
+
+| Skill | Description |
+|-------|-------------|
+| `career-review` | Review the user's private career log every month or quarter, or before a job search: close out open goals with their results, fill in missing numbers and the user's own part on thin entries, confirm facts imported from old resumes, ask about quiet stretches, and keep the skills list current. Use when the user says '/career-review', 'review my career log', 'monthly check-in', 'quarterly review of my wins', 'what goals do I have open', or 'get my log ready for a job search'. |
 
 ### carousel
 
@@ -631,13 +649,13 @@ Skills are deep, actionable reference materials organized by topic. They provide
 
 | Skill | Description |
 |-------|-------------|
-| `Resume Builder` | Build a complete, polished resume end-to-end by orchestrating specialized skills for research, branding, copywriting, design, LinkedIn, and QA. Use when creating a new resume from scratch, overhauling an existing one, targeting a specific role or industry, or preparing a full job-search package including LinkedIn and cover letter. |
+| `resume-builder` | Build a complete, polished resume end to end, from the user's private career log when they keep one. Makes two kinds: a targeted resume for one job posting, which starts from the user's current master resume and is tailored to that role, and a new master resume, which becomes the baseline every later targeted resume starts from. Researches the role, picks the logged achievements that fit, sets the positioning, writes the copy, lays it out, checks it, and records what was sent where. Every bullet traces back to a logged fact, and nothing claims more than the user did. Optional LinkedIn copy. Use when the user wants a resume for a specific job, a new master or general resume, a full overhaul, a resume aimed at a new kind of role or industry, or a job-search package with LinkedIn. For changing an existing resume (adding a job, tailoring to one posting, a freshness pass) use resume-update. |
 
 ### resume-update
 
 | Skill | Description |
 |-------|-------------|
-| `resume-update` | Update an existing resume instead of rebuilding it: add a new job, promotion, project, certification or achievement; retarget it to a specific job posting or a new role; or give a stale resume a freshness pass. Reruns only the resume-builder phases the change needs, shows the changes for approval, and saves a new version beside the old one. Use when the user says '/resume-update', 'update my resume', 'add my new job to my resume', 'tailor my resume to this posting', 'refresh my resume', or pastes a job description alongside an existing resume. |
+| `resume-update` | Update an existing resume instead of rebuilding it: add a new job, promotion, project, certification or achievement (pulled from the user's career log when they keep one); retarget it to a specific job posting or a new role; give a stale resume a freshness pass; or make a resume the user's new master, the baseline that targeted resumes start from. Reruns only the resume-builder phases the change needs, shows the changes for approval, and saves a new version beside the old one. Use when the user says '/resume-update', 'update my resume', 'add my new job to my resume', 'tailor my resume to this posting', 'refresh my resume', 'make this my new master resume', or pastes a job description alongside an existing resume. |
 
 ### reverse-engineer-anything
 
@@ -980,7 +998,7 @@ Hook runs at session conclusion.
 ## Summary
 
 - **Agents:** 45
-- **Skills:** 182
+- **Skills:** 185
 - **Slash Commands:** 83
 - **Hook Events:** 7 (PreToolUse, PreCompact, SessionStart, PostToolUse, PostToolUseFailure, Stop, SessionEnd)
 

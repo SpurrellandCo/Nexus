@@ -1,10 +1,10 @@
 # Quality Scorecard
-<!-- Output of Phase 6 — green / yellow / red per item -->
+<!-- Output of resume-builder phase 7 — green / yellow / red per item -->
 
 ## ATS Lens
 | Check | Status | Fix |
 |-------|--------|-----|
-| All Phase 1 keywords present | | |
+| All role-brief keywords present | | |
 | No tables or text boxes | | |
 | No images or icons | | |
 | Key info not in headers/footers | | |
@@ -33,6 +33,16 @@
 | No filler phrases | | |
 | Consistent tense | | |
 | Spelling and grammar clean | | |
+
+## Accuracy Lens
+| Check | Status | Fix |
+|-------|--------|-----|
+| Every number and claim traces to a career-log entry (source map) | | |
+| No verb stronger than the entry's "My part" | | |
+| Nothing contradicts corrections.md | | |
+| No private detail exposed | | |
+| Titles and dates match the role files | | |
+| No unconfirmed entry used without the user's yes | | |
 
 ## Verification
 | Check | Status | Fix |

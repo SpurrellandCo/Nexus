@@ -1,0 +1,19 @@
+{
+  "_about": {
+    "log_dir": "Folder that holds the career log (README.md, profile.md, roles/ and so on). Private: never a shared or published folder.",
+    "resumes_dir": "Folder where finished resumes are saved, one subfolder per target role. Often the log folder's parent.",
+    "baseline_file": "The current master resume (the baseline): a path relative to resumes_dir, or a full path. At first, the resume that got the user their current job; each new master the user approves replaces it.",
+    "resume_name": "File-name pattern for new resumes. MMDDYYYY or YYYY-MM-DD becomes the date, <Target> the target role.",
+    "formats": "Formats produced by default: any of docx, pdf, md, txt.",
+    "last_review": "Date career-review last ran (YYYY-MM-DD), or null."
+  },
+  "log_dir": "",
+  "resumes_dir": "",
+  "baseline_file": "",
+  "resume_name": "MMDDYYYY Resume - <Target>",
+  "formats": [
+    "docx",
+    "pdf"
+  ],
+  "last_review": null
+}

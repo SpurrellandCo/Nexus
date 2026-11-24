@@ -1,5 +1,5 @@
 # Brand Brief Template
-<!-- Output of Phase 2 — fill in after running brand + brandkit -->
+<!-- Output of resume-builder phase 3. Every proof point names the career-log entry ids behind it. -->
 
 ## Positioning Statement
 <!-- 1–2 sentences: who you are, what you do, for whom, with what result -->
@@ -14,18 +14,18 @@
 
 ### Theme 1:
 - Name:
-- Supporting proof points:
+- Supporting proof points (entry ids):
   -
   -
 
 ### Theme 2:
 - Name:
-- Supporting proof points:
+- Supporting proof points (entry ids):
   -
   -
 
 ### Theme 3 (optional):
 - Name:
-- Supporting proof points:
+- Supporting proof points (entry ids):
   -
   -
