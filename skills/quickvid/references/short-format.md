@@ -131,13 +131,11 @@ Look at a frame per overlay before showing the user.
 
 ## 7. Posting kit
 
-**Thumbnails** (a clip works as `--photo`; a frame near its end is used):
-
-```
-uv run --no-project --with pillow python QV/scripts/thumbnail.py --photo <photo or clip> --out-dir "<Content>/Final" --name <slug> --a "<hook line 1>" --b "<hook line 2>" [--strike <word>] --accent <accent>
-```
-
-That gives `-thumbnail-youtube.jpg` (1280x720) and `-cover.jpg` (1080x1920, for Instagram and TikTok). Look at both.
+**Thumbnails:** follow `QV/references/thumbnails.md`. Design them on purpose: three concepts (payoff, pain, curiosity or a
+number), each a big subject in the centre square with 2 to 5 huge words (never the hook line typed over a frame), rendered
+with `QV/scripts/thumbnail.py`, checked in its grid preview, and shown side by side for the user to pick. The cover
+(1080x1920) is for TikTok, Instagram and YouTube Shorts alike; a 1280x720 thumbnail (`--wide`) is only for a long YouTube
+video. The video's first frame shows the chosen cover's words.
 
 **Copy:** read `QV/references/publish-copy.md` for limits, then write `.quickvid/publish.md`, a section per platform,
 ready to paste, with character counts beside anything limited. Lead with the research's search phrase and hashtags:

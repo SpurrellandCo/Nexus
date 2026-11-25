@@ -1,6 +1,6 @@
 ---
 name: reel
-description: Make a short vertical video (Instagram Reel, TikTok, YouTube Short) for any of the user's brands, then write the title, caption or description and tags for each platform and make the thumbnails. Three formats - promo (a product or a published MakerWorld model, from its model folder and listing), tutorial (a how-to or explainer such as Bambu Studio settings, from a tutorial project made by makerworld-idea, with claims from official sources only) and tech-tip (finds ranked tech-tip ideas, then a software walkthrough screen-recorded step by step with auto-zoom, or hardware the user films). Works out the brand from the folder (or the one the user names) and reads that brand's settings and accounts. Checks which formats and sounds are trending that week, writes the script, the user records the voice-over line by line, and the video is built with the quickvid tools; then records where it was posted and clears out the old render versions. Use when the user asks for a reel, short, TikTok or promo video, a tutorial or how-to video, a tech tip, ideas for their tech channel, a walkthrough of an app or setting, after makerworld-publish, or when makerworld-idea hands off a tutorial.
+description: Make a short vertical video (Instagram Reel, TikTok, YouTube Short) for any of the user's brands, then write the title, caption or description and tags for each platform and make the thumbnails. Three formats - promo (a product or a published MakerWorld model, from its model folder and listing), tutorial (a how-to or explainer such as Bambu Studio settings, from a tutorial project made by makerworld-idea, with claims from official sources only) and tech-tip (finds ranked tech-tip ideas, then a software walkthrough screen-recorded step by step with auto-zoom, or hardware the user films). Works out the brand from the folder (or the one the user names) and reads that brand's settings and accounts. Checks which formats and sounds are trending that week, writes the script, the user records the voice-over line by line, and the video is built with the quickvid tools; then records where it was posted and clears out the old render versions. With no topic given, it first researches what's current and trending for that brand and pitches ideas. Use when the user asks for a reel, short, TikTok or promo video, a video for one of their brands, what to post, a tutorial or how-to video, a tech tip, ideas for their tech channel, a walkthrough of an app or setting, after makerworld-publish, or when makerworld-idea hands off a tutorial.
 ---
 
 # Reel
@@ -18,6 +18,14 @@ Pick from the request and the folder: a MakerWorld model folder is promo; a piec
 tutorial; a tech-tip request ("a tip about Teams", "tech tip ideas", "walk through this setting") or a piece whose
 `format` is `tech-tip` is tech-tip. Ask when it's still unclear.
 
+**No topic given.** When the user asks for a video for a brand without saying what it's about ("make a video for
+<brand>", "what should I post this week", "I need a reel for <brand>"), don't ask what it should be about: find out. After
+section 0 (the brand and its profile), follow `references/ideas.md`, which works for any brand: what is already waiting
+(ideas, made but unposted pieces, models with no promo), what's new in the profile's topics in the last few weeks from
+official sources, what's trending and searched right now on the brand's platforms, and what's crowded or open. Pitch 3 to
+5 scored ideas, each with why now and its format; when the user picks one, save it as a project and make it with the
+format file that fits.
+
 The build itself is shared with every short-video format: read
 `$NEXUS_HOME/skills/quickvid/references/short-format.md` once and follow its steps 1 to 8 where the format file says
 so. Its default format (hook, steps, one CTA, about 20 to 35 s) is a starting point; the user's own request for the
@@ -31,6 +39,15 @@ out the draft versions so only the posted video is left.
 names a brand ("for the tech channel"), use it. Otherwise match the folder you're working on against each brand's
 `contentRoot` (full paths, ignoring trailing slashes and letter case; the root or anything inside it matches). Ask
 only when no brand matches or more than one does. Archived brands and accounts are skipped.
+
+**Profile.** Then read the brand's profile, `_brand.md` in its `contentRoot` (written with the brand-profile skill): what
+the brand is, its audience, the topics it covers and never covers, its formats, voice and tone, goal and call to action,
+and its rules for sources. Everything after this follows it: ideas come from its topics and its audience's problems, a
+request outside its topics is flagged once (made only if the user still wants it), its formats and length replace the
+default format's (a standing preference, as a `format` setting is), the script and captions use its voice and end on its
+call to action, and facts follow its source rules. The user's request in the moment wins over the profile.
+With no `_brand.md`, say once that the brand has no profile, offer to write one with the brand-profile skill, and carry on
+with the settings below if the user would rather not.
 
 **Settings** come from that brand's `video` object; every field is optional:
 
@@ -78,7 +95,8 @@ their folder and `--out "<piece folder>"` (`screen_zoom.py` takes `--piece` inst
   `modelsRoot`). One project: use its `Reel` piece. Several projects: ask which. A project that holds only a carousel: add a piece
   to it with `status.mjs create "<Project Name>/Reel" --brand <brand id> --format promo --kind reel --status approved` (it copies
   `model:` from the sibling). No project: create the project and its piece the same way, with `--model "<model path under modelsRoot>"`,
-  and tell the user to put the footage in the project's `content/` folder.
+  make the project's `content/` folder (the brand's `contentFolder`; `status.mjs create` never makes it), and tell the
+  user to put the footage there.
 - **A second video of the same model** is another piece (`Reel 2`, or a name the user gives), made with `status.mjs create`; it
   never overwrites the first.
 

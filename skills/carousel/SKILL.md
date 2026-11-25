@@ -21,6 +21,12 @@ brand, use it. Otherwise match the folder you're working on against each brand's
 model folder (full paths, ignoring trailing slashes and letter case; the root or anything inside it matches). Ask only
 when no brand matches or more than one does. Archived brands and accounts are skipped.
 
+**Profile.** Then read the brand's profile, `_brand.md` in its `contentRoot` (written with the brand-profile skill): its
+audience, topics, voice and tone, goal and call to action, and source rules. The slide copy and captions follow it and end
+on its call to action; a project outside its topics is flagged once. The user's request in the moment wins over the
+profile. With no `_brand.md`, say once that the brand has no profile, offer to write one with the brand-profile skill, and
+carry on without it if the user would rather not.
+
 **The format of the brand.** This skill works only in a brand whose `itemLayout` is `2`: a content root of projects, each
 holding pieces, each piece with a `status.md`, which you change only with
 `node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs` (`$NEXUS_HOME/skills/content-backlog/references/status-file.md`
