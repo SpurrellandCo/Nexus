@@ -14,6 +14,7 @@
 import path from 'node:path';
 import { localDate } from './dates.mjs';
 import { parsePublishMd } from './publish-md.mjs';
+import { isTikTokCut } from './tiktok-check.mjs';
 import { isPieceRelPath } from './status-file.mjs';
 import { fold } from './status-file-text.mjs';
 
@@ -144,7 +145,9 @@ function readVideo(io, facts, lines) {
     const found = first.walked.state === 'present' && isMp4Name(first.walked.names.at(-1) ?? '') ? first.walked : null;
     if (found === null) video = { ...video, name: baseOf(first.named), path: first.named, source: first.source, missing: true };
     else {
+      // A TikTok cut (quickvid's tiktok_cut.py) is made after the video it comes from, so it is never "a newer render".
       const newer = files
+        .filter((name) => !isTikTokCut(name))
         .map((name) => ({ name, mtimeMs: io.lstat(path.join(finalDir, name))?.mtimeMs ?? 0 }))
         .filter((m) => m.mtimeMs > found.mtimeMs)
         .sort((a, b) => b.mtimeMs - a.mtimeMs)[0];

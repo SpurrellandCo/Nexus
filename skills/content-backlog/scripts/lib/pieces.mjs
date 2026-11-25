@@ -5,7 +5,8 @@
 // (models.mjs) cannot disagree about what a piece is.
 //
 // Everything is read through the injected io, and only by listing and reading: each folder is listed once, the
-// status file and publish.md are the only files opened (each through a capped read that never follows a link), and
+// status file, publish.md and the draft (script.md or copy.md, for TikTok's call-to-action check) are the only files opened
+// (each through a capped read that never follows a link), and
 // nothing is looked for with a stat of a joined path.
 // No module state; a folder that cannot be read is the io's warning, never an exception here.
 import crypto from 'node:crypto';
@@ -21,7 +22,7 @@ import { fold } from './status-file-text.mjs';
  * @typedef {{ name: string, path: string, size: number, mtimeMs: number, sha1: string }} FileRef
  * @typedef {{ project: FolderRef, piece: FolderRef, status: FileRef, front: import('./status-file.mjs').StatusFront,
  *             extra: Record<string, string>, final: { name: string | null, files: string[] },
- *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishTooLarge: boolean, publishNotUtf8: boolean, publishMtimeMs: number } }} PieceFacts
+ *             work: { name: string | null, hasDraft: boolean, hasPublish: boolean, publishText: string | null, publishTooLarge: boolean, publishNotUtf8: boolean, publishMtimeMs: number, draftText?: string | null } }} PieceFacts
  * @typedef {{ pieces: PieceFacts[], warnings: string[], legacyFolders: number, foldersRead: number, stopped: boolean }} Discovery
  */
 
@@ -133,6 +134,8 @@ export function readPiece(io, cfg, project, name) {
   const publishName = fileNamed(workEntries, kind.publish);
   const publishFile = publishName === null ? null : path.join(piece.dir, /** @type {string} */ (workName), publishName);
   const publish = publishFile === null ? null : io.readCapped(publishFile, LIMITS.fileBytes);
+  const draftName = fileNamed(workEntries, kind.draft);
+  const draft = draftName === null ? null : io.readCapped(path.join(piece.dir, /** @type {string} */ (workName), draftName), LIMITS.fileBytes);
   return {
     piece: {
       project,
@@ -143,7 +146,8 @@ export function readPiece(io, cfg, project, name) {
       final: { name: finalName, files: finalEntries.filter((e) => e.isFile()).map((e) => e.name).sort() },
       work: {
         name: workName,
-        hasDraft: fileNamed(workEntries, kind.draft) !== null,
+        hasDraft: draftName !== null,
+        draftText: draft !== null && 'text' in draft ? draft.text : null,
         hasPublish: publishName !== null,
         publishText: publish !== null && 'text' in publish ? publish.text : null,
         publishTooLarge: publish !== null && 'tooLarge' in publish,

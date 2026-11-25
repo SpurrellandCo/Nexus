@@ -52,7 +52,8 @@ user can reply "yes", correct it, or skip it. Say they can answer in their own w
 6. **Voice and tone.** How it sounds: plain or playful, words to use and to avoid, face on camera or voice only, any
    catchphrase or sign-off.
 7. **Goal and call to action.** What success looks like (followers, link clicks, sales, leads) and the line each post ends
-   on.
+   on. Ask whether the brand's TikTok account is a TikTok Shop creator (an affiliate or seller): if so, its TikTok call to action
+   is a follow or comment ask only, with no other site and no "link in bio" (`$NEXUS_HOME/skills/quickvid/references/platform-policy.md`).
 8. **Sources and claims.** Where facts must come from, what is never claimed, and any disclosure (affiliate links,
    sponsored posts).
 9. **Style references.** Channels or creators whose style is close to what the user wants (to learn from, never to copy),

@@ -9,7 +9,8 @@ import { normalizeRel } from './config.mjs';
 import { fileFlags } from './flags.mjs';
 import { MIN_SLIDES, isImageName, isMp4Name, readMedia } from './media.mjs';
 import { noPromoReel } from './cards.mjs';
-import { mentionsMakerWorld } from './publish-md.mjs';
+import { mentionsMakerWorld, parsePublishMd } from './publish-md.mjs';
+import { tiktokFlags } from './tiktok-check.mjs';
 import { isScheduledValue, parseScheduledValue } from './posted.mjs';
 import { clip, fold } from './status-file-text.mjs';
 import { resolveModel } from './models.mjs';
@@ -143,7 +144,11 @@ export function pieceCard(io, cfg, facts, ignore = ignoreSetOf(cfg)) {
       statusSlides: kind === 'carousel' ? [...(front.slides ?? [])] : [],
     },
     model,
-    rawFlags: fileFlags({ brandId: cfg.brandId, front, files, video: media.video, slides: media.slides, namedSlides: media.namedSlides, model, mediaFlags: media.flags }),
+    rawFlags: [
+      ...fileFlags({ brandId: cfg.brandId, front, files, video: media.video, slides: media.slides, namedSlides: media.namedSlides, model, mediaFlags: media.flags }),
+      // TikTok's redirecting-traffic rule (tiktok-check.mjs): shown at compose only while a TikTok account is open.
+      ...tiktokFlags({ kind, sections: parsePublishMd(work.publishText ?? '').sections, draftText: work.draftText ?? null }),
+    ],
     dependency: { mentionsMakerWorld: work.publishText === null ? false : mentionsMakerWorld(work.publishText) },
     created: front.created ?? null,
     lastChanged: Math.max(status.mtimeMs, work.publishMtimeMs, media.changedMs),

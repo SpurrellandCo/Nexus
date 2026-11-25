@@ -1,4 +1,4 @@
-// The 14 flags of a v2 piece (Content Board v2: V2-16, V2-17, V2-22, V2-23, V2-75; D-037): each says "the status and the
+// The 15 flags of a v2 piece (Content Board v2: V2-16, V2-17, V2-22, V2-23, V2-75; D-037): each says "the status and the
 // files disagree" and never changes the lane (the files decide, FR 3). One table gives every code its severity and text.
 // Pure functions of a card's facts: no io, no clock, no module state, and nothing is changed in what is passed in.
 //
@@ -7,6 +7,7 @@
 //     video-missing, slides-missing, status-lags (a video, slides, a script or copy exist), posts-other-video, posts-other-slides,
 //     video-outside-folder, slides-outside-folder (the last four are decided where the media is named, media.mjs),
 //     brand-mismatch, model-not-found, model-no-folder                                           -> fileFlags
+//     tiktok-redirect (the TikTok caption, script or slides send viewers off TikTok)               -> tiktok-check.mjs
 //   at compose, from the brand's accounts or the other pieces, so a change of accounts needs no read of the share:
 //     posted-but-open, status-lags (every account is posted or skipped), post-without-account, no-account-for-kind -> accountFlags
 //     model-differs                                                                               -> projectFlags
@@ -21,17 +22,18 @@ import { activeAccountsFor } from './status.mjs';
  * @typedef {import('./media.mjs').NamedSlide} NamedSlide
  */
 
-/** The 14 codes, in the order of V2-16's table (flags are shown in this order). */
+/** The 15 codes, in the order of V2-16's table and then the policy check (flags are shown in this order). */
 export const FLAG_CODES = Object.freeze([
   'video-missing', 'slides-missing', 'posted-but-open', 'status-lags', 'posts-other-video', 'posts-other-slides', 'video-outside-folder',
   'slides-outside-folder', 'post-without-account', 'no-account-for-kind', 'brand-mismatch', 'model-not-found', 'model-no-folder', 'model-differs',
+  'tiktok-redirect',
 ]);
 
 /** @type {Readonly<Record<string, 'warn' | 'info'>>} */
 export const FLAG_SEVERITY = Object.freeze({
   'video-missing': 'warn', 'slides-missing': 'warn', 'posted-but-open': 'warn', 'status-lags': 'info', 'posts-other-video': 'warn', 'posts-other-slides': 'warn',
   'video-outside-folder': 'warn', 'slides-outside-folder': 'warn', 'post-without-account': 'info', 'no-account-for-kind': 'warn', 'brand-mismatch': 'warn',
-  'model-not-found': 'warn', 'model-no-folder': 'warn', 'model-differs': 'warn',
+  'model-not-found': 'warn', 'model-no-folder': 'warn', 'model-differs': 'warn', 'tiktok-redirect': 'warn',
 });
 
 /** Statuses a flag says the files are ahead of: with media (V2-16, `status-lags`), and with only a script or copy. */
@@ -92,6 +94,12 @@ export function flagText({ code, params = {} }) {
     case 'model-not-found': return 'Model not found';
     case 'model-no-folder': return 'This brand has no models folder set';
     case 'model-differs': return `Pieces of ${plain(p.project, 80)} link different models`;
+    case 'tiktok-redirect': {
+      const said = `"${plain(p.phrase, 40)}"`;
+      if (p.where === 'video') return `The video sends TikTok viewers off TikTok (${said}): post a TikTok cut`;
+      if (p.where === 'slides') return `A slide sends TikTok viewers off TikTok: ${said}`;
+      return `The TikTok caption sends viewers off TikTok: ${said}`;
+    }
     default: return plain(code, 40);
   }
 }
@@ -207,7 +215,10 @@ export function projectFlags(card, projectPieces) {
  * @returns {Flag[]}
  */
 export function composeFlags(card, { statuses, accounts, brandName, projectPieces = [] }) {
-  const all = [...accountFlags(card, { statuses, accounts, brandName }), ...(card.rawFlags ?? []), ...projectFlags(card, projectPieces)];
+  // TikTok's call-to-action check matters only while the piece is still to go out on TikTok.
+  const tiktokOpen = statuses.some((s) => /^tiktok\b/i.test(s.accountKey) && OPEN.includes(s.status));
+  const raw = (card.rawFlags ?? []).filter((/** @type {RawFlag} */ f) => f.code !== 'tiktok-redirect' || tiktokOpen);
+  const all = [...accountFlags(card, { statuses, accounts, brandName }), ...raw, ...projectFlags(card, projectPieces)];
   const seen = new Set();
   const once = all.filter((flag) => {
     const key = flag.code === 'post-without-account' ? `${flag.code}:${flag.params.key}` : flag.code;

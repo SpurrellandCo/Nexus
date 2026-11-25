@@ -12,7 +12,8 @@ script.
 
 - **Hook** in the first six words, over the strongest shot: a problem or a promise, never just a product name.
 - **Retention:** numbered steps ("Step one...") or a promised payoff the viewer stays for.
-- **One call to action**, on an end card held about 1.3 s.
+- **One call to action**, on an end card held about 1.3 s. On TikTok it must stay on TikTok (a follow, never "link in bio" or
+  another site): `QV/references/platform-policy.md`, and a TikTok cut when the main video's ending points elsewhere (step 7).
 - **About 20 to 35 seconds:** 5 to 9 lines, about three words a second, one line per shot.
 
 ## The user's request beats the default
@@ -141,7 +142,9 @@ video. The video's first frame shows the chosen cover's words.
 ready to paste, with character counts beside anything limited. Lead with the research's search phrase and hashtags:
 
 - **TikTok:** cover text; a keyword-led caption that names the thing and the task plainly (TikTok is searched like a
-  search engine); 4-6 hashtags inline.
+  search engine); 4-6 hashtags inline; it ends on an engagement ask, never on another site, "link in bio" or a hashtag
+  that names another platform (`QV/references/platform-policy.md`). When there is a TikTok cut, the section starts with
+  `Video:` and its path.
 - **Instagram Reel:** cover text; a caption whose first line is the hook, a short list of the steps or how it works,
   the CTA; 3-5 hashtags.
 - **YouTube Shorts:** a title of 100 characters or fewer, keyword first; a description with the hook line and what it
@@ -154,6 +157,16 @@ whether it's approved for business use. Never mix it into the video file (resear
 
 Every claim must be in the sources. Links go only where they're clickable (the YouTube description), never in
 Instagram or TikTok captions. Show the user the copy: it goes out under their name.
+
+**TikTok cut:** when the video's call to action sends viewers off TikTok ("it's on MakerWorld, link in bio", a store, an
+affiliate link), make TikTok its own file from the finished video. It keeps everything before the call-to-action line and
+ends on a follow card (`QV/references/platform-policy.md` says why):
+
+```
+uv run --no-project --with pillow python QV/scripts/tiktok_cut.py --video "<finished video>" --timing "<piece>/.quickvid/timing.json" --cta-line <N> --out "<piece>/Final/<slug>-tiktok.mp4" --top "FOLLOW FOR" --title "<MORE PRINTS, MORE TIPS...>" --search "<the brand's TikTok handle>" --button "FOLLOW" --accent <accent>
+```
+
+Look at a frame either side of the cut. Then check the TikTok file and caption against the policy's "never" list.
 
 ## 8. Hand off
 

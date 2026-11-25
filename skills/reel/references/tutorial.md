@@ -33,7 +33,9 @@ teaching order and the sources come first; drop a trend that would bend either.
 
 **Hook:** the problem or question from the brief, over the proof shot or the first motion graphic.
 
-**End card:** if the brief links a model, the usual "FIND IT ON / MAKERWORLD" card with its name. Otherwise
+**End card:** if the brief links a model, the usual "FIND IT ON / MAKERWORLD" card with its name, and then a TikTok cut
+(the shared guide's step 7) that ends on the follow card below, since TikTok bars a call to action that sends viewers off
+TikTok; a script line that names MakerWorld or the link in bio is the cut point. Otherwise
 `--top "FOLLOW FOR" --title "MORE BAMBU TIPS" --search "<the brand's handle>" --button "FOLLOW"`, and for a series
 part before the last, `--title "PART <N+1> NEXT"`. Plain text only: never Bambu Lab's logo, and nothing that suggests
 the video is official.
@@ -44,7 +46,8 @@ the video is official.
 description links the wiki pages from `sources.md`, then the linked model and any matching affiliate links (as in the
 promo format). For a series, number the titles ("Support settings explained 1/3").
 
-**Before posting** (hand-off): a pinned comment with the wiki link or the next part. The piece is `status: made`, with
+**Before posting** (hand-off): a pinned comment with the wiki link or the next part, on Instagram and YouTube only (on
+TikTok, a pinned link sends viewers off TikTok: pin the next part's name instead). The piece is `status: made`, with
 `video:` set, once the video is done (reel's section 1); nothing is written to the brief.
 
 **After posting:** record the posts through `status.mjs post` and clear out the old versions (reel's section 3). The piece

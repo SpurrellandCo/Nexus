@@ -48,12 +48,16 @@ at posting in the research's "So, for this video".
   it was seen, and offer the default-format version as the alternative. If the pick needs shots the folder doesn't
   have, give the user the short shot list from `trend-formats.md` before recording.
 - **Hook** over the strongest finished-product shot, e.g. "Stop doing Gridfinity math."
-- **CTA line:** "It's on MakerWorld. Link in bio."
+- **CTA line:** "It's on MakerWorld. Link in bio." It is for Instagram and YouTube only: TikTok gets the TikTok cut
+  (below), because TikTok bars any call to action that sends viewers off TikTok (`$NEXUS_HOME/skills/quickvid/references/platform-policy.md`).
 - **Visuals:** if a multi-part model has no assembly footage, offer the assembly animation from makerworld-model
   (`$NEXUS_HOME/skills/makerworld-model/scripts/assemble_anim.py`), which matches the product photos. A screen
   recording of a generator or configurator in use can be zoomed with `screen_zoom.py` like any recorded step.
 - **End card:** `--top "FIND IT ON" --title "MAKERWORLD" --search "<model name as people would search it>" --button "LINK IN BIO"`,
   over the best finished photo.
+- **TikTok cut:** after the last render, make TikTok's file with the shared guide's TikTok cut (step 7): cut at the CTA line,
+  with `--top "FOLLOW FOR" --title "MORE PRINTS" --search "<the brand's TikTok handle>" --button "FOLLOW"`. Name it
+  `<slug>-tiktok`.
 - **Render name:** `<slug>-reel`.
 - **Character** (when the brand's `character` is set): the character pops in now and then and always leads the
   sign-off.
@@ -70,11 +74,14 @@ at posting in the research's "So, for this video".
     before the overlays (step 6), so the text sits on top of him.
 - **Posting copy:**
   - Instagram's CTA: "Link in bio, or search "<model name>" on MakerWorld".
+  - TikTok: `Video:` the TikTok cut, then a caption that says what the model is and does and ends on a question or "Follow for
+    more prints". No MakerWorld, no "link in bio", no search phrase for another site, no `#makerworld`.
   - YouTube description: the MakerWorld link from `published.txt`, then any matching saved affiliate links from
     `makerworld.json`, checked as makerworld-publish checks them, with the disclosure.
   - Claims match the listing exactly; don't contradict the model's own page.
-- **Before posting** (hand-off): the MakerWorld link in each bio, a pinned comment with the search phrase, and the
-  trending sound to add in each app (from `publish.md`). Trends move weekly: if the research is more than 7 days old
+- **Before posting** (hand-off): post the TikTok cut on TikTok and the main video everywhere else; the MakerWorld link in the
+  Instagram and YouTube bios and a pinned comment with the search phrase there (never on TikTok, where both count as sending
+  viewers off TikTok); and the trending sound to add in each app (from `publish.md`). Trends move weekly: if the research is more than 7 days old
   when the user posts, check the sound and format are still rising (research step 3b) before they post.
 - **Piece status:** `scripted` when the script is approved, `made` with `video:` when the render is done (reel's section 1).
 - **After posting:** record the posts through `status.mjs post` and the format used as `style:`, then clear out the old versions (reel's section 3).

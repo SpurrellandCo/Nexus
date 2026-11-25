@@ -66,6 +66,8 @@ Hashtags: #3dprinting #drawerorganizer #makerworld
 Where the call to action names the listing (the project links one), the caption names MakerWorld too, so the kit shows what the
 carousel points to. Use the listing's link only where a link in a caption is clickable; on Instagram and TikTok name the listing and
 ask the user where their profile links to it. Affiliate links follow the reel skill's rule: never in an Instagram or TikTok caption.
+The TikTok caption never names MakerWorld, another site or the link in bio, and has no `#makerworld`: TikTok bars a call to action
+that sends viewers off TikTok (`$NEXUS_HOME/skills/quickvid/references/platform-policy.md`).
 
 ## `## Before posting`
 

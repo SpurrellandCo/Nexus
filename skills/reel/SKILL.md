@@ -133,7 +133,8 @@ true to what exists (a brand in the new format):
 ## 2. Hand-off
 
 End with the finished video, the posting kit (`publish.md`) and the thumbnails, then ask the user to say when it's
-posted. Links are welcome but optional: "it's posted" is enough, so never hold the record back waiting for links.
+posted. When the video's call to action points off TikTok, also hand over its TikTok cut and say it is the file to post on
+TikTok (`$NEXUS_HOME/skills/quickvid/references/platform-policy.md`). Links are welcome but optional: "it's posted" is enough, so never hold the record back waiting for links.
 
 ## 3. Recording posts
 

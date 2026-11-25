@@ -41,6 +41,7 @@ Updated: <YYYY-MM-DD>
 
 - Goal: <followers, clicks, sales, leads>
 - Call to action: "<the line each post ends on>"
+- On TikTok: <a follow or comment ask only, if the account is a TikTok Shop creator: no other site, no "link in bio">
 
 ## Sources and claims
 

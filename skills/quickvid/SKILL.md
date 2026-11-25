@@ -260,6 +260,7 @@ They share one look through `scripts/motion_style.py`.
   folder that holds `.quickvid/`).
 - `photo_motion.py` — an animated photo (push in, pull out, pan) for a line with no video.
 - `endcard.py` — the call-to-action end card (headline, typed search bar, pulsing button).
+- `tiktok_cut.py` — the TikTok file of a finished video whose call to action points off TikTok: the same video up to that line, ending on a follow card. Why and when: `references/platform-policy.md`.
 - `thumbnail.py` — a vertical cover (1080x1920) for TikTok, Instagram and YouTube Shorts, with huge words in the centre square every grid keeps, optional badge and arrow or circle callout, and a grid preview for the squint test; `--wide` adds a 1280x720 thumbnail for a long YouTube video. How to design one: `references/thumbnails.md`.
 
 Screen walkthroughs (macOS), used by the reel skill's tech-tip format:

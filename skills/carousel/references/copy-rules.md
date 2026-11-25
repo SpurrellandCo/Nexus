@@ -10,7 +10,7 @@ The rules for the words on the slides. The structure is the social-content skill
 |---|---|---|
 | 1 | `hook` | A bold statement or question that earns the swipe. Short: a few words, the thing the viewer gets or the problem it ends. |
 | 2 to the one before last | `point` | One point per slide. A short headline, and at most one supporting line. If a slide needs two points, it is two slides. |
-| last | `cta` | A summary and one call to action, and only one: the model's listing when the project links one (name it: "Free on MakerWorld: <model name>"), else the brand's `cta`. |
+| last | `cta` | A summary and one call to action, and only one: the model's listing when the project links one (name it: "Free on MakerWorld: <model name>"), else the brand's `cta`. When TikTok is one of the owed accounts, always the brand's `cta`: TikTok bars a slide that sends viewers off TikTok (`$NEXUS_HOME/skills/quickvid/references/platform-policy.md`), and the listing is then named in the other platforms' captions. |
 
 - **How many.** From 2 to the smallest maximum among the owed accounts (`copy_md.mjs limits`). Fewer, stronger slides beat
   filling the limit: most carousels are 5 to 8 slides.
