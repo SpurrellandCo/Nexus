@@ -87,9 +87,11 @@ function nextOf(card, group) {
     return group === 'idea' ? 'approve or shelve it (/makerworld-idea)' : group === 'approved' ? '/makerworld-model' : undefined;
   }
   if (group === 'notPosted') return card.placement.stage === 'Ready to post' ? 'post it, then say so (links optional)' : card.placement.nextStep ?? undefined;
-  if (group === 'tutorial') return card.piece.declaredStatus === 'idea' ? 'approve it (/makerworld-idea)' : '/reel (tutorial format)';
-  if (group === 'idea') return 'approve or shelve it (/makerworld-idea)';
-  if (group === 'approved') return '/makerworld-model';
+  if (group === 'tutorial') return card.piece.declaredStatus === 'idea' ? 'approve or shelve it' : '/reel (tutorial format)';
+  // A promo idea is a model to make (makerworld-idea, then makerworld-model); any other format is a video idea for the reel skill.
+  const video = card.piece?.format !== undefined && card.piece.format !== 'promo';
+  if (group === 'idea') return video ? 'approve or shelve it' : 'approve or shelve it (/makerworld-idea)';
+  if (group === 'approved') return video ? '/reel' : '/makerworld-model';
   if (group === 'built') return '/makerworld-publish';
   return group === 'building' ? card.placement.nextStep ?? undefined : undefined;
 }

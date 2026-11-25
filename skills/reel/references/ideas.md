@@ -94,6 +94,10 @@ was found. Then write `<Idea title>/brief.md`:
 - Score: demand 4, freshness 5, gap 3, filmable 5, fit 4
 ```
 
+The Content Board app's New idea makes the same project for any brand (its brief has `Source`, `Created`, `Format` with the profile's
+format name, and the `Hook` and `Why now` the user typed), so an idea saved there is a waiting idea (section 1) and is made the same
+way. Its Find ideas button copies a prompt that starts this research for a brand.
+
 The idea's status is the piece's (`idea`, `approved`, `shelved`). When the user picks one to make, set `status: approved` on
 the idea's piece (`node $NEXUS_HOME/skills/content-backlog/scripts/status.mjs set "<piece folder>" status approved`, where
 `<piece folder>` is `<content root>/<Idea title>/Reel`), then make it with the format file its `format` names (reel's

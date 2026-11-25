@@ -87,7 +87,8 @@ function placeWithoutMedia(card) {
   if (status === 'posted') return at('Posted', 'Posted', null);
   if (card.files?.scriptOrCopy || status === 'scripted' || status === 'made') return at('In progress', 'Scripted', `Record the voice-over and build it (${command})`);
   if (status === 'approved') return at('Ideas', 'Approved', `Make it (${command})`);
-  return at('Ideas', 'Idea', card.type === 'tutorial' ? 'Approve it (/makerworld-idea)' : `Make it (${command})`);
+  // A tutorial idea is approved or shelved like any idea (in the board, or by the skill that saved it): any brand makes tutorials.
+  return at('Ideas', 'Idea', card.type === 'tutorial' ? 'Approve or shelve it' : `Make it (${command})`);
 }
 
 /**
