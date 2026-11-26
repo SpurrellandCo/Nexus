@@ -166,7 +166,9 @@ ends on a follow card (`QV/references/platform-policy.md` says why):
 uv run --no-project --with pillow python QV/scripts/tiktok_cut.py --video "<finished video>" --timing "<piece>/.quickvid/timing.json" --cta-line <N> --out "<piece>/Final/<slug>-tiktok.mp4" --top "FOLLOW FOR" --title "<MORE PRINTS, MORE TIPS...>" --search "<the brand's TikTok handle>" --button "FOLLOW" --accent <accent>
 ```
 
-Look at a frame either side of the cut. Then check the TikTok file and caption against the policy's "never" list.
+A line earlier in the video that also points off TikTok ("Hit Customize on MakerWorld") comes out with `--drop-line <N>`
+(repeatable): its voice, footage and text, up to the next line. Look at a frame either side of each cut. Then check the TikTok
+file and caption against the policy's "never" list.
 
 ## 8. Hand off
 
