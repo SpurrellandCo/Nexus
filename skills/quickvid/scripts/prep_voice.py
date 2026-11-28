@@ -1,12 +1,15 @@
 """Prepare the user's own recorded narration for the render, and time every phrase.
 
 Usage: python prep_voice.py <footage folder> [--out <piece folder>] [--hold-last 1.3] [--gap 0.4] [--min-pause 0.2]
-                            [--voice-profile <id>] [--no-dataset]
+                            [--skip 10[,N...]] [--voice-profile <id>] [--no-dataset]
 
 Reads the recordings named 01, 02, ... (m4a, wav, mp3, aac, mov) in the footage folder, one per script line,
 and writes trimmed copies (silence cut from both ends, 48 kHz mono) to <piece>/.quickvid/narration/NN.wav, where <piece> is the
 --out piece folder, or the footage folder itself when there is none.
 The originals are never changed. --hold-last adds silence after the final line so an end card can hold.
+--skip leaves script lines out of the video (a line the edit drops): no narration file, no timing entry, and any
+NN.wav an earlier run made for it is removed, so render.mjs can't pick it up. The other lines keep their numbers
+(the plan then has no line 10), and the skipped recordings still go to the voice dataset: they are the user's voice.
 
 It also writes <piece>/.quickvid/timing.json: where each line starts in the finished reel and the spoken
 phrases inside it, so overlays and motion graphics can be placed on exact words:
@@ -120,6 +123,17 @@ def text_arg(name):
     return None
 
 
+def skipped_lines():
+    """The line numbers after --skip ("10" or "3,10"), as a set; empty without the option."""
+    value = text_arg("--skip")
+    if value is None:
+        return set()
+    try:
+        return {int(v) for v in value.split(",") if v.strip()}
+    except ValueError:
+        sys.exit(f"prep_voice: --skip takes line numbers like 10 or 3,10, not {value!r}")
+
+
 def run(cmd):
     return subprocess.run(cmd, capture_output=True, text=True, check=True)
 
@@ -170,20 +184,31 @@ def main():
                  + "; ".join(f"line {n:02d}: {', '.join(names)}" for n, names in sorted(clashes.items())))
     out_dir = piece / ".quickvid" / "narration"
     out_dir.mkdir(parents=True, exist_ok=True)
+    skip = skipped_lines()
+    unknown = sorted(skip - set(seen))
+    if unknown:
+        sys.exit(f"prep_voice: --skip names lines with no recording: {', '.join(f'{n:02d}' for n in unknown)}")
+    for n in skip:
+        stale = out_dir / f"{n:02d}.wav"
+        if stale.exists():
+            stale.unlink()
+    used = [p for p in sources if line_number(p) not in skip]
+    if not used:
+        sys.exit("prep_voice: --skip leaves no lines")
 
     lines, reel = [], 0.0
-    for i, src in enumerate(sources):
+    for i, src in enumerate(used):
         n = line_number(src)
         out = out_dir / f"{n:02d}.wav"
         trim = ("silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.15,areverse,"
                 "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.25,areverse,aresample=48000")
-        if i == len(sources) - 1 and hold > 0:
+        if i == len(used) - 1 and hold > 0:
             trim += f",apad=pad_dur={hold}"
         run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-vn", "-af", trim, "-ac", "1", str(out)])
         secs = duration(out)
         lines.append({"line": n, "source": src.name, "seconds": round(secs, 3), "reelStart": round(reel, 3),
                       "phrases": phrases(out, secs, min_pause)})
-        reel += secs + (gap if i < len(sources) - 1 else 0)
+        reel += secs + (gap if i < len(used) - 1 else 0)
 
     timing = {"gapSeconds": gap, "total": round(reel, 3), "lines": lines}
     (piece / ".quickvid" / "timing.json").write_text(json.dumps(timing, indent=1))

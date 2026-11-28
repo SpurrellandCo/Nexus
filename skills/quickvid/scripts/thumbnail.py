@@ -4,7 +4,8 @@ YouTube Shorts, and with --wide a 1280x720 thumbnail for a long YouTube video.
 Usage:
   python thumbnail.py --photo IMG.jpg|CLIP.mp4 --out-dir Final --name teams-two-presenters \
       --words "TWO SCREENS" --words2 "AT ONCE" [--badge "COMING JAN 2027"] [--strike WORD] \
-      [--focus 0.5,0.45] [--zoom 1.3] [--accent #2F8CFF] [--circle X,Y,R] [--arrow X1,Y1,X2,Y2] [--wide]
+      [--focus 0.5,0.45] [--zoom 1.3] [--accent #2F8CFF] [--circle X,Y,R] [--arrow X1,Y1,X2,Y2] [--wide] \
+      [--character figure.png [--character-side right|left] [--character-height 0.4]]
 
 Everything that matters sits in the cover's centre square (y 420 to 1500), the part every grid shows: TikTok's profile
 grid, Instagram's 3:4 grid and YouTube's 4:5 tiles. The words (2 to 5) are huge: the first line white with a heavy
@@ -26,10 +27,14 @@ import motion_style as ms  # noqa: E402
 W, H = 1080, 1920
 SAFE_TOP, SAFE_BOTTOM = 420, 1500  # the centre square every platform's grid keeps
 MARGIN = 56
+CHARACTER_FLOOR = 1660  # lowest point of a --character's boots: inside Instagram's 3:4 grid crop (to y 1680)
 BLACK = (0, 0, 0)
 
 # How each place crops the 9:16 cover: (label, top, bottom) in cover pixels.
 GRID_CROPS = (("Instagram grid 3:4", 240, 1680), ("YouTube tile 4:5", 285, 1635), ("TikTok grid", SAFE_TOP, SAFE_BOTTOM))
+# With --platforms, each platform gets its own cover laid out inside the part of the frame its grid shows.
+# A platform not listed here gets the centre square, which every grid keeps.
+PLATFORM_CROPS = {"instagram": (240, 1680), "youtube": (285, 1635), "tiktok": (SAFE_TOP, SAFE_BOTTOM)}
 
 
 def free(path):
@@ -148,11 +153,30 @@ def badge(img, cx, bottom, text, accent):
     d.text((cx, (box[1] + box[3]) / 2), text, font=f, fill=ms.INK + (255,), anchor="mm")
 
 
-def cover(photo, a, accent, out):
-    img = edges_dark(punch(frame(photo, W, H, a.focus, a.zoom)), SAFE_TOP + 330, SAFE_BOTTOM - 140).convert("RGBA")
+def place_character(img, a, height, feet_y, margin):
+    """The brand's character (a transparent PNG, e.g. its director's probe frame) cut to its outline, scaled to
+    `height` px and stood with its feet at `feet_y` on the chosen side, under the words."""
+    if not a.character:
+        return
+    fig = Image.open(a.character).convert("RGBA")
+    box = fig.getbbox()
+    if not box:
+        raise SystemExit(f"thumbnail: {a.character} is empty (fully transparent)")
+    fig = fig.crop(box)
+    k = height / fig.height
+    fig = fig.resize((max(1, int(fig.width * k)), int(height)), Image.LANCZOS)
+    x = margin if a.character_side == "left" else img.width - margin - fig.width
+    img.alpha_composite(fig, (int(x), int(feet_y - fig.height)))
+
+
+def cover(photo, a, accent, out, safe=(SAFE_TOP, SAFE_BOTTOM), floor=CHARACTER_FLOOR):
+    """One vertical cover. `safe` is the band of the frame the target grid shows (top, bottom): the words start just
+    inside its top, the badge sits at its foot, and a --character's boots stop at `floor`."""
+    s_top, s_bottom = safe
+    img = edges_dark(punch(frame(photo, W, H, a.focus, a.zoom)), s_top + 330, s_bottom - 140).convert("RGBA")
     callouts(img, a)
     d = ImageDraw.Draw(img)
-    y = SAFE_TOP + 64  # clear of the TikTok grid's top edge
+    y = s_top + 64  # clear of the grid's top edge
     if a.words:
         f1 = fit_font(d, a.words, W - 2 * MARGIN, 200, 96)
         outlined(img, (W / 2, y), a.words, f1, ms.WHITE, "mt")
@@ -160,9 +184,14 @@ def cover(photo, a, accent, out):
         y += int(f1.size * 1.08)
     if a.words2:
         f2 = fit_font(d, a.words2, W - 2 * MARGIN - 80, 150, 80)
-        bar(img, W / 2, y, a.words2, f2, accent)
+        y = bar(img, W / 2, y, a.words2, f2, accent)
+    # The character stands below the words, never behind them: its head is what reads at grid size. Its boots stop at
+    # CHARACTER_FLOOR (inside Instagram's 3:4 grid); it shrinks only when it would run past that.
+    top = y + 30
+    height = min(a.character_height * H, floor - top)
+    place_character(img, a, height, top + height, 24)
     if a.badge:
-        badge(img, W / 2, SAFE_BOTTOM - 36, a.badge, accent)
+        badge(img, W / 2, s_bottom - 36, a.badge, accent)
     img.convert("RGB").save(out, quality=92)
     return img.convert("RGB")
 
@@ -175,6 +204,7 @@ def wide(photo, a, accent, out):
     for x in range(w):  # dark on the left for the words, clear by 60% of the width
         sd.line([(x, 0), (x, h)], fill=(0, 0, 0, int(200 * max(0.0, 1 - x / (w * 0.6)))))
     img.alpha_composite(shade)
+    place_character(img, a, h * 0.86, h - 12, 40)
     d = ImageDraw.Draw(img)
     y = 150
     if a.words:
@@ -224,6 +254,12 @@ def main():
     p.add_argument("--circle", default="", help="X,Y,R in cover pixels")
     p.add_argument("--arrow", default="", help="X1,Y1,X2,Y2 in cover pixels, pointing at X2,Y2")
     p.add_argument("--wide", action="store_true", help="also a 1280x720 thumbnail, for a long YouTube video only")
+    p.add_argument("--character", default="", help="the brand's character, a transparent PNG (its director's probe "
+                   "frame), stood in the centre square's lower corner under the words")
+    p.add_argument("--character-side", choices=("right", "left"), default="right")
+    p.add_argument("--platforms", default="", help="one cover per platform, e.g. instagram,tiktok,youtube (the brand's "
+                   "accounts that take video): <name>-cover-<platform>.jpg, each laid out for that platform's grid crop")
+    p.add_argument("--character-height", type=float, default=0.4, help="its height as a share of the cover's (0.4)")
     a = p.parse_args()
     if not (a.words or a.words2):
         raise SystemExit("thumbnail: give --words (and usually --words2)")
@@ -234,11 +270,20 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     work = out_dir.parent / ".quickvid"
     preview_dir = work if work.is_dir() else out_dir
-    cv = free(out_dir / f"{a.name}-cover.jpg")
-    shown = cover(photo, a, accent, cv)
-    pv = free(preview_dir / f"{a.name}-grid-preview.jpg")
-    grid_preview(shown, pv)
-    print(f"wrote {cv}\nwrote {pv} (look at this one: is it readable and clear at this size?)")
+    platforms = [p.strip().lower() for p in a.platforms.split(",") if p.strip()]
+    if not platforms:
+        cv = free(out_dir / f"{a.name}-cover.jpg")
+        shown = cover(photo, a, accent, cv)
+        pv = free(preview_dir / f"{a.name}-grid-preview.jpg")
+        grid_preview(shown, pv)
+        print(f"wrote {cv}\nwrote {pv} (look at this one: is it readable and clear at this size?)")
+    for p in platforms:
+        safe = PLATFORM_CROPS.get(p, (SAFE_TOP, SAFE_BOTTOM))
+        cv = free(out_dir / f"{a.name}-cover-{p}.jpg")
+        shown = cover(photo, a, accent, cv, safe=safe, floor=safe[1] - 20)
+        pv = free(preview_dir / f"{a.name}-{p}-grid-preview.jpg")
+        grid_preview(shown, pv)
+        print(f"wrote {cv}\nwrote {pv} ({p}: is it readable and clear at this size?)")
     if a.wide:
         yt = free(out_dir / f"{a.name}-thumbnail-youtube.jpg")
         wide(photo, a, accent, yt)

@@ -51,17 +51,31 @@ cover's words on screen, so the feed and the grid agree.
    ```
    uv run --no-project --with pillow python QV/scripts/thumbnail.py --photo <image or clip> --out-dir "<piece>/Final" \
        --name <slug>-a --words "<line 1>" --words2 "<line 2>" [--badge "<label>"] [--arrow X1,Y1,X2,Y2 | --circle X,Y,R] \
-       [--focus X,Y] [--zoom 1.3] --accent <accent> [--wide]
+       [--focus X,Y] [--zoom 1.3] --accent <accent> [--wide] [--character <figure.png> [--character-side left]]
    ```
 
    It writes `<slug>-a-cover.jpg` (the cover for TikTok, Instagram and YouTube Shorts) and `<slug>-a-grid-preview.jpg`
    in the piece's `.quickvid/`; `--wide` adds the 1280x720 thumbnail, for a long YouTube video only.
+
+   **The brand's character goes on every cover** when the brand's video settings name a `character` (a mascot drawn
+   by its own director script). Pick the one pose that fits the cover's words, from the director's pose list: a
+   question or a problem ("Hmm", think), a setting or a part to look at ("Look here", point), a result ("Ta-da",
+   present), a tip that works (thumbs), a failure (oops). Render it as a single frame with the director's `probe` mode
+   (cues: `{"duration": 2, "fps": 30, "probe": [1.0], "beats": [{"t": 0, "do": "pose", "name": "think"}]}`) and pass
+   that PNG as `--character`. It stands just below the words on the right (`--character-side left` when the subject
+   is on the right), never behind them, so its head always shows; keep the subject to the other side, moving the
+   image if it has to, and check in the grid preview that it covers neither the words nor the subject.
 4. **The squint test.** Look at each grid preview: are the words readable at tile size, is the subject clear in one
    glance, is anything cut off in a crop? Fix it and render again (each render is a new version; nothing is overwritten).
-5. **Show all three** side by side with a recommendation and why; the user picks. Put the chosen cover in `publish.md`'s
-   `Covers:` line for TikTok, Instagram and YouTube.
-6. **Match the opening.** The video's first frame shows the same words on the same image.
-7. **Learn from it.** After posting, which cover went out and how the video did belongs in the brand profile's "What
+5. **Show all three** side by side with a recommendation and why; the user picks.
+6. **One cover per platform.** Render the chosen concept once more with `--platforms` set to the brand's platforms
+   that take video (its non-archived accounts whose `accepts` is `video`, in `~/.nexus-local/accounts.json`; e.g.
+   `--platforms instagram,tiktok,youtube`). Each comes out as `<slug>-cover-<platform>.jpg`, laid out inside that
+   platform's own grid crop (Instagram 3:4, YouTube 4:5, TikTok the centre square; any other platform the centre
+   square), so every account gets a cover made for it. Look at each one's grid preview, then list them in
+   `publish.md`'s `Covers:` line, one per platform, and name each in its platform's section.
+7. **Match the opening.** The video's first frame shows the same words on the same image.
+8. **Learn from it.** After posting, which cover went out and how the video did belongs in the brand profile's "What
    has worked" (the brand-profile skill's "add what's working").
 
 A carousel's first slide is its cover: the same rules apply.

@@ -80,6 +80,9 @@ make a training clip and are skipped too, which is normal. Tell the user the dat
 ready, 6 min 25 s to go until 10 min"). Pass `--no-dataset` only if the user asks, or if a recording isn't their own
 voice (someone else voicing a line). Clips listed "to check" can be reviewed with the voice-take skill's checking steps.
 
+A recorded line the edit drops (its shot was never filmed, say) is left out with `--skip 10` (or `--skip 3,10`): no
+narration or timing for it, and the other lines keep their numbers, so the plan simply has no line 10.
+
 ## 4. Build the visuals that don't exist yet
 
 All 1080x1920, saved in `<Content>` with descriptive names (`<Subject> - <what>.mp4`) so they're reusable. A line's
@@ -134,8 +137,9 @@ Look at a frame per overlay before showing the user.
 
 **Thumbnails:** follow `QV/references/thumbnails.md`. Design them on purpose: three concepts (payoff, pain, curiosity or a
 number), each a big subject in the centre square with 2 to 5 huge words (never the hook line typed over a frame), rendered
-with `QV/scripts/thumbnail.py`, checked in its grid preview, and shown side by side for the user to pick. The cover
-(1080x1920) is for TikTok, Instagram and YouTube Shorts alike; a 1280x720 thumbnail (`--wide`) is only for a long YouTube
+with `QV/scripts/thumbnail.py`, checked in its grid preview, and shown side by side for the user to pick. The chosen
+one is then made once per platform the brand posts video to (`--platforms`, from its accounts that take video), each
+1080x1920 cover laid out for that platform's grid crop; a 1280x720 thumbnail (`--wide`) is only for a long YouTube
 video. The video's first frame shows the chosen cover's words.
 
 **Copy:** read `QV/references/publish-copy.md` for limits, then write `.quickvid/publish.md`, a section per platform,
